@@ -18,7 +18,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle }: Props) {
   const isQuotation = docType === "quotation";
   const showAmounts = !isChallan;
   const subtotal = state.items.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0);
-  const taxAmount = isTax ? subtotal * ((state.taxRate || 0) / 100) : 0;
+  const taxAmount = showAmounts ? subtotal * ((state.taxRate || 0) / 100) : 0;
   const total = subtotal + taxAmount;
 
   const set = <K extends keyof DocState>(key: K, value: DocState[K]) => setState((current) => ({ ...current, [key]: value }));
@@ -37,7 +37,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle }: Props) {
   }));
 
   return (
-    <article className="paper" style={paperStyle}>
+    <article id="document-paper" className="paper" style={paperStyle}>
       <div className="top-accent" />
       <div className="document-content">
         <header className="document-header">
@@ -107,7 +107,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle }: Props) {
           <section className="totals">
             <div className="total-row"><span>Sub Total</span><strong>{money(subtotal, state.currency)}</strong></div>
             <div className="total-row">
-              <span>{isTax ? "Sales Tax" : "Taxes"}{isTax && <span className="tax-editor"> (<NumberField value={state.taxRate} onChange={(value) => set("taxRate", value)} ariaLabel="Tax rate percent" />%)</span>}</span>
+              <span>{isTax ? "Sales Tax" : "Taxes"}<span className="tax-editor"> (<NumberField value={state.taxRate} onChange={(value) => set("taxRate", value)} ariaLabel="Tax rate percent" />%)</span></span>
               <strong>{money(taxAmount, state.currency)}</strong>
             </div>
             <div className="total-banner"><span>{isQuotation ? "Estimate" : "Total"}</span><strong>{money(total, state.currency)}</strong></div>
@@ -119,10 +119,12 @@ export function DocumentPaper({ docType, state, setState, paperStyle }: Props) {
             <h3>Terms &amp; Conditions</h3>
             <AreaField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
           </div>
-          <div className="bank-strip">
-            <div><strong>Bank Transfer :</strong><TextField value={state.bank.name} onChange={(value) => set("bank", { ...state.bank, name: value })} placeholder="Bank name" ariaLabel="Bank name" /></div>
-            <div><strong>Account :</strong><TextField value={state.bank.account} onChange={(value) => set("bank", { ...state.bank, account: value })} placeholder="Account / IBAN" ariaLabel="Bank account" /></div>
-            <div><strong>Paypal Address :</strong><TextField value={state.bank.paypal} onChange={(value) => set("bank", { ...state.bank, paypal: value })} placeholder="PayPal email" ariaLabel="PayPal address" /></div>
+          <div className="payment-info">
+            <strong>Payment Info</strong>
+            <AreaField value={state.paymentInfo} onChange={(value) => set("paymentInfo", value)} placeholder="Bank, account, or payment instructions" ariaLabel="Payment information" />
+          </div>
+          <div className="signature-block">
+            <span>Authorized Signature</span>
           </div>
           <div className="thank-you"><span>{isChallan ? "Received in Good Order" : "Thanks for your Business!"}</span></div>
         </section>
