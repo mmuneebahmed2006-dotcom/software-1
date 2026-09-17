@@ -1,0 +1,65 @@
+[
+  {
+    "capability": "Application UI and editable document fields",
+    "source": "Uploaded code archive",
+    "outcome": "Rebuild in the current application framework while preserving all document editing behavior",
+    "status": "verified",
+    "next_action": "None"
+  },
+  {
+    "capability": "Invoice, quotation, delivery challan, and sales tax invoice modes",
+    "source": "Uploaded code archive",
+    "outcome": "Preserve and refine all four modes",
+    "status": "verified",
+    "next_action": "None"
+  },
+  {
+    "capability": "Paper sizes and print output",
+    "source": "User requirements and partial archive types",
+    "outcome": "Add A4, A5, Letter, and Legal live sizing with matching print page rules",
+    "status": "verified",
+    "next_action": "None"
+  },
+  {
+    "capability": "Currency switching and calculations",
+    "source": "Uploaded code archive",
+    "outcome": "Preserve Rs., $, \u20ac, \u00a3, and AED with automatic totals and sales tax",
+    "status": "verified",
+    "next_action": "None"
+  },
+  {
+    "capability": "Brand logo and reference styling",
+    "source": "Uploaded logo and reference image",
+    "outcome": "Use the supplied 8 Ways Communications logo and exact #171717 visual treatment",
+    "status": "verified",
+    "next_action": "None"
+  },
+  {
+    "capability": "Schema and records",
+    "source": "Uploaded code archive",
+    "outcome": "Not applicable; application is client-side and has no stored records",
+    "status": "verified",
+    "next_action": "None"
+  },
+  {
+    "capability": "Authentication and authorization",
+    "source": "Uploaded code archive",
+    "outcome": "Not applicable; no sign-in or protected data exists",
+    "status": "verified",
+    "next_action": "None"
+  },
+  {
+    "capability": "External providers, callbacks, webhooks, and schedules",
+    "source": "Uploaded code archive",
+    "outcome": "Not applicable; none detected",
+    "status": "verified",
+    "next_action": "None"
+  },
+  {
+    "capability": "Production verification",
+    "source": "Target application",
+    "outcome": "Verify desktop and mobile editing, all modes, size changes, calculations, and print output",
+    "status": "verified",
+    "next_action": "None"
+  }
+]
