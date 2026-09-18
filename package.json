@@ -1,4 +1,5 @@
 {
+{
   "name": "tanstack_start_ts",
   "version": "1.0.0",
   "description": "Document Generator Application",
@@ -103,8 +104,8 @@
     ],
     "extraResources": [
       {
-        "from": ".output/public",
-        "to": "output/public"
+        "from": "app-public",
+        "to": "app-public"
       }
     ],
     "win": {
