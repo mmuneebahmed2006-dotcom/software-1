@@ -31,6 +31,9 @@ jobs:
       - name: Build Web Application
         run: bun run build
 
+      - name: Prepare Static Files
+        run: node -e "const fs=require('fs'); fs.cpSync('.output/public', 'app-public', { recursive: true }); console.log('Copied .output/public to app-public');"
+
       - name: Build Executable
         run: npx electron-builder --windows nsis --config.extraMetadata.main=main.cjs
         env:
