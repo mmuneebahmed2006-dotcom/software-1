@@ -19,17 +19,20 @@ jobs:
         with:
           node-version: 18
 
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+
       - name: Install Dependencies
-        run: npm install
+        run: bun install
 
       - name: Install Electron Builder
-        run: npm install electron electron-builder --save-dev
+        run: bun add -d electron electron-builder
 
-      - name: Build Web Dist
-        run: npm run build
+      - name: Build Web Application
+        run: bun run build
 
-      - name: Build Windows Executable
-        run: npx electron-builder --windows nsis
+      - name: Build Executable
+        run: npx electron-builder --windows nsis --config.extraMetadata.main=main.cjs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
