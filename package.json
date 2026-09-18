@@ -95,6 +95,13 @@
   "build": {
     "appId": "com.muneebahmed.documentgenerator",
     "productName": "Document Generator",
+    "asar": false,
+    "files": [
+      "main.cjs",
+      "splash.html",
+      "package.json",
+      ".output/**/*"
+    ],
     "win": {
       "icon": "build/icon.ico"
     }
