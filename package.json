@@ -99,8 +99,13 @@
     "files": [
       "main.cjs",
       "splash.html",
-      "package.json",
-      ".output/public/**/*"
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": ".output/public",
+        "to": "output/public"
+      }
     ],
     "win": {
       "icon": "build/icon.ico"
