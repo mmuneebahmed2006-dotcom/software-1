@@ -1,8 +1,8 @@
 {
   "name": "tanstack_start_ts",
   "version": "1.0.0",
-  "description": "Software Setup Application",
-  "author": "Muneeb Ahmed",
+  "description": "Document Generator Application",
+  "author": "Muhammad Muneeb Ahmed",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -91,5 +91,12 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5"
+  },
+  "build": {
+    "appId": "com.muneebahmed.documentgenerator",
+    "productName": "Document Generator",
+    "win": {
+      "icon": "build/icon.ico"
+    }
   }
 }
