@@ -90,7 +90,7 @@ function Index() {
           </div>
         </div>
       </header>
-      <main className="print-area"><DocumentPaper docType={docType} state={state} setState={setState} paperStyle={paperStyle} /></main>
+       <main className="print-area"><DocumentPaper docType={docType} state={state} setState={setState} paperStyle={paperStyle} paperSize={paperSize} /></main>
       </div>
     </div>
   );

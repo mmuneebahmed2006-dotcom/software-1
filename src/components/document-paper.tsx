@@ -1,7 +1,8 @@
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { Globe2, Mail, MapPin, Phone, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import logoAsset from "@/assets/8-ways-communications-logo.jpg.asset.json";
-import { DOC_LABELS, money, uid, type DocState, type DocType, type LineItem } from "@/lib/document";
+import { DOC_LABELS, money, uid, type DocState, type DocType, type LineItem, type PaperSizeKey } from "@/lib/document";
 import { Button } from "@/components/ui/button";
 import { AreaField, NumberField, TextField } from "@/components/field";
 
@@ -10,9 +11,12 @@ interface Props {
   state: DocState;
   setState: Dispatch<SetStateAction<DocState>>;
   paperStyle: CSSProperties;
+  paperSize: PaperSizeKey;
 }
 
-export function DocumentPaper({ docType, state, setState, paperStyle }: Props) {
+const MAX_ITEMS = 6;
+
+export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const isTax = docType === "tax";
   const isChallan = docType === "dc";
   const isQuotation = docType === "quotation";
@@ -27,17 +31,23 @@ export function DocumentPaper({ docType, state, setState, paperStyle }: Props) {
       ...current,
       items: current.items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
     }));
-  const addItem = () => setState((current) => ({
-    ...current,
-    items: [...current.items, { id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 }],
-  }));
+  const addItem = () => {
+    if (state.items.length >= MAX_ITEMS) {
+      toast.error("Maximum capacity reached for a single A4 page (6 items max).");
+      return;
+    }
+    setState((current) => ({
+      ...current,
+      items: [...current.items, { id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 }],
+    }));
+  };
   const removeItem = (id: string) => setState((current) => ({
     ...current,
     items: current.items.length > 1 ? current.items.filter((item) => item.id !== id) : current.items,
   }));
 
   return (
-    <article id="document-paper" className="paper" style={paperStyle}>
+    <article id="document-paper" className={`paper paper-${paperSize.toLowerCase()}`} style={paperStyle}>
       <div className="top-accent" />
       <div className="document-content">
         <header className="document-header">

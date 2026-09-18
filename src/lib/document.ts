@@ -88,7 +88,7 @@ export function normalizeDocumentState(value: Partial<DocState> & { bank?: { nam
     meta: { ...fallback.meta, ...value.meta },
     dispatch: { ...fallback.dispatch, ...value.dispatch },
     footer: { ...fallback.footer, ...value.footer },
-    items: value.items?.length ? value.items : fallback.items,
+    items: value.items?.length ? value.items.slice(0, 6) : fallback.items,
     paymentInfo: value.paymentInfo ?? legacyPayment,
   };
 }
