@@ -4,7 +4,15 @@ const http = require('http');
 const fs = require('fs');
 
 const PORT = 4173;
-const publicDir = path.join(__dirname, '.output', 'public');
+
+function getPublicDir() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'output', 'public');
+  }
+  return path.join(__dirname, '.output', 'public');
+}
+
+const publicDir = getPublicDir();
 
 const mimeTypes = {
   '.html': 'text/html',
@@ -45,16 +53,8 @@ if (!gotLock) {
       const ext = path.extname(filePath);
       fs.readFile(filePath, (err, data) => {
         if (err) {
-          filePath = path.join(publicDir, 'index.html');
-          fs.readFile(filePath, (err2, data2) => {
-            if (err2) {
-              res.writeHead(404);
-              res.end('Not found');
-              return;
-            }
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(data2);
-          });
+          res.writeHead(404);
+          res.end('Not found: ' + filePath);
           return;
         }
         res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
