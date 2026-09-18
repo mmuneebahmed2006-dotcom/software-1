@@ -1,33 +1,49 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
-const { fork } = require('child_process');
 const http = require('http');
+const fs = require('fs');
 
 const PORT = 4173;
+const publicDir = path.join(__dirname, '.output', 'public');
+
+const mimeTypes = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.mjs': 'application/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+};
+
 let win;
-let serverProcess;
 
 function startServer() {
-  const serverEntry = path.join(__dirname, '.output', 'server', 'index.mjs');
-  serverProcess = fork(serverEntry, [], {
-    env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1' },
-    stdio: 'pipe',
-  });
+  const server = http.createServer((req, res) => {
+    let reqPath = decodeURIComponent(req.url.split('?')[0]);
+    let filePath = path.join(publicDir, reqPath);
 
-  serverProcess.stdout?.on('data', (data) => console.log(`[server] ${data}`));
-  serverProcess.stderr?.on('data', (data) => console.error(`[server] ${data}`));
-}
-
-function waitForServer(url, callback, attempts = 40) {
-  http.get(url, (res) => {
-    callback();
-  }).on('error', () => {
-    if (attempts > 0) {
-      setTimeout(() => waitForServer(url, callback, attempts - 1), 300);
-    } else {
-      console.error('Server did not start in time.');
+    if (reqPath === '/' || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+      filePath = path.join(publicDir, 'index.html');
     }
+
+    const ext = path.extname(filePath);
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        res.writeHead(404);
+        res.end('Not found');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
+      res.end(data);
+    });
   });
+
+  server.listen(PORT, '127.0.0.1');
 }
 
 function createWindow() {
@@ -52,11 +68,7 @@ function createWindow() {
   });
 
   win.setMenuBarVisibility(false);
-
-  const url = `http://127.0.0.1:${PORT}`;
-  waitForServer(url, () => {
-    win.loadURL(url);
-  });
+  win.loadURL(`http://127.0.0.1:${PORT}`);
 
   win.once('ready-to-show', () => {
     splash.close();
@@ -67,10 +79,9 @@ function createWindow() {
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   startServer();
-  createWindow();
+  setTimeout(createWindow, 300);
 });
 
 app.on('window-all-closed', () => {
-  if (serverProcess) serverProcess.kill();
   if (process.platform !== 'darwin') app.quit();
 });
