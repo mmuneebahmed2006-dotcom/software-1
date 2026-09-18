@@ -100,7 +100,7 @@
       "main.cjs",
       "splash.html",
       "package.json",
-      ".output/**/*"
+      ".output/public/**/*"
     ],
     "win": {
       "icon": "build/icon.ico"
