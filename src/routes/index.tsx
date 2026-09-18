@@ -1,8 +1,6 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, FileText, Printer, Save } from "lucide-react";
-import { toPng } from "html-to-image";
-import { jsPDF } from "jspdf";
+import { FileText, Printer, Save } from "lucide-react";
 import { DocumentPaper } from "@/components/document-paper";
 import { SavedDocumentsSidebar } from "@/components/saved-documents-sidebar";
 import { Button } from "@/components/ui/button";
@@ -31,7 +29,6 @@ function Index() {
   const [paperSize, setPaperSize] = useState<PaperSizeKey>("A4");
   const [state, setState] = useState<DocState>(createDocumentState);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [exporting, setExporting] = useState(false);
   const { documents, setDocuments } = useSavedDocuments();
   const paper = PAPER_SIZES[paperSize];
   const paperStyle = useMemo(() => ({ "--paper-width": paper.width, "--paper-height": paper.height } as CSSProperties), [paper]);
@@ -59,33 +56,13 @@ function Index() {
     setDocuments((current) => [{ id, title, docType, paperSize, state, updatedAt: now }, ...current]);
     setActiveId(id);
   };
-  const printDocument = (blackAndWhite: boolean) => {
-    document.documentElement.classList.toggle("print-bw", blackAndWhite);
-    const cleanup = () => document.documentElement.classList.remove("print-bw");
-    window.addEventListener("afterprint", cleanup, { once: true });
+  const printDocument = () => {
     window.print();
-    window.setTimeout(cleanup, 1000);
-  };
-  const downloadPdf = async () => {
-    const element = document.getElementById("document-paper");
-    if (!element) return;
-    setExporting(true);
-    element.classList.add("exporting");
-    try {
-      const dataUrl = await toPng(element, { pixelRatio: 2, cacheBust: true, backgroundColor: "#ffffff" });
-      const format = paperSize === "Letter" ? "letter" : paperSize === "Legal" ? "legal" : paperSize.toLowerCase();
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format });
-      pdf.addImage(dataUrl, "PNG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), undefined, "FAST");
-      pdf.save(`${(state.meta.number || DOC_LABELS[docType]).replace(/[^a-z0-9-_]+/gi, "-")}.pdf`);
-    } finally {
-      element.classList.remove("exporting");
-      setExporting(false);
-    }
   };
 
   return (
     <div className="studio-shell">
-      <style>{`@media print { @page { size: ${paper.page}; margin: 0; } }`}</style>
+      <style>{`@media print { @page { size: ${paper.page} portrait; margin: 0; } }`}</style>
       <SavedDocumentsSidebar
         documents={documents}
         activeId={activeId}
@@ -109,9 +86,7 @@ function Index() {
             <label className="select-control"><span>Currency</span><select value={state.currency} onChange={(event) => setState((current) => ({ ...current, currency: event.target.value }))} aria-label="Currency">{CURRENCIES.map((currency) => <option key={currency} value={currency}>{currency.trim()}</option>)}</select></label>
             <label className="select-control"><span>Paper</span><select value={paperSize} onChange={(event) => setPaperSize(event.target.value as PaperSizeKey)} aria-label="Paper size">{PAPER_ORDER.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
             <Button type="button" variant="secondary" onClick={saveDocument}><Save size={16} /> Save Document</Button>
-            <Button type="button" variant="secondary" onClick={downloadPdf} disabled={exporting}><Download size={16} /> {exporting ? "Exporting…" : "Download PDF"}</Button>
-            <Button type="button" onClick={() => printDocument(false)}><Printer size={16} /> Print (Color)</Button>
-            <Button type="button" onClick={() => printDocument(true)}><Printer size={16} /> Print (B&amp;W)</Button>
+            <Button type="button" onClick={printDocument}><Printer size={16} /> Print</Button>
           </div>
         </div>
       </header>

@@ -61,7 +61,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle }: Props) {
             <MetaRow label="Document Date"><TextField value={state.meta.date} onChange={(value) => set("meta", { ...state.meta, date: value })} placeholder="DD/MM/YYYY" ariaLabel="Document date" align="right" /></MetaRow>
             {!isChallan && <MetaRow label={isQuotation ? "Valid Until" : "Due Date"}><TextField value={isQuotation ? state.meta.validUntil : state.meta.dueDate} onChange={(value) => set("meta", { ...state.meta, [isQuotation ? "validUntil" : "dueDate"]: value })} placeholder="DD/MM/YYYY" ariaLabel={isQuotation ? "Valid until" : "Due date"} align="right" /></MetaRow>}
             {(isTax || isChallan) && <MetaRow label="P.O. No."><TextField value={state.meta.poNumber} onChange={(value) => set("meta", { ...state.meta, poNumber: value })} placeholder="—" ariaLabel="Purchase order number" align="right" /></MetaRow>}
-            <h1>{DOC_LABELS[docType]}</h1>
+            <h1 className={`document-title document-title-${docType}`}>{DOC_LABELS[docType]}</h1>
           </div>
         </section>
 
@@ -120,11 +120,13 @@ export function DocumentPaper({ docType, state, setState, paperStyle }: Props) {
             <AreaField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
           </div>
           <div className="payment-info">
-            <strong>Payment Info</strong>
-            <AreaField value={state.paymentInfo} onChange={(value) => set("paymentInfo", value)} placeholder="Bank, account, or payment instructions" ariaLabel="Payment information" />
-          </div>
-          <div className="signature-block">
-            <span>Authorized Signature</span>
+            <div className="payment-details">
+              <strong>Payment Info</strong>
+              <AreaField value={state.paymentInfo} onChange={(value) => set("paymentInfo", value)} placeholder="Bank, account, or payment instructions" ariaLabel="Payment information" />
+            </div>
+            <div className="signature-block">
+              <span>Authorized Signature</span>
+            </div>
           </div>
           <div className="thank-you"><span>{isChallan ? "Received in Good Order" : "Thanks for your Business!"}</span></div>
         </section>
