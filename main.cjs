@@ -7,7 +7,7 @@ const PORT = 4173;
 
 function getPublicDir() {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'output', 'public');
+    return path.join(process.resourcesPath, 'app-public');
   }
   return path.join(__dirname, '.output', 'public');
 }
