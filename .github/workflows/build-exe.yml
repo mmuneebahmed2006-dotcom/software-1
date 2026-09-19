@@ -32,7 +32,7 @@ jobs:
         run: bun run build
 
       - name: Prepare Static Files
-        run: node prepare-static.js
+        run: node prepare-static.cjs
 
       - name: Build Executable
         run: npx electron-builder --windows nsis --config.extraMetadata.main=main.cjs
