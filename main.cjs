@@ -1,34 +1,18 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
+const { fork } = require('child_process');
 const http = require('http');
-const fs = require('fs');
 
 const PORT = 4173;
-
-function getPublicDir() {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'app-public');
-  }
-  return path.join(__dirname, '.output', 'public');
-}
-
-const publicDir = getPublicDir();
-
-const mimeTypes = {
-  '.html': 'text/html',
-  '.js': 'application/javascript',
-  '.mjs': 'application/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.woff': 'font/woff',
-  '.woff2': 'font/woff2',
-};
-
 let win;
+let serverProcess;
+
+function getServerEntry() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'app-output', 'server', 'index.mjs');
+  }
+  return path.join(__dirname, '.output', 'server', 'index.mjs');
+}
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -42,38 +26,24 @@ if (!gotLock) {
   });
 
   function startServer() {
-    const server = http.createServer((req, res) => {
-      let reqPath = decodeURIComponent(req.url.split('?')[0]);
-      let filePath = path.join(publicDir, reqPath);
-
-      if (reqPath === '/' || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-        filePath = path.join(publicDir, 'index.html');
-      }
-
-      const ext = path.extname(filePath);
-      fs.readFile(filePath, (err, data) => {
-        if (err) {
-          res.writeHead(404);
-          res.end('Not found: ' + filePath);
-          return;
-        }
-        res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
-        res.end(data);
-      });
+    const serverEntry = getServerEntry();
+    serverProcess = fork(serverEntry, [], {
+      env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1' },
+      stdio: 'pipe',
     });
+    serverProcess.stdout?.on('data', (d) => console.log(`[server] ${d}`));
+    serverProcess.stderr?.on('data', (d) => console.error(`[server] ${d}`));
+  }
 
-    server.on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        createWindow();
+  function waitForServer(url, callback, attempts = 50) {
+    http.get(url, () => callback()).on('error', () => {
+      if (attempts > 0) {
+        setTimeout(() => waitForServer(url, callback, attempts - 1), 300);
       }
     });
-
-    server.listen(PORT, '127.0.0.1');
   }
 
   function createWindow() {
-    if (win) return;
-
     const splash = new BrowserWindow({
       width: 500,
       height: 300,
@@ -95,7 +65,9 @@ if (!gotLock) {
     });
 
     win.setMenuBarVisibility(false);
-    win.loadURL(`http://127.0.0.1:${PORT}`);
+
+    const url = `http://127.0.0.1:${PORT}`;
+    waitForServer(url, () => win.loadURL(url));
 
     win.once('ready-to-show', () => {
       splash.close();
@@ -110,10 +82,11 @@ if (!gotLock) {
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
     startServer();
-    setTimeout(createWindow, 300);
+    setTimeout(createWindow, 500);
   });
 
   app.on('window-all-closed', () => {
+    if (serverProcess) serverProcess.kill();
     if (process.platform !== 'darwin') app.quit();
   });
 }
