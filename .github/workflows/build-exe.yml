@@ -34,10 +34,24 @@ jobs:
       - name: Prepare Static Files
         run: node prepare-static.cjs
 
+      - name: Verify app-public folder
+        run: |
+          echo "Listing app-public folder:"
+          dir app-public
+          echo "Listing app-public/assets folder (if exists):"
+          dir app-public\assets
+
       - name: Build Executable
         run: npx electron-builder --windows nsis --config.extraMetadata.main=main.cjs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify packaged resources
+        run: |
+          echo "Listing dist folder:"
+          dir dist
+          echo "Listing unpacked resources folder:"
+          dir dist\win-unpacked\resources
 
       - name: Upload EXE Artifact
         uses: actions/upload-artifact@v4
