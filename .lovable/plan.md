@@ -1,42 +1,36 @@
-# Document Management Upgrade
+# Document Workspace and Export Upgrade
 
 ## Overview
-Expand the current document editor into a complete local document workspace while preserving the existing four document types, paper sizing, branding, and editable canvas.
+Upgrade the existing document editor in place with richer saved-document details, native file saving, high-resolution PDF export, compact ten-row layouts, and exact amount alignment.
 
 ## What will change
 
-### Saved Documents sidebar
-- Add a collapsible left sidebar titled **Saved Documents** with a prominent **New Document** action.
-- Persist documents in the browser, including title, document type, paper size, content, and last-updated time.
-- Add instant search by saved title or document number.
-- Support selecting a saved item to restore it, inline title renaming, and deletion with a confirmation step.
-- Clearly mark the active document and show a useful empty state when no documents match.
+### Saved documents
+- Keep the collapsible sidebar and browser-session persistence.
+- Show each saved document’s title/number, document date, and calculated total.
+- Preserve instant loading, search, inline rename, delete, and active-document highlighting.
+- Make **New Document** open a genuinely blank template without altering saved records.
 
-### Top action bar
-- Reorganize the top bar to retain document type, currency, and paper-size controls while adding:
-  - **Save Document** to create or update the active saved document.
-  - **Download PDF** for a direct, high-resolution client-side PDF export of the paper only.
-  - **Print (Color)** for standard print output.
-  - **Print (B&W)** with a temporary grayscale print mode.
-- Keep controls compact and usable on narrower screens, with icon labels and tooltips where appropriate.
+### Save and PDF workflow
+- **Save Document** will update browser storage and prompt for a JSON document file through the native save picker when supported.
+- **Download PDF** will export only the paper at high resolution, automatically named from document type and number, and prompt for a destination through the native save picker when supported.
+- Browsers without the File System Access API will use their standard download behavior.
+- Export mode will hide editor controls and row actions before rendering.
 
-### Document layout and calculations
-- Preserve the centered uploaded logo, dark `#171717` top accent, document tabs, currency options, and exact paper dimensions.
-- Increase separation below the logo and shift the metadata block farther right with wider label/value spacing.
-- Keep table headers `#FAFAFA`, header text/accent elements `#171717`, and borders `#E0E0E0`.
-- Make the tax percentage editable for Invoice, Quotation, and Sales Tax Invoice; recalculate tax and total immediately. Delivery Challan remains price-free.
-- Replace the three bank fields with one editable **Payment Info** text block.
-- Add an **Authorized Signature** line beneath Payment Info while retaining editable italic Terms & Conditions and the three-column dark footer.
+### A4 layout and amounts
+- Increase the row limit from 6 to 10 and block row 11 with the requested notification.
+- Compact header, table, payment, closing, and footer spacing so ten rows fit within A4.
+- Prevent wrapping in unit-price, amount, subtotal, tax, and total values.
+- Widen the amount columns and summary block while preserving exact right-edge alignment with the table Amount column.
+- Set Terms & Conditions and the closing message to semi-bold italic serif styling.
 
-### Print and export behavior
-- Continue injecting the selected paper size into `@page` and resizing the onscreen paper.
-- Hide the sidebar, toolbar, search, buttons, row controls, and other editor-only UI from print and PDF output.
-- Apply grayscale only for the B&W print action, then automatically return the editor to color mode after printing.
-- Export the exact paper bounds at a high rendering scale so the downloaded PDF matches the selected A4, A5, Letter, or Legal dimensions.
+### Printing
+- Keep one native **Print** action calling the browser print dialog.
+- Use `@page { size: auto; margin: 0; }` so native paper size and orientation controls remain available.
+- Continue hiding the sidebar, toolbar, controls, borders, and delete actions in print output.
 
-## Technical details
-- Extend the document model with saved-document metadata and a single payment-info field, including safe migration from the current bank-field shape.
-- Add an SSR-safe browser storage hook so saved data loads after hydration and avoids random-ID hydration mismatches.
-- Extract the sidebar and top controls into focused components; keep the document paper responsible only for editable paper content.
-- Use a browser-compatible PDF library and DOM renderer; no server or account setup is needed.
-- Verify save/load/rename/delete/search/new flows, all four document types, tax math, each paper size, PDF dimensions, color and grayscale printing, desktop layout, and mobile sidebar behavior.
+## Verification
+- Test save, fallback download, sidebar reload, New Document, PDF dimensions/content, and automatic filenames.
+- Confirm row 10 fits on one A4 page and row 11 is rejected.
+- Verify large currency values stay on one line and summary values align with the Amount column.
+- Check print and exported PDF output visually on desktop and narrow layouts.
