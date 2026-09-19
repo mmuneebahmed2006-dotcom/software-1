@@ -103,8 +103,8 @@
     ],
     "extraResources": [
       {
-        "from": "app-public",
-        "to": "app-public"
+        "from": "app-output",
+        "to": "app-output"
       }
     ],
     "win": {
