@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, FilePlus2, FileText, Pencil, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DOC_LABELS, type SavedDocument } from "@/lib/document";
+import { DOC_LABELS, documentTotal, money, type SavedDocument } from "@/lib/document";
 
 interface Props {
   documents: SavedDocument[];
@@ -42,7 +42,8 @@ export function SavedDocumentsSidebar({ documents, activeId, onNew, onOpen, onRe
                     {editingId === document.id ? (
                       <input autoFocus value={document.title} onClick={(event) => event.stopPropagation()} onChange={(event) => onRename(document.id, event.target.value)} onBlur={() => setEditingId(null)} onKeyDown={(event) => event.key === "Enter" && setEditingId(null)} aria-label="Document title" />
                     ) : <strong>{document.title}</strong>}
-                    <small>{DOC_LABELS[document.docType]} · {document.state.meta.number || "No number"}</small>
+                    <small>{document.state.meta.number || DOC_LABELS[document.docType]} · {document.state.meta.date || "No date"}</small>
+                    <small className="saved-item-total">{document.docType === "dc" ? "No pricing" : money(documentTotal(document.state, document.docType), document.state.currency)}</small>
                   </span>
                 </button>
                 <div className="saved-item-actions">

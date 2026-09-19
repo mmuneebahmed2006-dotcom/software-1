@@ -78,6 +78,20 @@ export function createDocumentState(): DocState {
   };
 }
 
+export function createBlankDocumentState(): DocState {
+  return {
+    currency: "Rs. ",
+    client: { name: "", phone: "", email: "", address: "", website: "" },
+    meta: { number: "", date: "", dueDate: "", validUntil: "", poNumber: "", ntn: "", strn: "" },
+    dispatch: { method: "", vehicleNo: "", gatePassNo: "" },
+    items: [{ id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 }],
+    taxRate: 0,
+    terms: "",
+    paymentInfo: "",
+    footer: { address: "", phone: "", email: "" },
+  };
+}
+
 export function normalizeDocumentState(value: Partial<DocState> & { bank?: { name?: string; account?: string; paypal?: string } }): DocState {
   const fallback = createDocumentState();
   const legacyPayment = value.bank ? `Bank: ${value.bank.name ?? ""}  •  ${value.bank.account ?? ""}  •  PayPal: ${value.bank.paypal ?? ""}` : fallback.paymentInfo;
@@ -88,9 +102,15 @@ export function normalizeDocumentState(value: Partial<DocState> & { bank?: { nam
     meta: { ...fallback.meta, ...value.meta },
     dispatch: { ...fallback.dispatch, ...value.dispatch },
     footer: { ...fallback.footer, ...value.footer },
-    items: value.items?.length ? value.items.slice(0, 6) : fallback.items,
+    items: value.items?.length ? value.items.slice(0, 10) : fallback.items,
     paymentInfo: value.paymentInfo ?? legacyPayment,
   };
+}
+
+export function documentTotal(state: DocState, docType: DocType) {
+  if (docType === "dc") return 0;
+  const subtotal = state.items.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0);
+  return subtotal + subtotal * ((state.taxRate || 0) / 100);
 }
 
 export function money(amount: number, currency: string) {

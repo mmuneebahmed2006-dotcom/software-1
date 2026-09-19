@@ -14,7 +14,7 @@ interface Props {
   paperSize: PaperSizeKey;
 }
 
-const MAX_ITEMS = 6;
+const MAX_ITEMS = 10;
 
 export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const isTax = docType === "tax";
@@ -33,7 +33,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
     }));
   const addItem = () => {
     if (state.items.length >= MAX_ITEMS) {
-      toast.error("Maximum capacity reached for a single A4 page (6 items max).");
+      toast.error("Maximum capacity reached for a single A4 page (10 items max).");
       return;
     }
     setState((current) => ({
@@ -103,7 +103,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
                   <td><AreaField value={item.description} onChange={(value) => updateItem(item.id, { description: value })} placeholder="Item or service description" ariaLabel={`Description for row ${index + 1}`} /></td>
                   <td><TextField value={item.unit} onChange={(value) => updateItem(item.id, { unit: value })} placeholder="pcs" ariaLabel={`Unit for row ${index + 1}`} align="center" /></td>
                   <td><NumberField value={item.qty} onChange={(value) => updateItem(item.id, { qty: value })} ariaLabel={`Quantity for row ${index + 1}`} /></td>
-                  {showAmounts && <td><NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel={`Unit price for row ${index + 1}`} step={0.01} /></td>}
+                  {showAmounts && <td className="unit-price"><NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel={`Unit price for row ${index + 1}`} step={0.01} /></td>}
                   {showAmounts && <td className="line-total">{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
                   <td className="no-print action-col"><Button type="button" size="icon" variant="danger" onClick={() => removeItem(item.id)} aria-label={`Remove row ${index + 1}`} title="Remove line"><Trash2 size={15} /></Button></td>
                 </tr>
