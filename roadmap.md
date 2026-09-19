@@ -9,4 +9,4 @@
 - [x] Expand the A4 limit to ten compact rows and preserve one-page output.
 - [x] Add native JSON saving, high-resolution PDF export, and fallback downloads.
 - [x] Show date and total in saved document cards and make New Document blank.
-- [ ] Verify export, print, large amounts, and ten-row behavior.
+- [x] Verify export, print, large amounts, and ten-row behavior.
