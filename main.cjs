@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
 const { fork } = require('child_process');
 const http = require('http');
+const fs = require('fs');
 
 const PORT = 4173;
 let win;
@@ -12,6 +13,11 @@ function getServerEntry() {
     return path.join(process.resourcesPath, 'app-output', 'server', 'index.mjs');
   }
   return path.join(__dirname, '.output', 'server', 'index.mjs');
+}
+
+function logToFile(msg) {
+  const logPath = path.join(app.getPath('desktop'), 'document-generator-log.txt');
+  fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`);
 }
 
 const gotLock = app.requestSingleInstanceLock();
@@ -27,18 +33,26 @@ if (!gotLock) {
 
   function startServer() {
     const serverEntry = getServerEntry();
+    logToFile('Server entry path: ' + serverEntry);
+    logToFile('File exists: ' + fs.existsSync(serverEntry));
+
     serverProcess = fork(serverEntry, [], {
       env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1' },
       stdio: 'pipe',
     });
-    serverProcess.stdout?.on('data', (d) => console.log(`[server] ${d}`));
-    serverProcess.stderr?.on('data', (d) => console.error(`[server] ${d}`));
+
+    serverProcess.stdout?.on('data', (d) => logToFile('[server stdout] ' + d.toString()));
+    serverProcess.stderr?.on('data', (d) => logToFile('[server stderr] ' + d.toString()));
+    serverProcess.on('error', (err) => logToFile('[fork error] ' + err.message));
+    serverProcess.on('exit', (code) => logToFile('[server exited] code: ' + code));
   }
 
   function waitForServer(url, callback, attempts = 50) {
     http.get(url, () => callback()).on('error', () => {
       if (attempts > 0) {
         setTimeout(() => waitForServer(url, callback, attempts - 1), 300);
+      } else {
+        logToFile('Server never responded after all attempts.');
       }
     });
   }
@@ -81,6 +95,7 @@ if (!gotLock) {
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
+    logToFile('App starting...');
     startServer();
     setTimeout(createWindow, 500);
   });
