@@ -106,7 +106,7 @@ function Index() {
     element.classList.add("exporting");
     try {
       const [width, height] = PDF_SIZES[paperSize];
-      const dataUrl = await toPng(element, { pixelRatio: 3, cacheBust: true, backgroundColor: "white" });
+      const dataUrl = await toPng(element, { pixelRatio: 3, cacheBust: true, backgroundColor: "white", skipFonts: true });
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [width, height], compress: true });
       pdf.addImage(dataUrl, "PNG", 0, 0, width, height, undefined, "FAST");
       await saveBlob(pdf.output("blob"), `${safeFileName(docType, state.meta.number)}.pdf`, "PDF document", ".pdf");
