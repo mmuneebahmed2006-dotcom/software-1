@@ -34,12 +34,12 @@ jobs:
       - name: Prepare Static Files
         run: node prepare-static.cjs
 
-      - name: Verify app-public folder
+      - name: Verify app-output folder
         run: |
-          echo "Listing app-public folder:"
-          dir app-public
-          echo "Listing app-public/assets folder (if exists):"
-          dir app-public\assets
+          echo "Listing app-output folder:"
+          dir app-output
+          echo "Listing app-output/server folder:"
+          dir app-output\server
 
       - name: Build Executable
         run: npx electron-builder --windows nsis --config.extraMetadata.main=main.cjs
