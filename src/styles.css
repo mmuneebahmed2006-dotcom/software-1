@@ -201,7 +201,7 @@
 .top-accent { height: 10px; flex: 0 0 10px; background: var(--primary); }
 .document-content { min-height: 0; flex: 1; display: flex; flex-direction: column; padding: calc(14px * var(--paper-scale)) calc(62px * var(--paper-scale)) calc(20px * var(--paper-scale)); }
 .document-header { height: calc(88px * var(--paper-scale)); display: flex; align-items: center; justify-content: center; margin-bottom: calc(20px * var(--paper-scale)); }
-.document-logo { display: block; width: calc(190px * var(--paper-scale)); height: calc(78px * var(--paper-scale)); margin: 0 auto; object-fit: contain; image-rendering: -webkit-optimize-contrast; }
+.document-logo { display: block; width: auto; max-width: calc(230px * var(--paper-scale)); height: calc(72px * var(--paper-scale)); margin: 0 auto; object-fit: contain; image-rendering: -webkit-optimize-contrast; }
 .identity-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr); gap: 64px; }
 .bill-to h2 { margin: 0 0 3px; font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); font-weight: 700; line-height: 1; text-transform: uppercase; }
 .client-name { font-size: calc(16pt * var(--paper-scale)); font-weight: 600; }
@@ -219,22 +219,22 @@
 .detail-strip > div { display: flex; align-items: center; gap: 8px; font-size: 11px; }
 .items-section { margin-top: 14px; border-top: 2px solid var(--primary); padding-top: 6px; }
 .items-section table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: calc(12pt * var(--paper-scale)); font-weight: 400; }
-.items-section th, .items-section td { border: 1px solid var(--paper-line); padding: 4px 8px; vertical-align: middle; line-height: 1.15; }
+.items-section th, .items-section td { border: 1px solid var(--paper-line); padding: 4px 8px; vertical-align: middle; line-height: 1.15; overflow-wrap: anywhere; word-break: break-word; }
 .items-section th { background: var(--paper-soft); color: var(--primary); font-size: calc(14pt * var(--paper-scale)); font-weight: 700; text-align: center; text-transform: uppercase; }
-.number-col { width: 42px; text-align: center; }.unit-col { width: 58px; }.qty-col,.money-col { width: calc(112px * var(--paper-scale)); min-width: calc(112px * var(--paper-scale)); white-space: nowrap; }.action-col { width: 38px; padding: 2px !important; border: 0 !important; background: transparent !important; }
+.number-col { width: 38px; text-align: center; }.unit-col,.qty-col { width: 64px; }.money-col { width: calc(118px * var(--paper-scale)); min-width: calc(118px * var(--paper-scale)); white-space: nowrap; }.action-col { width: 38px; padding: 2px !important; border: 0 !important; background: transparent !important; }
 .unit-price, .unit-price input, .line-total { min-width: 0; white-space: nowrap; font-size: clamp(10px, 1.5vw, 12px); font-variant-numeric: tabular-nums; text-align: right; }
 .add-line { margin-top: 7px; color: var(--foreground); border: 1px dashed var(--border); }
 .editable { outline: none; border-radius: 3px; transition: background-color 120ms ease, box-shadow 120ms ease; }
 .editable::placeholder { color: color-mix(in oklab, var(--foreground) 35%, transparent); }
 .editable:hover { background: oklch(0.2 0 0 / 0.05); }
 .editable:focus { background: oklch(0.2 0 0 / 0.07); box-shadow: inset 0 0 0 1px oklch(0.2 0 0 / 0.35); }
-.totals { width: calc(238px * var(--paper-scale)); margin: 10px 38px 0 auto; font-size: calc(12pt * var(--paper-scale)); }
-.total-row { display: grid; grid-template-columns: 126px 112px; align-items: center; }
+.totals { width: calc(276px * var(--paper-scale)); margin: 10px 38px 0 auto; font-size: calc(12pt * var(--paper-scale)); }
+.total-row { display: grid; grid-template-columns: 142px 134px; align-items: center; }
 .total-row > span { padding: 4px 9px; text-align: left; }
-.total-row > strong { min-width: 112px; padding: 4px 8px; overflow: hidden; font-size: clamp(9px, 1.4vw, 11px); font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.total-row > strong { min-width: 134px; padding: 4px 8px; font-size: clamp(9px, 1.15em, 12px); font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .tax-editor { display: inline-flex; align-items: center; }.tax-editor input { width: 32px; }
-.total-banner { margin-top: 5px; min-width: 238px; min-height: 38px; display: grid; grid-template-columns: 126px 112px; align-items: center; border-bottom: 3px double var(--primary); background: var(--primary); color: var(--primary-foreground); text-transform: uppercase; white-space: nowrap; }
-.total-banner span { padding: 0 8px; font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); font-weight: 700; letter-spacing: 0; text-align: left; }.total-banner strong { min-width: 112px; padding: 0 8px; overflow: hidden; font-size: calc(16pt * var(--paper-scale)); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.total-banner { margin-top: 5px; min-width: 276px; min-height: 38px; display: grid; grid-template-columns: 142px 134px; align-items: center; border-bottom: 3px double var(--primary); background: var(--primary); color: var(--primary-foreground); text-transform: uppercase; white-space: nowrap; }
+.total-banner span { padding: 0 8px; font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); font-weight: 700; letter-spacing: 0; text-align: left; }.total-banner strong { min-width: 134px; padding: 0 8px; font-size: clamp(10px, calc(16pt * var(--paper-scale)), 21px); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .closing-content { margin-top: auto; padding-top: 10px; }
 .terms-block { max-width: 54%; }.terms-block h3 { margin: 0; font-family: var(--font-body); font-size: calc(16pt * var(--paper-scale)); font-style: italic; font-weight: 600; }.terms-block textarea { margin-top: 2px; font-family: var(--font-body); font-size: calc(12pt * var(--paper-scale)); font-style: italic; line-height: 1.15; }
 .payment-info { margin-top: 8px; display: grid; grid-template-columns: minmax(0, 1fr) 210px; align-items: end; gap: 28px; min-height: 52px; padding: 7px 16px; background: var(--paper-muted); font-size: calc(11pt * var(--paper-scale)); }.payment-info strong { display: block; margin-bottom: 2px; font-size: calc(12pt * var(--paper-scale)); font-weight: 600; text-transform: uppercase; }.payment-info textarea { line-height: 1.15; }
