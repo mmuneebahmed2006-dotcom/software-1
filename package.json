@@ -127,7 +127,9 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "Document-Studio-Setup-${version}.${ext}"
+      "artifactName": "Document-Studio-Setup-${version}.${ext}",
+      "include": "build/installer.nsh",
+      "deleteAppDataOnUninstall": false
     }
   }
 }
