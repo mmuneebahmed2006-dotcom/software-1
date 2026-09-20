@@ -3,9 +3,9 @@ import { ChevronLeft, ChevronRight, FilePlus2, FileText, FolderPlus, Pencil, Sea
 import { Button } from "@/components/ui/button";
 import { dateRangeStart, DOC_LABELS, documentTotal, groupLabel, matchesDateRange, money, type SavedDocument } from "@/lib/document";
 
-interface Props { documents: SavedDocument[]; activeId: string | null; onNew: () => void; onOpen: (document: SavedDocument) => void; onRename: (id: string, title: string) => void | Promise<void>; onDelete: (document: SavedDocument) => void; onCreateFolder: () => void }
+interface Props { documents: SavedDocument[]; activeId: string | null; folders: string[]; activeFolder: string; onSelectFolder: (folder: string) => void; onNew: () => void; onOpen: (document: SavedDocument) => void; onRename: (id: string, title: string) => void | Promise<void>; onDelete: (document: SavedDocument) => void; onCreateFolder: () => void }
 
-export function SavedDocumentsSidebar({ documents, activeId, onNew, onOpen, onRename, onDelete, onCreateFolder }: Props) {
+export function SavedDocumentsSidebar({ documents, activeId, folders, activeFolder, onSelectFolder, onNew, onOpen, onRename, onDelete, onCreateFolder }: Props) {
   const [collapsed, setCollapsed] = useState(false); const [query, setQuery] = useState(""); const [editingId, setEditingId] = useState<string | null>(null); const [range, setRange] = useState("all"); const [from, setFrom] = useState(""); const [to, setTo] = useState("");
   const groups = useMemo(() => {
     const rangeFrom = range === "custom" ? (from ? new Date(`${from}T00:00:00`).getTime() : undefined) : range === "all" ? undefined : dateRangeStart(Number(range));
