@@ -279,8 +279,21 @@
 .paper.exporting .no-print, .paper.exporting button { display: none !important; }
 .paper.exporting input, .paper.exporting textarea, .paper.exporting select, .paper.exporting .editable { border: 0 !important; outline: 0 !important; background: transparent !important; box-shadow: none !important; }
 
+.folder-toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.folder-all { border: 1px solid hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground)); border-radius: 999px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.folder-all.active { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary)); }
+.folder-search { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0; border: 1px solid hsl(var(--border)); border-radius: 999px; padding: 3px 9px; background: hsl(var(--card)); }
+.folder-search input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 11.5px; outline: none; color: inherit; }
 .folder-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.folder-chips button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground)); border-radius: 999px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; }
-.folder-chips button small { opacity: .6; font-weight: 500; }
-.folder-chips button.active { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary)); }
-.folder-chips button.current { outline: 1px dashed hsl(var(--primary)); }
+.folder-empty { opacity: .6; font-size: 11.5px; }
+.folder-chip { position: relative; display: inline-flex; align-items: stretch; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); border-radius: 999px; overflow: visible; }
+.folder-chip button { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+.folder-chip-main { padding: 4px 6px 4px 10px; border-radius: 999px 0 0 999px; }
+.folder-chip-menu { padding: 4px 8px 4px 2px; border-radius: 0 999px 999px 0; opacity: .65; }
+.folder-chip button small { opacity: .6; font-weight: 500; }
+.folder-chip.active { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary)); }
+.folder-chip.current { outline: 1px dashed hsl(var(--primary)); }
+.folder-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; display: flex; flex-direction: column; min-width: 140px; padding: 4px; border: 1px solid hsl(var(--border)); border-radius: 10px; background: hsl(var(--card)); color: hsl(var(--foreground)); box-shadow: 0 12px 30px rgb(0 0 0 / .18); }
+.folder-menu button { justify-content: flex-start; gap: 7px; padding: 6px 9px; border-radius: 7px; font-weight: 500; }
+.folder-menu button:hover { background: hsl(var(--muted)); }
+.pdf-render-host { position: fixed; top: 0; left: -20000px; z-index: -1; pointer-events: none; }
