@@ -100,6 +100,7 @@
   "build": {
     "appId": "com.muneebahmed.documentgenerator",
     "productName": "Document Generator",
+    "icon": "build/icon.ico",
     "asar": true,
     "files": [
       "main.cjs",
