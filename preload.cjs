@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('desktop', {
   restoreBackup: () => ipcRenderer.invoke('workspace:restore-backup'),
   listDocuments: () => ipcRenderer.invoke('documents:list'),
   saveDocument: (document, pdfData) => ipcRenderer.invoke('documents:save', document, pdfData),
+  renameDocument: (document, title) => ipcRenderer.invoke('documents:rename', document, title),
   deleteDocument: (document) => ipcRenderer.invoke('documents:delete', document),
   createFolder: (category, name) => ipcRenderer.invoke('folders:create', category, name),
   listFolders: (category) => ipcRenderer.invoke('folders:list', category),
