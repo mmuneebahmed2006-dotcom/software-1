@@ -16,7 +16,7 @@ export interface DocState {
 }
 export interface SavedDocument {
   id: string; title: string; docType: DocType; paperSize: PaperSizeKey; state: DocState;
-  folder: string; createdAt: number; updatedAt: number; storagePath?: string;
+  folder: string; createdAt: number; updatedAt: number; storagePath?: string | undefined;
 }
 export interface CompanyDetails { address: string; phone: string; email: string; website: string; paymentInfo: string }
 export type CompanyScope = "current" | "future" | "previous" | "all";
