@@ -25,9 +25,6 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      - name: Install Electron Builder
-        run: bun add -d electron electron-builder
-
       - name: Build Web Application
         run: bun run build
 
@@ -42,7 +39,7 @@ jobs:
           dir app-output\server
 
       - name: Build Executable
-        run: npx electron-builder --windows nsis --config.extraMetadata.main=main.cjs
+        run: bunx electron-builder --windows nsis
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

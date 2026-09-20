@@ -1,107 +1,38 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const { fork } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 
 const PORT = 4173;
-let win;
-let serverProcess;
-
-function getServerEntry() {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'app-output', 'server', 'index.mjs');
-  }
-  return path.join(__dirname, '.output', 'server', 'index.mjs');
+const CATEGORIES = { invoice: 'Invoice', quotation: 'Quotation', dc: 'DeliveryChallan', tax: 'SalesTaxInvoice' };
+let win; let serverProcess;
+const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
+const readSettings = () => { try { return { initialized: false, dataRoot: null, lastBackupAt: null, ...JSON.parse(fs.readFileSync(settingsPath(), 'utf8')) }; } catch { return { initialized: false, dataRoot: null, lastBackupAt: null }; } };
+const writeSettings = (value) => { fs.mkdirSync(path.dirname(settingsPath()), { recursive: true }); fs.writeFileSync(settingsPath(), JSON.stringify(value, null, 2)); return value; };
+const safePart = (value) => String(value ?? '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '-').trim().slice(0, 100) || 'Untitled';
+const dataRoot = () => { const root = readSettings().dataRoot; if (!root) throw new Error('Workspace is not initialized'); return path.resolve(root); };
+const withinRoot = (...parts) => { const root = dataRoot(); const target = path.resolve(root, ...parts.map(safePart)); if (target !== root && !target.startsWith(root + path.sep)) throw new Error('Invalid workspace path'); return target; };
+const decodeData = (value) => Buffer.from(String(value).replace(/^data:[^;]+;base64,/, ''), 'base64');
+const getServerEntry = () => app.isPackaged ? path.join(process.resourcesPath, 'app-output', 'server', 'index.mjs') : path.join(__dirname, '.output', 'server', 'index.mjs');
+const log = (message) => { try { fs.appendFileSync(path.join(app.getPath('userData'), 'document-generator.log'), `[${new Date().toISOString()}] ${message}\n`); } catch {} };
+function ensureWorkspace(root) { fs.mkdirSync(root, { recursive: true }); Object.values(CATEGORIES).forEach((category) => fs.mkdirSync(path.join(root, category), { recursive: true })); fs.mkdirSync(path.join(root, 'AutoBackups'), { recursive: true }); }
+function walkJson(root) { if (!fs.existsSync(root)) return []; return fs.readdirSync(root, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? walkJson(path.join(root, entry.name)) : entry.name.endsWith('.document.json') ? [path.join(root, entry.name)] : []); }
+function createBackup(from, to) { const root = dataRoot(); const stamp = new Date().toISOString().replace(/[:.]/g, '-'); const destination = path.join(root, 'AutoBackups', stamp); fs.mkdirSync(destination, { recursive: true }); for (const file of walkJson(root)) { try { const doc = JSON.parse(fs.readFileSync(file, 'utf8')); if ((from && doc.updatedAt < from) || (to && doc.updatedAt > to)) continue; const relative = path.relative(root, file); fs.mkdirSync(path.dirname(path.join(destination, relative)), { recursive: true }); fs.copyFileSync(file, path.join(destination, relative)); const pdf = file.replace(/\.document\.json$/, '.pdf'); if (fs.existsSync(pdf)) { const pdfDestination = path.join(destination, path.relative(root, pdf)); fs.mkdirSync(path.dirname(pdfDestination), { recursive: true }); fs.copyFileSync(pdf, pdfDestination); } } catch {} } const settings = readSettings(); writeSettings({ ...settings, lastBackupAt: Date.now() }); return destination; }
+function installIpc() {
+  ipcMain.handle('settings:get', () => readSettings());
+  ipcMain.handle('settings:choose-root', async () => { const result = await dialog.showOpenDialog(win, { title: 'Choose Document Studio data folder', defaultPath: process.platform === 'win32' && fs.existsSync('D:\\') ? 'D:\\DocumentStudio' : app.getPath('documents'), properties: ['openDirectory', 'createDirectory'] }); return result.canceled ? null : result.filePaths[0]; });
+  ipcMain.handle('settings:initialize', (_event, root) => { const resolved = path.resolve(String(root)); ensureWorkspace(resolved); return writeSettings({ initialized: true, dataRoot: resolved, lastBackupAt: null }); });
+  ipcMain.handle('workspace:restore', async () => { const result = await dialog.showOpenDialog(win, { title: 'Restore Document Studio folder', properties: ['openDirectory'] }); if (result.canceled) return null; const root = path.resolve(result.filePaths[0]); ensureWorkspace(root); const files = walkJson(root); let imported = 0; let skipped = 0; for (const file of files) { try { JSON.parse(fs.readFileSync(file, 'utf8')); imported++; } catch { skipped++; } } writeSettings({ initialized: true, dataRoot: root, lastBackupAt: null }); return { imported, skipped, dataRoot: root }; });
+  ipcMain.handle('documents:list', () => walkJson(dataRoot()).flatMap((file) => { try { return [JSON.parse(fs.readFileSync(file, 'utf8'))]; } catch { return []; } }));
+  ipcMain.handle('documents:save', (_event, document, pdfData) => { const category = CATEGORIES[document.docType]; if (!category) throw new Error('Invalid category'); const folder = withinRoot(category, document.folder || 'General'); fs.mkdirSync(folder, { recursive: true }); const base = safePart(`${document.title}-${document.id}`); fs.writeFileSync(path.join(folder, `${base}.document.json`), JSON.stringify(document, null, 2)); if (pdfData) fs.writeFileSync(path.join(folder, `${base}.pdf`), decodeData(pdfData)); return document; });
+  ipcMain.handle('documents:delete', (_event, document) => { const category = CATEGORIES[document.docType]; const folder = withinRoot(category, document.folder || 'General'); const base = safePart(`${document.title}-${document.id}`); for (const ext of ['.document.json', '.pdf']) { const file = path.join(folder, base + ext); if (fs.existsSync(file)) fs.unlinkSync(file); } });
+  ipcMain.handle('folders:create', (_event, categoryKey, name) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); fs.mkdirSync(withinRoot(category, name), { recursive: true }); });
+  ipcMain.handle('pdf:save-as', async (_event, name, data) => { const result = await dialog.showSaveDialog(win, { defaultPath: safePart(name), filters: [{ name: 'PDF', extensions: ['pdf'] }] }); if (result.canceled || !result.filePath) return false; fs.writeFileSync(result.filePath, decodeData(data)); return true; });
+  ipcMain.handle('pdf:export-selected', async (_event, ids) => { const result = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] }); if (result.canceled) return 0; const selected = new Set(Array.isArray(ids) ? ids.map(String) : []); let count = 0; for (const file of walkJson(dataRoot())) { try { const doc = JSON.parse(fs.readFileSync(file, 'utf8')); if (!selected.has(doc.id)) continue; const pdf = file.replace(/\.document\.json$/, '.pdf'); if (fs.existsSync(pdf)) { fs.copyFileSync(pdf, path.join(result.filePaths[0], path.basename(pdf))); count++; } } catch {} } return count; });
+  ipcMain.handle('workspace:backup', (_event, from, to) => createBackup(from, to));
 }
-
-function logToFile(msg) {
-  const logPath = path.join(app.getPath('desktop'), 'document-generator-log.txt');
-  fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`);
-}
-
-const gotLock = app.requestSingleInstanceLock();
-if (!gotLock) {
-  app.quit();
-} else {
-  app.on('second-instance', () => {
-    if (win) {
-      if (win.isMinimized()) win.restore();
-      win.focus();
-    }
-  });
-
-  function startServer() {
-    const serverEntry = getServerEntry();
-    logToFile('Server entry path: ' + serverEntry);
-    logToFile('File exists: ' + fs.existsSync(serverEntry));
-
-    serverProcess = fork(serverEntry, [], {
-      env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1' },
-      stdio: 'pipe',
-    });
-
-    serverProcess.stdout?.on('data', (d) => logToFile('[server stdout] ' + d.toString()));
-    serverProcess.stderr?.on('data', (d) => logToFile('[server stderr] ' + d.toString()));
-    serverProcess.on('error', (err) => logToFile('[fork error] ' + err.message));
-    serverProcess.on('exit', (code) => logToFile('[server exited] code: ' + code));
-  }
-
-  function waitForServer(url, callback, attempts = 50) {
-    http.get(url, () => callback()).on('error', () => {
-      if (attempts > 0) {
-        setTimeout(() => waitForServer(url, callback, attempts - 1), 300);
-      } else {
-        logToFile('Server never responded after all attempts.');
-      }
-    });
-  }
-
-  function createWindow() {
-    const splash = new BrowserWindow({
-      width: 500,
-      height: 300,
-      frame: false,
-      alwaysOnTop: true,
-      resizable: false,
-    });
-    splash.loadFile(path.join(__dirname, 'splash.html'));
-
-    win = new BrowserWindow({
-      width: 1280,
-      height: 800,
-      show: false,
-      title: 'Document Generator',
-      webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
-      },
-    });
-
-    win.setMenuBarVisibility(false);
-
-    const url = `http://127.0.0.1:${PORT}`;
-    waitForServer(url, () => win.loadURL(url));
-
-    win.once('ready-to-show', () => {
-      splash.close();
-      win.show();
-    });
-
-    win.on('closed', () => {
-      win = null;
-    });
-  }
-
-  app.whenReady().then(() => {
-    Menu.setApplicationMenu(null);
-    logToFile('App starting...');
-    startServer();
-    setTimeout(createWindow, 500);
-  });
-
-  app.on('window-all-closed', () => {
-    if (serverProcess) serverProcess.kill();
-    if (process.platform !== 'darwin') app.quit();
-  });
-}
+function startServer() { serverProcess = fork(getServerEntry(), [], { env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1' }, stdio: 'pipe' }); serverProcess.stderr?.on('data', (data) => log(data.toString())); }
+function waitForServer(url, callback, attempts = 60) { http.get(url, callback).on('error', () => attempts > 0 ? setTimeout(() => waitForServer(url, callback, attempts - 1), 250) : log('Server did not respond')); }
+function createWindow() { win = new BrowserWindow({ width: 1440, height: 900, minWidth: 900, minHeight: 650, show: false, title: 'Document Studio', icon: path.join(__dirname, 'build', 'icon.ico'), webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, webSecurity: true, sandbox: true } }); win.setMenuBarVisibility(false); win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) void shell.openExternal(url); return { action: 'deny' }; }); win.webContents.on('will-navigate', (event, url) => { if (!url.startsWith(`http://127.0.0.1:${PORT}`)) event.preventDefault(); }); waitForServer(`http://127.0.0.1:${PORT}`, () => win.loadURL(`http://127.0.0.1:${PORT}`)); win.once('ready-to-show', () => win.show()); }
+if (!app.requestSingleInstanceLock()) app.quit(); else { app.whenReady().then(() => { Menu.setApplicationMenu(null); installIpc(); startServer(); createWindow(); const settings = readSettings(); if (settings.initialized && settings.dataRoot && (!settings.lastBackupAt || Date.now() - settings.lastBackupAt >= 30 * 86400000)) setTimeout(() => { try { createBackup(); } catch (error) { log(error.message); } }, 10000); }); app.on('window-all-closed', () => { serverProcess?.kill(); if (process.platform !== 'darwin') app.quit(); }); }

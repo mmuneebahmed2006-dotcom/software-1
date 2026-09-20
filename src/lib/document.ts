@@ -1,122 +1,48 @@
 export type DocType = "invoice" | "quotation" | "dc" | "tax";
 export type PaperSizeKey = "A4" | "A5" | "Letter" | "Legal";
 
-export interface LineItem {
-  id: string;
-  description: string;
-  unit: string;
-  qty: number;
-  rate: number;
-}
-
+export interface LineItem { id: string; description: string; unit: string; qty: number; rate: number }
 export interface DocState {
   currency: string;
   client: { name: string; phone: string; email: string; address: string; website: string };
-  meta: {
-    number: string;
-    date: string;
-    dueDate: string;
-    validUntil: string;
-    poNumber: string;
-    ntn: string;
-    strn: string;
-  };
+  meta: { number: string; date: string; dueDate: string; validUntil: string; poNumber: string; ntn: string; strn: string };
   dispatch: { method: string; vehicleNo: string; gatePassNo: string };
   items: LineItem[];
   taxRate: number;
   terms: string;
   paymentInfo: string;
   footer: { address: string; phone: string; email: string };
+  minimumPages: number;
 }
-
 export interface SavedDocument {
-  id: string;
-  title: string;
-  docType: DocType;
-  paperSize: PaperSizeKey;
-  state: DocState;
-  updatedAt: number;
+  id: string; title: string; docType: DocType; paperSize: PaperSizeKey; state: DocState;
+  folder: string; createdAt: number; updatedAt: number;
 }
 
-export const DOC_LABELS: Record<DocType, string> = {
-  invoice: "Invoice",
-  quotation: "Quotation",
-  dc: "Delivery Challan",
-  tax: "Sales Tax Invoice",
-};
-
+export const DOC_LABELS: Record<DocType, string> = { invoice: "Invoice", quotation: "Quotation", dc: "Delivery Challan", tax: "Sales Tax Invoice" };
+export const CATEGORY_FOLDERS: Record<DocType, string> = { invoice: "Invoice", quotation: "Quotation", dc: "DeliveryChallan", tax: "SalesTaxInvoice" };
 export const CURRENCIES = ["Rs. ", "$", "€", "£", "AED "] as const;
-
-export const PAPER_SIZES: Record<PaperSizeKey, { width: string; height: string; page: string }> = {
-  A4: { width: "210mm", height: "297mm", page: "A4" },
-  A5: { width: "148mm", height: "210mm", page: "A5" },
-  Letter: { width: "8.5in", height: "11in", page: "letter" },
-  Legal: { width: "8.5in", height: "14in", page: "legal" },
+export const PAPER_SIZES: Record<PaperSizeKey, { width: string; height: string; page: string; scale: number; rows: number; pdf: [number, number] }> = {
+  A4: { width: "210mm", height: "297mm", page: "A4", scale: 1, rows: 10, pdf: [210, 297] },
+  A5: { width: "148mm", height: "210mm", page: "A5", scale: .73, rows: 7, pdf: [148, 210] },
+  Letter: { width: "8.5in", height: "11in", page: "letter", scale: .96, rows: 9, pdf: [215.9, 279.4] },
+  Legal: { width: "8.5in", height: "14in", page: "legal", scale: 1, rows: 14, pdf: [215.9, 355.6] },
 };
 
-export function uid() {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-export function createDocumentState(): DocState {
-  return {
-    currency: "Rs. ",
-    client: { name: "Mrs Angela Fransisca", phone: "+1 223-963-9621", email: "yourname@gmail.com", address: "123 2nd Ave #110, NYC", website: "www.yourname.com" },
-    meta: { number: "#351-34", date: "05/05/2026", dueDate: "06/07/2026", validUntil: "06/07/2026", poNumber: "", ntn: "", strn: "" },
-    dispatch: { method: "", vehicleNo: "", gatePassNo: "" },
-    items: [
-      { id: "line-logo", description: "Logo Design", unit: "pcs", qty: 1, rate: 120 },
-      { id: "line-flyer", description: "Flyer Design", unit: "pcs", qty: 2, rate: 20 },
-      { id: "line-web", description: "Web Development", unit: "pcs", qty: 1, rate: 90 },
-      { id: "line-revision", description: "Revision Logo", unit: "hrs", qty: 3, rate: 10 },
-      { id: "line-poster", description: "Poster Design", unit: "pcs", qty: 5, rate: 25 },
-    ],
-    taxRate: 18,
-    terms: "Payment is due within 20 days.",
-    paymentInfo: "Bank: Bank name  •  Account / IBAN  •  PayPal: info@paypaladdress.com",
-    footer: { address: "55 Ambu Abah Street, East Sedok Java", phone: "P. 000 000 000 000", email: "info@yourdomain.com" },
-  };
-}
-
+export function uid() { return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}` }
 export function createBlankDocumentState(): DocState {
-  return {
-    currency: "Rs. ",
-    client: { name: "", phone: "", email: "", address: "", website: "" },
-    meta: { number: "", date: "", dueDate: "", validUntil: "", poNumber: "", ntn: "", strn: "" },
-    dispatch: { method: "", vehicleNo: "", gatePassNo: "" },
-    items: [{ id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 }],
-    taxRate: 0,
-    terms: "",
-    paymentInfo: "",
-    footer: { address: "", phone: "", email: "" },
-  };
+  return { currency: "Rs. ", client: { name: "", phone: "", email: "", address: "", website: "" }, meta: { number: "", date: "", dueDate: "", validUntil: "", poNumber: "", ntn: "", strn: "" }, dispatch: { method: "", vehicleNo: "", gatePassNo: "" }, items: [{ id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 }], taxRate: 0, terms: "", paymentInfo: "", footer: { address: "", phone: "", email: "" }, minimumPages: 1 };
 }
-
+export function createDocumentState() { return createBlankDocumentState() }
 export function normalizeDocumentState(value: Partial<DocState> & { bank?: { name?: string; account?: string; paypal?: string } }): DocState {
-  const fallback = createDocumentState();
-  const legacyPayment = value.bank ? `Bank: ${value.bank.name ?? ""}  •  ${value.bank.account ?? ""}  •  PayPal: ${value.bank.paypal ?? ""}` : fallback.paymentInfo;
-  return {
-    ...fallback,
-    ...value,
-    client: { ...fallback.client, ...value.client },
-    meta: { ...fallback.meta, ...value.meta },
-    dispatch: { ...fallback.dispatch, ...value.dispatch },
-    footer: { ...fallback.footer, ...value.footer },
-    items: value.items?.length ? value.items.slice(0, 10) : fallback.items,
-    paymentInfo: value.paymentInfo ?? legacyPayment,
-  };
+  const blank = createBlankDocumentState();
+  const legacyPayment = value.bank ? `Bank: ${value.bank.name ?? ""} • ${value.bank.account ?? ""} • PayPal: ${value.bank.paypal ?? ""}` : "";
+  return { ...blank, ...value, client: { ...blank.client, ...value.client }, meta: { ...blank.meta, ...value.meta }, dispatch: { ...blank.dispatch, ...value.dispatch }, footer: { ...blank.footer, ...value.footer }, items: value.items?.length ? value.items : blank.items, paymentInfo: value.paymentInfo ?? legacyPayment, minimumPages: Math.max(1, value.minimumPages ?? 1) };
 }
-
-export function documentTotal(state: DocState, docType: DocType) {
-  if (docType === "dc") return 0;
-  const subtotal = state.items.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0);
-  return subtotal + subtotal * ((state.taxRate || 0) / 100);
+export function normalizeSavedDocument(value: Partial<SavedDocument> & Pick<SavedDocument, "id" | "title" | "docType" | "paperSize" | "state" | "updatedAt">): SavedDocument {
+  return { ...value, id: value.id, title: value.title, docType: value.docType, paperSize: value.paperSize, state: normalizeDocumentState(value.state), folder: value.folder ?? "General", createdAt: value.createdAt ?? value.updatedAt, updatedAt: value.updatedAt };
 }
-
-export function money(amount: number, currency: string) {
-  const value = (Number.isFinite(amount) ? amount : 0).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${currency}${value}`;
-}
+export function documentTotal(state: DocState, docType: DocType) { if (docType === "dc") return 0; const subtotal = state.items.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0); return subtotal * (1 + (state.taxRate || 0) / 100) }
+export function money(amount: number, currency: string) { return `${currency}${(Number.isFinite(amount) ? amount : 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
+export function safeFileName(docType: DocType, number: string) { const clean = number.replace(/^#/, "").replace(/[^a-zA-Z0-9_-]+/g, "-") || "Untitled"; return `${DOC_LABELS[docType].replaceAll(" ", "_")}_${clean}` }
+export function groupLabel(timestamp: number) { const days = Math.floor((Date.now() - timestamp) / 86400000); if (days <= 0) return "Today"; if (days <= 7) return "Last Week"; if (days <= 31) return "Last Month"; const months = Math.max(2, Math.round(days / 30)); return `${months} Months Ago` }
