@@ -4,6 +4,7 @@
   "description": "Document Generator Application",
   "author": "Muhammad Muneeb Ahmed",
   "private": true,
+  "main": "main.cjs",
   "sideEffects": false,
   "type": "module",
   "scripts": {
@@ -80,6 +81,8 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^44.4.3",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
@@ -95,10 +98,12 @@
   "build": {
     "appId": "com.muneebahmed.documentgenerator",
     "productName": "Document Generator",
-    "asar": false,
+    "asar": true,
     "files": [
       "main.cjs",
+      "preload.cjs",
       "splash.html",
+      "build/icon.ico",
       "package.json"
     ],
     "extraResources": [
@@ -108,7 +113,17 @@
       }
     ],
     "win": {
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "requestedExecutionLevel": "requireAdministrator",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "Document-Studio-Setup-${version}.${ext}"
     }
   }
 }
