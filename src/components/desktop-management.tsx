@@ -24,7 +24,11 @@ export function DesktopManagement({ documents }: DesktopManagementProps) {
 
   useEffect(() => setAvailable(Boolean(window.desktop)), []);
   const allSelected = documents.length > 0 && selected.length === documents.length;
-  const grouped = useMemo(() => Object.entries(Object.groupBy(documents, (document) => document.folder || "General")), [documents]);
+  const grouped = useMemo(() => Object.entries(documents.reduce<Record<string, SavedDocument[]>>((groups, document) => {
+    const folder = document.folder || "General";
+    groups[folder] = [...(groups[folder] ?? []), document];
+    return groups;
+  }, {})), [documents]);
   if (!available) return null;
 
   const exportSelected = async () => {
