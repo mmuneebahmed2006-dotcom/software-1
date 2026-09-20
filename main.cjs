@@ -10,8 +10,10 @@ const CATEGORIES = { invoice: 'Invoice', quotation: 'Quotation', dc: 'Delivery C
 const EMPTY_COMPANY = { address: '', phone: '', email: '', website: '', paymentInfo: '' };
 let win; let serverProcess;
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
-const readSettings = () => { try { return { initialized: false, dataRoot: null, lastBackupAt: null, ...JSON.parse(fs.readFileSync(settingsPath(), 'utf8')) }; } catch { return { initialized: false, dataRoot: null, lastBackupAt: null }; } };
 const writeSettings = (value) => { fs.mkdirSync(path.dirname(settingsPath()), { recursive: true }); fs.writeFileSync(settingsPath(), JSON.stringify(value, null, 2)); return value; };
+// The Windows installer asks for a documents folder on every install and drops the choice here.
+const installerRoot = () => { for (const file of [path.join(app.getPath('userData'), 'data-root.txt'), path.join(path.dirname(app.getPath('exe')), 'data-root.txt')]) { try { const value = fs.readFileSync(file, 'utf8').trim().replace(/^\ufeff/, ''); if (value) return path.resolve(value); } catch {} } return null; };
+const readSettings = () => { let stored = {}; try { stored = JSON.parse(fs.readFileSync(settingsPath(), 'utf8')); } catch {} const base = { initialized: false, dataRoot: null, lastBackupAt: null, ...stored }; if (base.dataRoot) return base; const chosen = installerRoot(); if (!chosen) return base; try { ensureWorkspace(chosen); } catch {} return writeSettings({ ...base, initialized: true, dataRoot: chosen }); };
 const safePart = (value) => String(value ?? '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '-').trim().slice(0, 100) || 'Untitled';
 const dataRoot = () => { const root = readSettings().dataRoot; if (!root) throw new Error('Workspace is not initialized'); return path.resolve(root); };
 const withinRoot = (...parts) => { const root = dataRoot(); const target = path.resolve(root, ...parts.map(safePart)); if (target !== root && !target.startsWith(root + path.sep)) throw new Error('Invalid workspace path'); return target; };
