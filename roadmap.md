@@ -10,3 +10,11 @@
 - [x] Harden Electron and configure Windows NSIS installer privileges and install-directory selection
 - [x] Optimize rendering and deferred startup work
 - [x] Verify browser behavior, printing/PDFs, desktop configuration, and packaging workflow
+
+## Complete persistence and management upgrade
+- [ ] Apply uploaded logo and icon
+- [ ] Implement stable disk save, Save As, folders, export, backup, and restore
+- [ ] Add date-filtered history and management dialogs
+- [ ] Add company-details settings with four save scopes
+- [ ] Fix multi-page editing and overflow
+- [ ] Verify browser, filesystem, and packaging behavior
