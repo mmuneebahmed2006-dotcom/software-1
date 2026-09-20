@@ -14,6 +14,8 @@ export interface DesktopApi {
   createFolder(category: string, name: string): Promise<string[]>;
   listFolders(category: string): Promise<string[]>;
   savePdf(name: string, data: string): Promise<boolean>;
+  getBasePath?(): Promise<string | null>;
+  savePdfToLibrary?(docType: string, folder: string, fileName: string, data: string): Promise<string>;
   exportSelected(ids: string[], from?: number, to?: number): Promise<number>;
   backup(): Promise<string | null>;
   restoreBackup(): Promise<RestoreResult | null>;

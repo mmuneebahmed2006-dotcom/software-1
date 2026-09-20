@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('desktop', {
   createFolder: (category, name) => ipcRenderer.invoke('folders:create', category, name),
   listFolders: (category) => ipcRenderer.invoke('folders:list', category),
   savePdf: (name, data) => ipcRenderer.invoke('pdf:save-as', name, data),
+  getBasePath: () => ipcRenderer.invoke('settings:base-path'),
+  savePdfToLibrary: (docType, folder, fileName, data) => ipcRenderer.invoke('pdf:save-to-library', docType, folder, fileName, data),
   exportSelected: (ids, from, to) => ipcRenderer.invoke('pdf:export-selected', ids, from, to),
   backup: () => ipcRenderer.invoke('workspace:backup'),
   getCompanyDetails: () => ipcRenderer.invoke('company:get'),
