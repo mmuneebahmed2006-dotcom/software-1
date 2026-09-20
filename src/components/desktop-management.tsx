@@ -32,14 +32,14 @@ export function DesktopManagement({ documents }: DesktopManagementProps) {
   if (!available) return null;
 
   const exportSelected = async () => {
-    const count = await window.desktop?.exportSelected(selected);
+    const count = await window.desktop?.exportSelected(selected, startOfDay(from), endOfDay(to));
     if (typeof count !== "number") return;
     toast.success(`${count} PDF${count === 1 ? "" : "s"} exported.`);
     setExportOpen(false);
   };
 
   const createBackup = async () => {
-    const destination = await window.desktop?.backup(startOfDay(from), endOfDay(to));
+    const destination = await window.desktop?.backup();
     if (!destination) return;
     toast.success("Backup created.");
     setBackupOpen(false);
@@ -51,7 +51,7 @@ export function DesktopManagement({ documents }: DesktopManagementProps) {
       <DialogContent>
         <DialogHeader><DialogTitle>Export saved PDFs</DialogTitle><DialogDescription>Select the documents to copy into a folder.</DialogDescription></DialogHeader>
         <label className="management-check"><Checkbox checked={allSelected} onCheckedChange={(checked) => setSelected(checked ? documents.map((document) => document.id) : [])}/><strong>Select All</strong></label>
-        <div className="management-list">
+         <div className="backup-dates"><label><span>From</span><Input type="date" value={from} onChange={(event) => setFrom(event.target.value)}/></label><label><span>To</span><Input type="date" value={to} onChange={(event) => setTo(event.target.value)}/></label></div><div className="management-list">
           {grouped.map(([folder, entries]) => <section key={folder}><h3>{folder}</h3>{entries?.map((document) => <label className="management-check" key={document.id}><Checkbox checked={selected.includes(document.id)} onCheckedChange={(checked) => setSelected((current) => checked ? [...new Set([...current, document.id])] : current.filter((id) => id !== document.id))}/><span>{document.title}</span></label>)}</section>)}
           {!documents.length && <p>No saved documents are available.</p>}
         </div>
@@ -59,11 +59,10 @@ export function DesktopManagement({ documents }: DesktopManagementProps) {
       </DialogContent>
     </Dialog>
     <Dialog open={backupOpen} onOpenChange={setBackupOpen}>
-      <DialogTrigger asChild><Button type="button" variant="secondary"><Archive size={16}/> Backup</Button></DialogTrigger>
+       <DialogTrigger asChild><Button type="button" variant="secondary"><Archive size={16}/> Backup &amp; Restore</Button></DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Export backup</DialogTitle><DialogDescription>Optionally limit the backup to documents updated within a date range.</DialogDescription></DialogHeader>
-        <div className="backup-dates"><label><span>From</span><Input type="date" value={from} onChange={(event) => setFrom(event.target.value)}/></label><label><span>To</span><Input type="date" value={to} onChange={(event) => setTo(event.target.value)}/></label></div>
-        <DialogFooter><Button type="button" onClick={() => void createBackup()}>Create Backup</Button></DialogFooter>
+         <DialogHeader><DialogTitle>Backup &amp; Restore</DialogTitle><DialogDescription>Save the entire workspace as one ZIP, or restore a previous backup.</DialogDescription></DialogHeader>
+         <DialogFooter><Button type="button" variant="outline" onClick={async () => { const result = await window.desktop?.restoreBackup(); if (result) { toast.success(`${result.imported} documents restored.`); window.location.reload(); } }}>Restore Backup</Button><Button type="button" onClick={() => void createBackup()}>Create Backup ZIP</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   </>;

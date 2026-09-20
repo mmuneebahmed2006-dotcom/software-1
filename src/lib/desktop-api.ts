@@ -1,4 +1,4 @@
-import type { SavedDocument } from "@/lib/document";
+import type { CompanyDetails, SavedDocument } from "@/lib/document";
 
 export interface DesktopSettings { initialized: boolean; dataRoot: string | null; lastBackupAt: number | null }
 export interface RestoreResult { imported: number; skipped: number; dataRoot: string }
@@ -10,10 +10,15 @@ export interface DesktopApi {
   listDocuments(): Promise<SavedDocument[]>;
   saveDocument(document: SavedDocument, pdfData?: string): Promise<SavedDocument>;
   deleteDocument(document: SavedDocument): Promise<void>;
-  createFolder(category: string, name: string): Promise<void>;
+  createFolder(category: string, name: string): Promise<string[]>;
+  listFolders(category: string): Promise<string[]>;
   savePdf(name: string, data: string): Promise<boolean>;
-  exportSelected(ids: string[]): Promise<number>;
-  backup(from?: number, to?: number): Promise<string | null>;
+  exportSelected(ids: string[], from?: number, to?: number): Promise<number>;
+  backup(): Promise<string | null>;
+  restoreBackup(): Promise<RestoreResult | null>;
+  getCompanyDetails(): Promise<CompanyDetails>;
+  saveCompanyDetails(details: CompanyDetails): Promise<CompanyDetails>;
+  updatePreviousCompanyDetails(details: CompanyDetails): Promise<SavedDocument[]>;
 }
 
 declare global { interface Window { desktop?: DesktopApi } }
