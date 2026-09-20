@@ -9,6 +9,7 @@ export interface DesktopApi {
   restore(): Promise<RestoreResult | null>;
   listDocuments(): Promise<SavedDocument[]>;
   saveDocument(document: SavedDocument, pdfData?: string): Promise<SavedDocument>;
+  renameDocument(document: SavedDocument, title: string): Promise<SavedDocument>;
   deleteDocument(document: SavedDocument): Promise<void>;
   createFolder(category: string, name: string): Promise<string[]>;
   listFolders(category: string): Promise<string[]>;

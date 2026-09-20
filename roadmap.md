@@ -12,9 +12,9 @@
 - [x] Verify browser behavior, printing/PDFs, desktop configuration, and packaging workflow
 
 ## Complete persistence and management upgrade
-- [ ] Apply uploaded logo and icon
-- [ ] Implement stable disk save, Save As, folders, export, backup, and restore
-- [ ] Add date-filtered history and management dialogs
-- [ ] Add company-details settings with four save scopes
-- [ ] Fix multi-page editing and overflow
-- [ ] Verify browser, filesystem, and packaging behavior
+- [x] Apply uploaded logo and icon
+- [x] Implement stable disk save, Save As, folders, export, backup, and restore
+- [x] Add date-filtered history and management dialogs
+- [x] Add company-details settings with four save scopes
+- [x] Fix multi-page editing and overflow
+- [x] Verify browser behavior, filesystem logic, production build, and packaging configuration

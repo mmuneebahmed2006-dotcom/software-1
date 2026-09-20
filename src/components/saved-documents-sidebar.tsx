@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, FilePlus2, FileText, FolderPlus, Pencil, Sea
 import { Button } from "@/components/ui/button";
 import { dateRangeStart, DOC_LABELS, documentTotal, groupLabel, matchesDateRange, money, type SavedDocument } from "@/lib/document";
 
-interface Props { documents: SavedDocument[]; activeId: string | null; onNew: () => void; onOpen: (document: SavedDocument) => void; onRename: (id: string, title: string) => void; onDelete: (document: SavedDocument) => void; onCreateFolder: () => void }
+interface Props { documents: SavedDocument[]; activeId: string | null; onNew: () => void; onOpen: (document: SavedDocument) => void; onRename: (id: string, title: string) => void | Promise<void>; onDelete: (document: SavedDocument) => void; onCreateFolder: () => void }
 
 export function SavedDocumentsSidebar({ documents, activeId, onNew, onOpen, onRename, onDelete, onCreateFolder }: Props) {
   const [collapsed, setCollapsed] = useState(false); const [query, setQuery] = useState(""); const [editingId, setEditingId] = useState<string | null>(null); const [range, setRange] = useState("all"); const [from, setFrom] = useState(""); const [to, setTo] = useState("");
