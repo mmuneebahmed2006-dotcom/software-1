@@ -10,7 +10,7 @@ export function SavedDocumentsSidebar({ documents, activeId, folders, activeFold
   const groups = useMemo(() => {
     const rangeFrom = range === "custom" ? (from ? new Date(`${from}T00:00:00`).getTime() : undefined) : range === "all" ? undefined : dateRangeStart(Number(range));
     const rangeTo = range === "custom" && to ? new Date(`${to}T23:59:59.999`).getTime() : undefined;
-    const filtered = documents.filter((d) => `${d.title} ${d.state.meta.number} ${d.state.client.name} ${d.folder}`.toLowerCase().includes(query.toLowerCase()) && matchesDateRange(d, rangeFrom, rangeTo));
+    const filtered = documents.filter((d) => `${d.title} ${d.state.meta.number} ${d.state.client.name} ${d.folder}`.toLowerCase().includes(query.toLowerCase()) && matchesDateRange(d, rangeFrom, rangeTo) && (folder === "all" || d.folder === folder));
     return filtered.reduce<Record<string, SavedDocument[]>>((result, item) => { const label = groupLabel(item.updatedAt); (result[label] ??= []).push(item); return result }, {});
   }, [documents, query, range, from, to]);
   return <aside className={`no-print saved-sidebar ${collapsed ? "collapsed" : ""}`}>
