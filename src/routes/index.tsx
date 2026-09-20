@@ -22,7 +22,7 @@ type SavePickerWindow = Window & typeof globalThis & {
     createWritable: () => Promise<{ write: (blob: Blob) => Promise<void>; close: () => Promise<void> }>;
   }>;
 };
-async function saveBlob(blob: Blob, name: string, description: string, extension: string) { const picker = (window as SavePickerWindow).showSaveFilePicker; if (picker) { const handle = await picker({ suggestedName: name, types: [{ description, accept: { [blob.type]: [extension] } }] }); const writable = await handle.createWritable(); await writable.write(blob); await writable.close(); return } const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = name; anchor.click(); URL.revokeObjectURL(url) }
+async function saveBlob(blob: Blob, name: string, _description: string, _extension: string) { const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = name; document.body.append(anchor); anchor.click(); anchor.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000) }
 
 export const Route = createFileRoute("/")({ head: () => ({ meta: [{ title: "Document Studio | 8 Ways Communications" }, { name: "description", content: "Create and manage print-ready invoices, quotations, delivery challans, and sales tax invoices." }, { property: "og:title", content: "Document Studio | 8 Ways Communications" }, { property: "og:description", content: "Create and manage professional print-ready business documents." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Index });
 
