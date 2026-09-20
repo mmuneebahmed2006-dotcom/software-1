@@ -6,7 +6,8 @@ import { dateRangeStart, DOC_LABELS, documentTotal, groupLabel, matchesDateRange
 interface Props { documents: SavedDocument[]; activeId: string | null; folders: string[]; activeFolder: string; onSelectFolder: (folder: string) => void; onNew: () => void; onOpen: (document: SavedDocument) => void; onRename: (id: string, title: string) => void | Promise<void>; onDelete: (document: SavedDocument) => void; onCreateFolder: () => void }
 
 export function SavedDocumentsSidebar({ documents, activeId, folders, activeFolder, onSelectFolder, onNew, onOpen, onRename, onDelete, onCreateFolder }: Props) {
-  const [collapsed, setCollapsed] = useState(false); const [query, setQuery] = useState(""); const [editingId, setEditingId] = useState<string | null>(null); const [range, setRange] = useState("all"); const [from, setFrom] = useState(""); const [to, setTo] = useState("");
+  const [collapsed, setCollapsed] = useState(false); const [query, setQuery] = useState(""); const [editingId, setEditingId] = useState<string | null>(null); const [range, setRange] = useState("all"); const [from, setFrom] = useState(""); const [to, setTo] = useState(""); const [folder, setFolder] = useState("all");
+  const folderNames = useMemo(() => [...new Set([...folders, ...documents.map((d) => d.folder)])].filter(Boolean), [folders, documents]);
   const groups = useMemo(() => {
     const rangeFrom = range === "custom" ? (from ? new Date(`${from}T00:00:00`).getTime() : undefined) : range === "all" ? undefined : dateRangeStart(Number(range));
     const rangeTo = range === "custom" && to ? new Date(`${to}T23:59:59.999`).getTime() : undefined;
