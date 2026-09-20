@@ -16,11 +16,13 @@ export interface DocState {
 }
 export interface SavedDocument {
   id: string; title: string; docType: DocType; paperSize: PaperSizeKey; state: DocState;
-  folder: string; createdAt: number; updatedAt: number;
+  folder: string; createdAt: number; updatedAt: number; storagePath?: string;
 }
+export interface CompanyDetails { address: string; phone: string; email: string; website: string; paymentInfo: string }
+export type CompanyScope = "current" | "future" | "previous" | "all";
 
 export const DOC_LABELS: Record<DocType, string> = { invoice: "Invoice", quotation: "Quotation", dc: "Delivery Challan", tax: "Sales Tax Invoice" };
-export const CATEGORY_FOLDERS: Record<DocType, string> = { invoice: "Invoice", quotation: "Quotation", dc: "DeliveryChallan", tax: "SalesTaxInvoice" };
+export const CATEGORY_FOLDERS: Record<DocType, string> = { invoice: "Invoice", quotation: "Quotation", dc: "Delivery Challan", tax: "Sales Tax Invoice" };
 export const CURRENCIES = ["Rs. ", "$", "€", "£", "AED "] as const;
 export const PAPER_SIZES: Record<PaperSizeKey, { width: string; height: string; page: string; scale: number; rows: number; pdf: [number, number] }> = {
   A4: { width: "210mm", height: "297mm", page: "A4", scale: 1, rows: 10, pdf: [210, 297] },
@@ -37,12 +39,16 @@ export function createDocumentState() { return createBlankDocumentState() }
 export function normalizeDocumentState(value: Partial<DocState> & { bank?: { name?: string; account?: string; paypal?: string } }): DocState {
   const blank = createBlankDocumentState();
   const legacyPayment = value.bank ? `Bank: ${value.bank.name ?? ""} • ${value.bank.account ?? ""} • PayPal: ${value.bank.paypal ?? ""}` : "";
-  return { ...blank, ...value, client: { ...blank.client, ...value.client }, meta: { ...blank.meta, ...value.meta }, dispatch: { ...blank.dispatch, ...value.dispatch }, footer: { ...blank.footer, ...value.footer }, items: value.items?.length ? value.items : blank.items, paymentInfo: value.paymentInfo ?? legacyPayment, minimumPages: Math.max(1, value.minimumPages ?? 1) };
+  return { ...blank, ...value, client: { ...blank.client, ...value.client }, meta: { ...blank.meta, ...value.meta }, dispatch: { ...blank.dispatch, ...value.dispatch }, footer: { ...blank.footer, ...value.footer }, items: value.items?.length ? value.items : blank.items, paymentInfo: value.paymentInfo ?? legacyPayment, minimumPages: Math.min(99, Math.max(1, value.minimumPages ?? 1)) };
 }
 export function normalizeSavedDocument(value: Partial<SavedDocument> & Pick<SavedDocument, "id" | "title" | "docType" | "paperSize" | "state" | "updatedAt">): SavedDocument {
-  return { ...value, id: value.id, title: value.title, docType: value.docType, paperSize: value.paperSize, state: normalizeDocumentState(value.state), folder: value.folder ?? "General", createdAt: value.createdAt ?? value.updatedAt, updatedAt: value.updatedAt };
+  return { ...value, id: value.id, title: value.title, docType: value.docType, paperSize: value.paperSize, state: normalizeDocumentState(value.state), folder: value.folder ?? "General", createdAt: value.createdAt ?? value.updatedAt, updatedAt: value.updatedAt, storagePath: value.storagePath };
 }
 export function documentTotal(state: DocState, docType: DocType) { if (docType === "dc") return 0; const subtotal = state.items.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0); return subtotal * (1 + (state.taxRate || 0) / 100) }
 export function money(amount: number, currency: string) { return `${currency}${(Number.isFinite(amount) ? amount : 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
 export function safeFileName(docType: DocType, number: string) { const clean = number.replace(/^#/, "").replace(/[^a-zA-Z0-9_-]+/g, "-") || "Untitled"; return `${DOC_LABELS[docType].replaceAll(" ", "_")}_${clean}` }
 export function groupLabel(timestamp: number) { const days = Math.floor((Date.now() - timestamp) / 86400000); if (days <= 0) return "Today"; if (days <= 7) return "Last Week"; if (days <= 31) return "Last Month"; const months = Math.max(2, Math.round(days / 30)); return `${months} Months Ago` }
+export function dateRangeStart(months: number) { const date = new Date(); date.setMonth(date.getMonth() - months); return date.getTime() }
+export function matchesDateRange(document: SavedDocument, from?: number, to?: number) { return (!from || document.updatedAt >= from) && (!to || document.updatedAt <= to) }
+export function companyFromState(state: DocState): CompanyDetails { return { ...state.footer, website: state.client.website, paymentInfo: state.paymentInfo } }
+export function applyCompanyDetails(state: DocState, details: CompanyDetails): DocState { return { ...state, footer: { address: details.address, phone: details.phone, email: details.email }, client: { ...state.client, website: details.website }, paymentInfo: details.paymentInfo } }
