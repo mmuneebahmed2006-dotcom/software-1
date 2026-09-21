@@ -18,3 +18,9 @@
 - [x] Add company-details settings with four save scopes
 - [x] Fix multi-page editing and overflow
 - [x] Verify browser behavior, filesystem logic, production build, and packaging configuration
+
+## Invoice header alignment and typography
+- [x] Align document number, document date, and due date in one responsive row
+- [x] Position the document title directly beneath the metadata row
+- [x] Reduce the four requested text weights by one step
+- [x] Verify desktop, tablet, and mobile rendering
