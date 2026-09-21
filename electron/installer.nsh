@@ -8,16 +8,6 @@ Var DataRootDir
   StrCpy $DataRootDir "$PROFILE\Document Studio"
 !macroend
 
-Function dataRootPre
-  !insertmacro MUI_HEADER_TEXT "Choose Documents Folder" "Select where Document Studio should save your documents."
-FunctionEnd
-
-Function dataRootShow
-FunctionEnd
-
-Function dataRootLeave
-FunctionEnd
-
 !macro customPageAfterChangeDir
   !define MUI_PAGE_HEADER_TEXT "Choose Documents Folder"
   !define MUI_PAGE_HEADER_SUBTEXT "Select where Document Studio should save your documents."
