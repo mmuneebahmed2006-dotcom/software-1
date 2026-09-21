@@ -101,13 +101,13 @@
   "build": {
     "appId": "com.muneebahmed.documentgenerator",
     "productName": "Document Generator",
-    "icon": "build/icon.ico",
+    "icon": "electron/icon.ico",
     "asar": true,
     "files": [
       "main.cjs",
       "preload.cjs",
       "splash.html",
-      "build/icon.ico",
+      "electron/icon.ico",
       "package.json"
     ],
     "extraResources": [
@@ -117,7 +117,7 @@
       }
     ],
     "win": {
-      "icon": "build/icon.ico",
+      "icon": "electron/icon.ico",
       "requestedExecutionLevel": "asInvoker",
       "target": "nsis"
     },
@@ -128,7 +128,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "artifactName": "Document-Studio-Setup-${version}.${ext}",
-      "include": "build/installer.nsh",
+      "include": "electron/installer.nsh",
       "deleteAppDataOnUninstall": false
     }
   }
