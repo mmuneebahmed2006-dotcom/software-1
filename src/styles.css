@@ -237,7 +237,7 @@
 .total-row { display: grid; grid-template-columns: calc(140px * var(--paper-scale)) minmax(0, calc(210px * var(--paper-scale))); align-items: center; }
 .total-row > span { padding: 4px 9px; text-align: left; }
 .total-row > strong { min-width: 0; padding: 4px 8px; overflow: hidden; font-size: calc(11px * var(--paper-scale)); font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.tax-editor { display: inline-flex; align-items: center; }.tax-editor input { width: 32px; }
+.tax-editor { display: inline-flex; align-items: center; gap: calc(2px * var(--paper-scale)); white-space: nowrap; }.tax-editor input { box-sizing: border-box; width: calc(52px * var(--paper-scale)); min-width: calc(52px * var(--paper-scale)); padding-inline: calc(3px * var(--paper-scale)); overflow: visible; text-align: center; }
 .total-banner { margin-top: 5px; width: 100%; min-width: 0; min-height: 38px; display: grid; grid-template-columns: calc(140px * var(--paper-scale)) minmax(0, calc(210px * var(--paper-scale))); align-items: center; overflow: hidden; border-bottom: 3px double var(--primary); background: var(--primary); color: var(--primary-foreground); text-transform: uppercase; white-space: nowrap; }
 .total-banner span { min-width: 0; padding: 0 8px; font-family: var(--font-display); font-size: calc(26pt * var(--paper-scale)); font-weight: 600; letter-spacing: 0; text-align: left; }.total-banner strong { min-width: 0; max-width: 100%; padding: 0 8px; overflow: hidden; font-size: calc(12px * var(--paper-scale)); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .closing-content { margin-top: auto; padding-top: 10px; }
@@ -247,8 +247,8 @@
 .signature-block { width: 100%; margin: 0; border-top: 1px solid var(--primary); padding-top: 6px; font-size: 10px; text-align: center; }
 .thank-you { margin-top: 8px; padding: 7px 0; border-top: 1px solid var(--paper-line); border-bottom: 1px solid var(--paper-line); text-align: center; }
 .thank-you span { font-family: var(--font-body); font-size: calc(22pt * var(--paper-scale)); font-style: italic; font-weight: 500; }
-.document-footer { min-height: 58px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr) minmax(0, 1.45fr); align-items: center; padding: 7px calc(48px * var(--paper-scale)); background: var(--primary); color: var(--primary-foreground); }
-.footer-field { min-width: 0; min-height: 38px; display: grid; grid-template-columns: calc(18px * var(--paper-scale)) minmax(0, 1fr); align-items: center; gap: calc(5px * var(--paper-scale)); padding: 0 calc(8px * var(--paper-scale)); font-size: calc(8.5pt * var(--paper-scale)); }
+.document-footer { min-height: 58px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; padding: 7px calc(48px * var(--paper-scale)); background: var(--primary); color: var(--primary-foreground); }
+.footer-field { min-width: 0; min-height: 38px; display: grid; grid-template-columns: calc(18px * var(--paper-scale)) minmax(0, 1fr); align-items: center; gap: calc(5px * var(--paper-scale)); padding: 0 calc(10px * var(--paper-scale)); font-size: calc(7.5pt * var(--paper-scale)); }
 .footer-field svg { width: calc(14px * var(--paper-scale)); height: calc(14px * var(--paper-scale)); }
 .footer-field .editable { min-width: 0; width: 100%; overflow: visible; color: inherit; font-size: inherit; line-height: 1.2; white-space: nowrap; }
 .continuation-heading { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--primary); padding-bottom: 8px; }.continuation-heading strong { font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); }.continuation-heading span { font-size: calc(11pt * var(--paper-scale)); }

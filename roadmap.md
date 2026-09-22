@@ -31,3 +31,8 @@
 - [x] Keep all three footer details on one line without clipping
 - [x] Preserve the top accent rule in print output
 - [x] Verify desktop, mobile, and print/PDF rendering
+
+## Totals and footer containment
+- [x] Show three-digit tax percentages without clipping
+- [x] Make the three footer sections equal width and evenly spaced
+- [ ] Verify 100% tax and complete footer values on desktop and mobile
