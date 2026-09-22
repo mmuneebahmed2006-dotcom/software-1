@@ -24,3 +24,10 @@
 - [x] Position the document title directly beneath the metadata row
 - [x] Reduce the four requested text weights by one step
 - [x] Verify desktop, tablet, and mobile rendering
+
+## Reference invoice corrections
+- [x] Stack document metadata as aligned label/value rows
+- [x] Remove the Export PDFs toolbar action
+- [x] Keep all three footer details on one line without clipping
+- [x] Preserve the top accent rule in print output
+- [ ] Verify desktop, mobile, and print/PDF rendering
