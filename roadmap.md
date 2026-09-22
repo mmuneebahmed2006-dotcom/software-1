@@ -35,4 +35,4 @@
 ## Totals and footer containment
 - [x] Show three-digit tax percentages without clipping
 - [x] Make the three footer sections equal width and evenly spaced
-- [ ] Verify 100% tax and complete footer values on desktop and mobile
+- [x] Verify 100% tax and complete footer values on desktop and mobile
