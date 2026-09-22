@@ -30,4 +30,4 @@
 - [x] Remove the Export PDFs toolbar action
 - [x] Keep all three footer details on one line without clipping
 - [x] Preserve the top accent rule in print output
-- [ ] Verify desktop, mobile, and print/PDF rendering
+- [x] Verify desktop, mobile, and print/PDF rendering
