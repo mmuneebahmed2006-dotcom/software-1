@@ -16,7 +16,7 @@ interface Props {
 export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
-  const firstPageCapacity = 15; // تصویر کی طرح پہلے صفحے پر بالکل 15 لائنیں
+  const firstPageCapacity = 15; // 15 lines exact for single page fitting
   const laterPageCapacity = PAPER_SIZES[paperSize].rows || 15;
 
   const pages = useMemo(() => {
@@ -259,20 +259,21 @@ const DocumentPage = memo(function DocumentPage({
       id={`paper-page-${pageIndex + 1}`}
       data-page-num={pageIndex + 1}
       className={`paper paper-${paperSize.toLowerCase()}`}
-      style={{ ...paperStyle, position: "relative", minHeight: "1056px" }}
+      style={{ ...paperStyle, position: "relative" }}
       data-pdf-page
     >
       <div className="top-accent" />
-      <div className="document-content" style={{ paddingBottom: isFirstPage ? "8px" : "16px" }}>
+      <div className="document-content" style={{ paddingBottom: "6px" }}>
         
         {/* Header & Logo */}
         <header className="document-header" style={{ marginBottom: "2px" }}>
-          <img src={logoMark} alt="PrintMark" className="document-logo" style={{ maxHeight: "38px" }} />
+          <img src={logoMark} alt="PrintMark" className="document-logo" style={{ maxHeight: "35px" }} />
         </header>
 
-        <section className="identity-grid" style={{ marginBottom: "4px", gap: "10px" }}>
-          <div className="bill-to" style={{ fontSize: "10.5px" }}>
-            <h2 style={{ fontSize: "11.5px", marginBottom: "1px", fontWeight: "bold" }}>BILL TO</h2>
+        {/* Identity Grid - Original Layout with 1pt reduced size */}
+        <section className="identity-grid" style={{ marginBottom: "2px", gap: "8px" }}>
+          <div className="bill-to" style={{ fontSize: "10px" }}>
+            <h2 style={{ fontSize: "11px", marginBottom: "1px" }}>BILL TO</h2>
             <TextField
               value={state.client.name}
               onChange={(value) => set("client", { ...state.client, name: value })}
@@ -315,21 +316,21 @@ const DocumentPage = memo(function DocumentPage({
           </div>
 
           <div className="document-meta">
-            <div className="meta-grid" style={{ fontSize: "10.5px", gap: "1px" }}>
+            <div className="meta-grid" style={{ fontSize: "10px", gap: "1px" }}>
               <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
                 <TextField
                   value={state.meta.number}
                   onChange={(value) => set("meta", { ...state.meta, number: value })}
-                  placeholder="1321654"
+                  placeholder="Invoice #"
                   ariaLabel="Document number"
                   align="right"
                 />
               </MetaRow>
               <MetaRow label="Account">
                 <TextField
-                  value={state.meta.account || "65464654"}
+                  value={state.meta.account || ""}
                   onChange={(value) => set("meta", { ...state.meta, account: value })}
-                  placeholder="65464654"
+                  placeholder="Account"
                   ariaLabel="Account number"
                   align="right"
                 />
@@ -338,27 +339,27 @@ const DocumentPage = memo(function DocumentPage({
                 <TextField
                   value={state.meta.date}
                   onChange={(value) => set("meta", { ...state.meta, date: value })}
-                  placeholder="8/8/2026"
+                  placeholder="Date"
                   ariaLabel="Document date"
                   align="right"
                 />
               </MetaRow>
             </div>
-            <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "22px", marginTop: "2px", fontWeight: "bold" }}>
+            <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "20px", marginTop: "2px" }}>
               {DOC_LABELS[docType]}
             </h1>
           </div>
         </section>
 
-        {/* Items Table - 15 Lines */}
-        <section className="items-section" style={{ marginBottom: "4px" }}>
-          <table style={{ fontSize: "10.5px" }}>
+        {/* Items Table - Exactly 15 Lines Fit */}
+        <section className="items-section" style={{ marginBottom: "2px" }}>
+          <table style={{ fontSize: "10px" }}>
             <thead>
               <tr>
-                <th className="number-col" style={{ width: "30px" }}>NO</th>
+                <th className="number-col" style={{ width: "28px" }}>NO</th>
                 <th>Description</th>
-                <th className="unit-col" style={{ width: "45px" }}>Unit</th>
-                <th className="qty-col" style={{ width: "45px" }}>QTY</th>
+                <th className="unit-col" style={{ width: "40px" }}>Unit</th>
+                <th className="qty-col" style={{ width: "40px" }}>QTY</th>
                 {showAmounts && <th className="unit-price-col">Unit Price</th>}
                 {showAmounts && <th className="amount-col">Amount</th>}
                 <th className="no-print action-col" />
@@ -367,7 +368,7 @@ const DocumentPage = memo(function DocumentPage({
             <tbody>
               {items.length > 0 ? (
                 items.map((item, index) => (
-                  <tr key={item.id} style={{ height: isFirstPage ? "19px" : "auto" }}>
+                  <tr key={item.id} style={{ height: isFirstPage ? "18px" : "auto" }}>
                     <td className="number-col">{itemOffset + index + 1}</td>
                     <td className="description-col">
                       <AreaField
@@ -404,7 +405,7 @@ const DocumentPage = memo(function DocumentPage({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={showAmounts ? 7 : 5} style={{ textAlign: "center", padding: "15px", color: "#94a3b8" }}>
+                  <td colSpan={showAmounts ? 7 : 5} style={{ textAlign: "center", padding: "10px", color: "#94a3b8" }}>
                     Continuation Page {pageIndex + 1}
                   </td>
                 </tr>
@@ -418,27 +419,27 @@ const DocumentPage = memo(function DocumentPage({
         </section>
 
         {/* Totals & Payment Info Layout */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "20px", marginBottom: "4px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", marginBottom: "2px" }}>
           <div style={{ flex: 1 }}>
-            <div className="payment-info" style={{ padding: "4px 8px", fontSize: "10.5px", marginBottom: "4px" }}>
+            <div className="payment-info" style={{ padding: "3px 6px", fontSize: "10px", marginBottom: "2px" }}>
               <div className="payment-details">
                 <strong>Payment Info</strong>
                 <AreaField
                   value={state.paymentInfo}
                   onChange={(value) => set("paymentInfo", value)}
-                  placeholder="........................................."
+                  placeholder="Payment instructions..."
                   ariaLabel="Payment information"
                 />
               </div>
             </div>
-            <div style={{ fontSize: "10.5px", fontWeight: "bold", marginTop: "12px" }}>
+            <div style={{ fontSize: "10px", fontWeight: "bold", marginTop: "8px" }}>
               <span>Signature</span>
-              <div style={{ borderBottom: "1px solid #000000", width: "160px", marginTop: "14px" }} />
+              <div style={{ borderBottom: "1px solid #000000", width: "150px", marginTop: "10px" }} />
             </div>
           </div>
 
           {showAmounts && (
-            <section className="totals" style={{ fontSize: "10.5px", width: "220px", margin: 0 }}>
+            <section className="totals" style={{ fontSize: "10px", width: "200px", margin: 0 }}>
               <div className="total-row" style={{ padding: "1px 0" }}>
                 <span>Sub Total</span>
                 <strong>{money(subtotal, state.currency)}</strong>
@@ -453,7 +454,7 @@ const DocumentPage = memo(function DocumentPage({
                 </span>
                 <strong>{money(taxAmount, state.currency)}</strong>
               </div>
-              <div className="total-banner" style={{ padding: "3px 6px", marginTop: "2px" }}>
+              <div className="total-banner" style={{ padding: "2px 6px", marginTop: "2px" }}>
                 <span style={{ fontWeight: "bold" }}>TOTAL</span>
                 <strong>{money(total, state.currency)}</strong>
               </div>
@@ -461,16 +462,16 @@ const DocumentPage = memo(function DocumentPage({
           )}
         </div>
 
-        {/* Closing Thank You with Bottom Border */}
+        {/* Closing Thank You */}
         {isFirstPage && (
-          <section className="closing-content" style={{ marginTop: "4px" }}>
+          <section className="closing-content" style={{ marginTop: "2px" }}>
             <div
               className="thank-you"
               style={{
                 textAlign: "center",
                 fontWeight: "bold",
-                fontSize: "12.5px",
-                paddingBottom: "4px",
+                fontSize: "12px",
+                paddingBottom: "3px",
                 borderBottom: "2px solid #000000",
                 marginBottom: "2px",
               }}
@@ -481,9 +482,9 @@ const DocumentPage = memo(function DocumentPage({
         )}
       </div>
 
-      {/* Footer صرف فرنٹ پیج پر */}
+      {/* Footer */}
       {isFirstPage && (
-        <footer className="document-footer" style={{ padding: "4px 16px" }}>
+        <footer className="document-footer" style={{ padding: "3px 16px" }}>
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
             <MapPin size={16} style={{ flexShrink: 0 }} />
             <textarea
