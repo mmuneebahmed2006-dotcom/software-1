@@ -37,7 +37,36 @@ const DocumentPage = memo(function DocumentPage({ docType, state, setState, item
          {first && isChallan && <section className="detail-strip three-columns"><InlineDetail label="Dispatch Via" value={state.dispatch.method} onChange={(value) => set("dispatch", { ...state.dispatch, method: value })}/><InlineDetail label="Vehicle No." value={state.dispatch.vehicleNo} onChange={(value) => set("dispatch", { ...state.dispatch, vehicleNo: value })}/><InlineDetail label="Gate Pass No." value={state.dispatch.gatePassNo} onChange={(value) => set("dispatch", { ...state.dispatch, gatePassNo: value })}/></section>}</>}
       <section className="items-section"><table><thead><tr><th className="number-col">No</th><th>Description</th><th className="unit-col">Unit</th><th className="qty-col">Qty</th>{showAmounts && <th className="unit-price-col">Unit Price</th>}{showAmounts && <th className="amount-col">Amount</th>}<th className="no-print action-col"/></tr></thead><tbody>{items.map((item, index) => <tr key={item.id}><td className="number-col">{itemOffset + index + 1}</td><td className="description-col"><AreaField value={item.description} onChange={(value) => updateItem(item.id, { description: value })} placeholder="Item or service description" ariaLabel={`Description for row ${itemOffset + index + 1}`}/></td><td className="unit-col"><TextField value={item.unit} onChange={(value) => updateItem(item.id, { unit: value })} placeholder="pcs" ariaLabel="Unit" align="center"/></td><td className="qty-col"><NumberField value={item.qty} onChange={(value) => updateItem(item.id, { qty: value })} ariaLabel="Quantity"/></td>{showAmounts && <td className="unit-price-col unit-price"><NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel="Unit price" step={.01}/></td>}{showAmounts && <td className="amount-col line-total">{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}<td className="no-print action-col"><Button type="button" size="icon" variant="danger" onClick={() => removeItem(item.id)} aria-label="Remove row"><Trash2 size={15}/></Button></td></tr>)}</tbody></table>{last && <Button type="button" variant="ghost" className="no-print add-line" onClick={addItem}><Plus size={15}/> Add line item</Button>}</section>
       {last && <>{showAmounts && <section className="totals"><div className="total-row"><span>Sub Total</span><strong>{money(subtotal, state.currency)}</strong></div><div className="total-row"><span>{isTax ? "Sales Tax" : "Taxes"}<span className="tax-editor"> (<NumberField value={state.taxRate} onChange={(value) => set("taxRate", value)} ariaLabel="Tax rate percent"/>%)</span></span><strong>{money(taxAmount, state.currency)}</strong></div><div className="total-banner"><span>{isQuotation ? "Estimate" : "Total"}</span><strong>{money(total, state.currency)}</strong></div></section>}<section className="closing-content"><div className="terms-block"><h3>Terms &amp; Conditions</h3><AreaField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions"/></div><div className="payment-info"><div className="payment-details"><strong>Payment Info</strong><AreaField value={state.paymentInfo} onChange={(value) => set("paymentInfo", value)} placeholder="Bank, account, or payment instructions" ariaLabel="Payment information"/></div><div className="signature-block">Authorized Signature</div></div><div className="thank-you"><span>{isChallan ? "Received in Good Order" : "Thanks for your Business!"}</span></div></section></>}
-    </div>{last && <footer className="document-footer"><FooterField icon={MapPin}><textarea value={state.footer.address} onChange={(e) => set("footer", { ...state.footer, address: e.target.value })} placeholder="Business address" aria-label="Business address" rows={state.footer.address.includes("\n") ? state.footer.address.split("\n").length : 1} style={{ width: "100%", background: "transparent", border: "none", outline: "none", resize: "none", color: "inherit", fontFamily: "inherit", fontSize: "inherit", lineHeight: "1.2", height: "auto", display: "block", alignSelf: "center", paddingTop: "2px" }}/></FooterField><FooterField icon={Phone}><TextField value={state.footer.phone} onChange={(value) => set("footer", { ...state.footer, phone: value })} placeholder="Phone" ariaLabel="Business phone"/></FooterField><FooterField icon={Mail}><TextField value={state.footer.email} onChange={(value) => set("footer", { ...state.footer, email: value })} placeholder="Email" ariaLabel="Business email"/></FooterField></footer>}<div className="page-number">Page {pageIndex + 1} of {pageCount}</div>
+    </div>{last && <footer className="document-footer">
+      <div className="footer-field" style={{ display: "flex", alignItems: "center", minHeight: "100%" }}>
+        <MapPin size={18} style={{ flexShrink: 0 }} />
+        <textarea
+          value={state.footer.address}
+          onChange={(e) => set("footer", { ...state.footer, address: e.target.value })}
+          placeholder="Business address"
+          aria-label="Business address"
+          rows={state.footer.address ? state.footer.address.split("\n").length : 1}
+          style={{
+            width: "100%",
+            background: "transparent",
+            border: "none",
+            outline: "none",
+            resize: "none",
+            color: "inherit",
+            fontFamily: "inherit",
+            fontSize: "inherit",
+            lineHeight: "1.2",
+            height: "auto",
+            margin: "0",
+            padding: "0 0 0 6px",
+            display: "block",
+            verticalAlign: "middle"
+          }}
+        />
+      </div>
+      <FooterField icon={Phone}><TextField value={state.footer.phone} onChange={(value) => set("footer", { ...state.footer, phone: value })} placeholder="Phone" ariaLabel="Business phone"/></FooterField>
+      <FooterField icon={Mail}><TextField value={state.footer.email} onChange={(value) => set("footer", { ...state.footer, email: value })} placeholder="Email" ariaLabel="Business email"/></FooterField>
+    </footer>}<div className="page-number">Page {pageIndex + 1} of {pageCount}</div>
   </article>;
 });
 
