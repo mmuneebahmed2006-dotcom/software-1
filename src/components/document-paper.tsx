@@ -18,6 +18,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
   const updateItem = (id: string, patch: Partial<LineItem>) => setState((current) => ({ ...current, items: current.items.map((item) => item.id === id ? { ...item, ...patch } : item) }));
   const removeItem = (id: string) => setState((current) => ({ ...current, items: current.items.length > 1 ? current.items.filter((item) => item.id !== id) : current.items }));
   const addItem = () => setState((current) => ({ ...current, items: [...current.items, { id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 }] }));
+  
   return <div id="document-pages" className="document-pages">
     {pages.map((items, pageIndex) => <DocumentPage key={`${pageIndex}-${items[0]?.id ?? "empty"}`} docType={docType} state={state} setState={setState} items={items} itemOffset={pageIndex * capacity} pageIndex={pageIndex} pageCount={pages.length} paperStyle={paperStyle} paperSize={paperSize} updateItem={updateItem} removeItem={removeItem} addItem={addItem}/>) }
   </div>;
@@ -29,7 +30,7 @@ const DocumentPage = memo(function DocumentPage({ docType, state, setState, item
   const subtotal = state.items.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0); const taxAmount = showAmounts ? subtotal * ((state.taxRate || 0) / 100) : 0; const total = subtotal + taxAmount;
   const set = <K extends keyof DocState>(key: K, value: DocState[K]) => setState((current) => ({ ...current, [key]: value }));
 
-  return <article className={`paper paper-${paperSize.toLowerCase()}`} style={paperStyle} data-pdf-page>
+  return <article id={`paper-page-${pageIndex + 1}`} className={`paper paper-${paperSize.toLowerCase()}`} style={paperStyle} data-pdf-page>
     <div className="top-accent"/><div className="document-content">
       <header className="document-header"><img src={logoMark} alt="8 Ways Communications" className="document-logo"/></header>
       {<><section className="identity-grid"><div className="bill-to"><h2>Bill To</h2><TextField value={state.client.name} onChange={(value) => set("client", { ...state.client, name: value })} placeholder="Client name" ariaLabel="Client name" className="client-name"/><ContactRow icon={Phone}><TextField value={state.client.phone} onChange={(value) => set("client", { ...state.client, phone: value })} placeholder="Phone number" ariaLabel="Client phone"/></ContactRow><ContactRow icon={Mail}><TextField value={state.client.email} onChange={(value) => set("client", { ...state.client, email: value })} placeholder="Email address" ariaLabel="Client email"/></ContactRow><ContactRow icon={MapPin}><AreaField value={state.client.address} onChange={(value) => set("client", { ...state.client, address: value })} placeholder="Client address" ariaLabel="Client address"/></ContactRow><ContactRow icon={Globe2}><TextField value={state.client.website} onChange={(value) => set("client", { ...state.client, website: value })} placeholder="Website" ariaLabel="Client website"/></ContactRow></div>
@@ -47,14 +48,9 @@ const DocumentPage = memo(function DocumentPage({ docType, state, setState, item
           placeholder="Business address"
           aria-label="Business address"
           rows={1}
-          onInput={(e) => {
-            const target = e.target as HTMLTextAreaElement;
-            target.style.height = "auto";
-            target.style.height = `${target.scrollHeight}px`;
-          }}
           style={{
             width: "100%",
-            height: "1.3em", // سنگل لائن کی اونچائی فون نمبر والے فیلڈ کے برابر رکھے گا
+            height: "1.3em",
             minHeight: "1.3em",
             background: "transparent",
             border: "none",
@@ -73,7 +69,8 @@ const DocumentPage = memo(function DocumentPage({ docType, state, setState, item
       </div>
       <FooterField icon={Phone}><TextField value={state.footer.phone} onChange={(value) => set("footer", { ...state.footer, phone: value })} placeholder="Phone" ariaLabel="Business phone"/></FooterField>
       <FooterField icon={Mail}><TextField value={state.footer.email} onChange={(value) => set("footer", { ...state.footer, email: value })} placeholder="Email" ariaLabel="Business email"/></FooterField>
-    </footer>}<div className="page-number">Page {pageIndex + 1} of {pageCount}</div>
+    </footer>}
+    <div className="page-number no-print">Page {pageIndex + 1} of {pageCount}</div>
   </article>;
 });
 
