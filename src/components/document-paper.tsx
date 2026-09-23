@@ -15,9 +15,10 @@ interface Props {
 
 export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
+  const [currentPage, setCurrentPage] = useState(1);
   const capacity = PAPER_SIZES[paperSize].rows;
 
-  // تمام پیجز جنریٹ کرنے کی لاجک (Page 1 سب سے اوپر رہے گا، باقی پیجز نیچے آئیں گے)
+  // Generate chunks: Page 1 top par rahega, aage ke items next pages mein vertical list honge
   const pages = useMemo(() => {
     const chunks: LineItem[][] = [];
     for (let index = 0; index < state.items.length; index += capacity) {
@@ -28,6 +29,28 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
     }
     return chunks.length ? chunks : [[]];
   }, [capacity, state.items, state.minimumPages]);
+
+  // Active page tracking on scroll using Intersection Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const pageNum = Number(entry.target.getAttribute("data-page-num"));
+            if (pageNum) setCurrentPage(pageNum);
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    pages.forEach((_, idx) => {
+      const pageElem = document.getElementById(`paper-page-${idx + 1}`);
+      if (pageElem) observer.observe(pageElem);
+    });
+
+    return () => observer.disconnect();
+  }, [pages]);
 
   const updateItem = (id: string, patch: Partial<LineItem>) =>
     setState((current) => ({
@@ -47,14 +70,13 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
       items: [...current.items, { id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 }],
     }));
 
-  // زوم فنکشن
   const handleZoom = (newZoom: number) => {
     const clamped = Math.min(Math.max(newZoom, 40), 160);
     setZoom(clamped);
   };
 
-  // پیج جمپ فنکشن
   const jumpToPage = (pageNum: number) => {
+    setCurrentPage(pageNum);
     const pageElem = document.getElementById(`paper-page-${pageNum}`);
     if (pageElem) {
       pageElem.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -63,7 +85,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
 
   return (
     <div className="document-paper-wrapper" style={{ position: "relative", width: "100%" }}>
-      {/* 1. زوم اور پیج جمپ بار (Floating Zoom & Page Jump Controls) */}
+      {/* Dynamic Floating Toolbar */}
       <div
         className="no-print"
         style={{
@@ -82,8 +104,9 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
           border: "1px solid #334155"
         }}
       >
-        {/* پیج جمپ سلیکٹر */}
+        {/* Dynamic Current Page Selector */}
         <select
+          value={currentPage}
           onChange={(e) => jumpToPage(Number(e.target.value))}
           style={{
             background: "#1e293b",
@@ -105,7 +128,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
 
         <div style={{ width: "1px", height: "18px", backgroundColor: "#475569" }} />
 
-        {/* زوم آؤٹ */}
+        {/* Zoom Out */}
         <Button
           type="button"
           variant="ghost"
@@ -121,7 +144,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
           {zoom}%
         </span>
 
-        {/* زوم ان */}
+        {/* Zoom In */}
         <Button
           type="button"
           variant="ghost"
@@ -133,7 +156,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
           <ZoomIn size={16} />
         </Button>
 
-        {/* ری سیٹ زوم */}
+        {/* Reset Zoom */}
         <Button
           type="button"
           variant="ghost"
@@ -146,7 +169,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
         </Button>
       </div>
 
-      {/* 2. تمام پیجز ایک کے نیچے ایک (Vertical Stack) */}
+      {/* Pages Container - Top to Bottom Stack */}
       <div
         id="document-pages"
         className="document-pages"
@@ -224,6 +247,7 @@ const DocumentPage = memo(function DocumentPage({
   return (
     <article
       id={`paper-page-${pageIndex + 1}`}
+      data-page-num={pageIndex + 1}
       className={`paper paper-${paperSize.toLowerCase()}`}
       style={{ ...paperStyle, position: "relative" }}
       data-pdf-page
@@ -334,7 +358,6 @@ const DocumentPage = memo(function DocumentPage({
           </section>
         )}
 
-        {/* لائن آئٹمز ٹیبل */}
         <section className="items-section">
           <table>
             <thead>
@@ -482,7 +505,6 @@ const DocumentPage = memo(function DocumentPage({
         </footer>
       )}
 
-      {/* پیج نمبر جو پرنٹ میں نہیں آئے گا */}
       <div className="page-number no-print">
         Page {pageIndex + 1} of {pageCount}
       </div>
