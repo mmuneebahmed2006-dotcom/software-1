@@ -208,9 +208,9 @@
 .client-name { font-size: calc(16pt * var(--paper-scale)); font-weight: 600; }
 .contact-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 6px; margin-top: 3px; font-size: calc(11pt * var(--paper-scale)); font-weight: 400; }
 .contact-row svg { margin-top: 3px; }
-.document-meta { min-width: 0; padding-top: 4px; }
+.document-meta { min-width: 0; padding-top: 4px; margin-left: auto; width: fit-content; max-width: 100%; }
 .meta-grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: calc(4px * var(--paper-scale)); }
-.meta-row { min-width: 0; display: grid; grid-template-columns: minmax(calc(118px * var(--paper-scale)), 1fr) minmax(0, 1fr); align-items: baseline; gap: calc(12px * var(--paper-scale)); font-size: calc(11pt * var(--paper-scale)); font-weight: 400; }
+.meta-row { min-width: 0; display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: end; gap: calc(12px * var(--paper-scale)); font-size: calc(11pt * var(--paper-scale)); font-weight: 400; }
 .meta-row > span { min-width: 0; font-weight: 700; line-height: 1.2; white-space: nowrap; }
 .meta-row > div { min-width: 0; }
 .meta-row .editable { width: 100%; min-width: 0; text-align: right !important; white-space: nowrap; }
