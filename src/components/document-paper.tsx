@@ -253,26 +253,27 @@ const DocumentPage = memo(function DocumentPage({
       data-pdf-page
     >
       <div className="top-accent" />
-      {/* document-content ko flex column aur space-between de diya hai taaki bottom items bilkul neechay chale jayen */}
       <div className="document-content" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", paddingBottom: "10px" }}>
         
         <div>
-          {/* Header & Logo */}
+          {/* Header & Logo - Bada Logo */}
           <header className="document-header" style={{ marginBottom: "2px" }}>
-            <img src={logoMark} alt="Logo" className="document-logo" style={{ maxHeight: "30px" }} />
+            <img src={logoMark} alt="Logo" className="document-logo" style={{ maxHeight: "42px" }} />
           </header>
 
-          {/* Identity Grid: Bill To & Invoice Meta */}
+          {/* Identity Grid */}
           <section className="identity-grid" style={{ marginBottom: "2px", gap: "8px" }}>
-            <div className="bill-to" style={{ fontSize: "9.5px" }}>
-              <h2 style={{ fontSize: "12px", marginBottom: "2px", fontWeight: "bold" }}>BILL TO</h2>
+            <div className="bill-to">
+              {/* BILL TO - Bada */}
+              <h2 style={{ fontSize: "15px", fontWeight: "bold", marginBottom: "2px" }}>BILL TO</h2>
+              {/* Client details - 1 point smaller */}
               <TextField
                 value={state.client.name}
                 onChange={(value) => set("client", { ...state.client, name: value })}
                 placeholder="Client name"
                 ariaLabel="Client name"
                 className="client-name"
-                style={{ fontSize: "10px" }}
+                style={{ fontSize: "11px" }}
               />
               <ContactRow icon={Phone}>
                 <TextField
@@ -280,7 +281,7 @@ const DocumentPage = memo(function DocumentPage({
                   onChange={(value) => set("client", { ...state.client, phone: value })}
                   placeholder="Phone number"
                   ariaLabel="Client phone"
-                  style={{ fontSize: "9.5px" }}
+                  style={{ fontSize: "10px" }}
                 />
               </ContactRow>
               <ContactRow icon={Mail}>
@@ -289,7 +290,7 @@ const DocumentPage = memo(function DocumentPage({
                   onChange={(value) => set("client", { ...state.client, email: value })}
                   placeholder="Email address"
                   ariaLabel="Client email"
-                  style={{ fontSize: "9.5px" }}
+                  style={{ fontSize: "10px" }}
                 />
               </ContactRow>
               <ContactRow icon={MapPin}>
@@ -298,7 +299,7 @@ const DocumentPage = memo(function DocumentPage({
                   onChange={(value) => set("client", { ...state.client, address: value })}
                   placeholder="Client address"
                   ariaLabel="Client address"
-                  style={{ fontSize: "9.5px" }}
+                  style={{ fontSize: "10px" }}
                 />
               </ContactRow>
               <ContactRow icon={Globe2}>
@@ -307,13 +308,14 @@ const DocumentPage = memo(function DocumentPage({
                   onChange={(value) => set("client", { ...state.client, website: value })}
                   placeholder="Website"
                   ariaLabel="Client website"
-                  style={{ fontSize: "9.5px" }}
+                  style={{ fontSize: "10px" }}
                 />
               </ContactRow>
             </div>
 
             <div className="document-meta">
-              <div className="meta-grid" style={{ fontSize: "9.5px", gap: "1px" }}>
+              {/* Invoice details (Invoice #, Date, Due Date) - 1 point smaller */}
+              <div className="meta-grid" style={{ fontSize: "10px", gap: "1px" }}>
                 <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
                   <TextField
                     value={state.meta.number}
@@ -321,7 +323,7 @@ const DocumentPage = memo(function DocumentPage({
                     placeholder="#351-34"
                     ariaLabel="Document number"
                     align="right"
-                    style={{ fontSize: "9.5px" }}
+                    style={{ fontSize: "10px" }}
                   />
                 </MetaRow>
                 <MetaRow label="Document Date">
@@ -331,7 +333,7 @@ const DocumentPage = memo(function DocumentPage({
                     placeholder="DD/MM/YYYY"
                     ariaLabel="Document date"
                     align="right"
-                    style={{ fontSize: "9.5px" }}
+                    style={{ fontSize: "10px" }}
                   />
                 </MetaRow>
                 {!isChallan && (
@@ -347,20 +349,21 @@ const DocumentPage = memo(function DocumentPage({
                       placeholder="DD/MM/YYYY"
                       ariaLabel={isQuotation ? "Valid until" : "Due date"}
                       align="right"
-                      style={{ fontSize: "9.5px" }}
+                      style={{ fontSize: "10px" }}
                     />
                   </MetaRow>
                 )}
               </div>
-              <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "20px", marginTop: "2px", fontWeight: "bold" }}>
+              {/* INVOICE Title - Bada */}
+              <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "24px", fontWeight: "bold", marginTop: "2px" }}>
                 {DOC_LABELS[docType]}
               </h1>
             </div>
           </section>
 
-          {/* Items Table - Exactly 15 Lines Perfect Fit */}
+          {/* Items Table - Exactly 15 Lines */}
           <section className="items-section" style={{ marginBottom: "2px" }}>
-            <table style={{ fontSize: "9.5px" }}>
+            <table>
               <thead>
                 <tr>
                   <th className="number-col">No</th>
@@ -375,7 +378,7 @@ const DocumentPage = memo(function DocumentPage({
               <tbody>
                 {items.length > 0 ? (
                   items.map((item, index) => (
-                    <tr key={item.id} style={{ height: "16px" }}>
+                    <tr key={item.id} style={{ height: "18px" }}>
                       <td className="number-col">{itemOffset + index + 1}</td>
                       <td className="description-col">
                         <AreaField
@@ -405,7 +408,7 @@ const DocumentPage = memo(function DocumentPage({
                       {showAmounts && <td className="amount-col line-total">{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
                       <td className="no-print action-col">
                         <Button type="button" size="icon" variant="danger" onClick={() => removeItem(item.id)} aria-label="Remove row">
-                          <Trash2 size={13} />
+                          <Trash2 size={14} />
                         </Button>
                       </td>
                     </tr>
@@ -421,18 +424,18 @@ const DocumentPage = memo(function DocumentPage({
             </table>
 
             <Button type="button" variant="ghost" className="no-print add-line" onClick={addItem}>
-              <Plus size={13} /> Add line item
+              <Plus size={14} /> Add line item
             </Button>
           </section>
 
           {/* Totals */}
           {showAmounts && (
-            <section className="totals" style={{ fontSize: "9.5px", marginBottom: "2px" }}>
-              <div className="total-row" style={{ padding: "1px 0" }}>
+            <section className="totals" style={{ marginBottom: "2px" }}>
+              <div className="total-row">
                 <span>Sub Total</span>
                 <strong>{money(subtotal, state.currency)}</strong>
               </div>
-              <div className="total-row" style={{ padding: "1px 0" }}>
+              <div className="total-row">
                 <span>
                   {isTax ? "Sales Tax" : "Taxes"}
                   <span className="tax-editor">
@@ -442,7 +445,7 @@ const DocumentPage = memo(function DocumentPage({
                 </span>
                 <strong>{money(taxAmount, state.currency)}</strong>
               </div>
-              <div className="total-banner" style={{ padding: "2px 6px" }}>
+              <div className="total-banner">
                 <span>{isQuotation ? "Estimate" : "Total"}</span>
                 <strong>{money(total, state.currency)}</strong>
               </div>
@@ -453,11 +456,11 @@ const DocumentPage = memo(function DocumentPage({
         {/* Closing Content (Terms, Payment Info, Thanks at Bottom properly anchored) */}
         {isFirstPage && (
           <section className="closing-content" style={{ marginTop: "auto", paddingTop: "4px" }}>
-            <div className="terms-block" style={{ marginBottom: "2px", fontSize: "9.5px" }}>
-              <h3 style={{ fontSize: "10px", marginBottom: "1px" }}>Terms &amp; Conditions</h3>
+            <div className="terms-block">
+              <h3>Terms &amp; Conditions</h3>
               <AreaField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
             </div>
-            <div className="payment-info" style={{ padding: "2px 6px", marginBottom: "3px", fontSize: "9.5px" }}>
+            <div className="payment-info">
               <div className="payment-details">
                 <strong>Payment Info</strong>
                 <AreaField
@@ -469,7 +472,7 @@ const DocumentPage = memo(function DocumentPage({
               </div>
               <div className="signature-block">Authorized Signature</div>
             </div>
-            <div className="thank-you" style={{ fontSize: "11px", paddingBottom: "2px" }}>
+            <div className="thank-you">
               <span>{isChallan ? "Received in Good Order" : "Thanks for your Business!"}</span>
             </div>
           </section>
@@ -478,9 +481,9 @@ const DocumentPage = memo(function DocumentPage({
 
       {/* Footer */}
       {isFirstPage && (
-        <footer className="document-footer" style={{ padding: "3px 16px" }}>
+        <footer className="document-footer">
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
-            <MapPin size={15} style={{ flexShrink: 0 }} />
+            <MapPin size={18} style={{ flexShrink: 0 }} />
             <textarea
               value={state.footer.address}
               onChange={(e) => set("footer", { ...state.footer, address: e.target.value })}
@@ -489,8 +492,8 @@ const DocumentPage = memo(function DocumentPage({
               rows={1}
               style={{
                 width: "100%",
-                height: "1.2em",
-                minHeight: "1.2em",
+                height: "1.3em",
+                minHeight: "1.3em",
                 background: "transparent",
                 border: "none",
                 outline: "none",
@@ -498,7 +501,7 @@ const DocumentPage = memo(function DocumentPage({
                 color: "inherit",
                 fontFamily: "inherit",
                 fontSize: "inherit",
-                lineHeight: "1.2",
+                lineHeight: "1.3",
                 padding: "0",
                 margin: "0",
                 display: "block",
@@ -523,7 +526,7 @@ const DocumentPage = memo(function DocumentPage({
 });
 
 function ContactRow({ icon: Icon, children }: { icon: typeof Phone; children: React.ReactNode }) {
-  return <div className="contact-row" style={{ marginBottom: "1px" }}><Icon size={11} />{children}</div>;
+  return <div className="contact-row"><Icon size={14} />{children}</div>;
 }
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -531,5 +534,5 @@ function MetaRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 function FooterFooterField({ icon: Icon, children }: { icon: typeof Phone; children: React.ReactNode }) {
-  return <div className="footer-field" style={{ display: "flex", alignItems: "center" }}><Icon size={15} />{children}</div>;
+  return <div className="footer-field" style={{ display: "flex", alignItems: "center" }}><Icon size={18} />{children}</div>;
 }
