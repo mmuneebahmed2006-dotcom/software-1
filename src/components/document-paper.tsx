@@ -18,7 +18,6 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
   const [currentPage, setCurrentPage] = useState(1);
   const capacity = PAPER_SIZES[paperSize].rows;
 
-  // Pages array generation: Front Page is strictly first (index 0)
   const pages = useMemo(() => {
     const chunks: LineItem[][] = [];
     for (let index = 0; index < state.items.length; index += capacity) {
@@ -87,7 +86,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
 
   return (
     <div className="document-paper-wrapper" style={{ position: "relative", width: "100%" }}>
-      {/* Dynamic Floating Toolbar */}
+      {/* Floating Control Toolbar */}
       <div
         className="no-print"
         style={{
@@ -167,7 +166,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
         </Button>
       </div>
 
-      {/* Pages Container - Sequentially stacked */}
+      {/* Pages Container */}
       <div
         id="document-pages"
         className="document-pages"
@@ -228,7 +227,7 @@ const DocumentPage = memo(function DocumentPage({
   removeItem,
   addItem,
 }: PageProps) {
-  const isFirstPage = pageIndex === 0;
+  const isFirstPage = pageIndex === 0; // صرف اور صرف پہلا صفحہ
   const isTax = docType === "tax";
   const isChallan = docType === "dc";
   const isQuotation = docType === "quotation";
@@ -252,7 +251,7 @@ const DocumentPage = memo(function DocumentPage({
       <div className="top-accent" />
       <div className="document-content">
         
-        {/* ۱. اگر پہلا پیج (Page 1) ہے تو پورا Main Header آئے گا */}
+        {/* ۱. ہیڈر (Page 1 پر مکمل Bill To اور Details، باقی تمام صفحات پر مختصر Header) */}
         {isFirstPage ? (
           <>
             <header className="document-header">
@@ -345,7 +344,6 @@ const DocumentPage = memo(function DocumentPage({
             </section>
           </>
         ) : (
-          /* ذیلی صفحات (Page 2, 3...) کا مختصر ہیڈر */
           <header className="document-header" style={{ paddingBottom: "16px", marginBottom: "20px", borderBottom: "1px solid #e2e8f0" }}>
             <img src={logoMark} alt="8 Ways Communications" className="document-logo" style={{ height: "32px" }} />
             <span style={{ fontSize: "14px", fontWeight: "bold", color: "#64748b" }}>
@@ -354,7 +352,7 @@ const DocumentPage = memo(function DocumentPage({
           </header>
         )}
 
-        {/* ۲. ٹیبل آئٹمز */}
+        {/* ۲. بلیو لائن سے اوپر کا تمام مواد (تمام صفحات پر آئٹمز والا ٹیبل رہے گا) */}
         <section className="items-section">
           <table>
             <thead>
@@ -421,58 +419,57 @@ const DocumentPage = memo(function DocumentPage({
           </Button>
         </section>
 
-        {/* ۳. فرنٹ پیج (Page 1) پر ٹوٹلز اور پیمنٹ انفو لازمی رہیں گے */}
-        {isFirstPage && (
-          <>
-            {showAmounts && (
-              <section className="totals">
-                <div className="total-row">
-                  <span>Sub Total</span>
-                  <strong>{money(subtotal, state.currency)}</strong>
-                </div>
-                <div className="total-row">
-                  <span>
-                    {isTax ? "Sales Tax" : "Taxes"}
-                    <span className="tax-editor">
-                      {" "}
-                      (<NumberField value={state.taxRate} onChange={(value) => set("taxRate", value)} ariaLabel="Tax rate percent" />%)
-                    </span>
-                  </span>
-                  <strong>{money(taxAmount, state.currency)}</strong>
-                </div>
-                <div className="total-banner">
-                  <span>{isQuotation ? "Estimate" : "Total"}</span>
-                  <strong>{money(total, state.currency)}</strong>
-                </div>
-              </section>
-            )}
+        {/* ۳. بلیو لائن سے اوپر کا Totals حصہ (تمام صفحات ۲، ۳، ۴... وغیرہ پر بھی موجود رہے گا) */}
+        {showAmounts && (
+          <section className="totals">
+            <div className="total-row">
+              <span>Sub Total</span>
+              <strong>{money(subtotal, state.currency)}</strong>
+            </div>
+            <div className="total-row">
+              <span>
+                {isTax ? "Sales Tax" : "Taxes"}
+                <span className="tax-editor">
+                  {" "}
+                  (<NumberField value={state.taxRate} onChange={(value) => set("taxRate", value)} ariaLabel="Tax rate percent" />%)
+                </span>
+              </span>
+              <strong>{money(taxAmount, state.currency)}</strong>
+            </div>
+            <div className="total-banner">
+              <span>{isQuotation ? "Estimate" : "Total"}</span>
+              <strong>{money(total, state.currency)}</strong>
+            </div>
+          </section>
+        )}
 
-            <section className="closing-content">
-              <div className="terms-block">
-                <h3>Terms &amp; Conditions</h3>
-                <AreaField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
+        {/* ۴. بلیو لائن کے نیچے والا تمام حصہ (Terms, Payment Info) - صرف فرنٹ پیج (isFirstPage) پر ہو گا */}
+        {isFirstPage && (
+          <section className="closing-content">
+            <div className="terms-block">
+              <h3>Terms &amp; Conditions</h3>
+              <AreaField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
+            </div>
+            <div className="payment-info">
+              <div className="payment-details">
+                <strong>Payment Info</strong>
+                <AreaField
+                  value={state.paymentInfo}
+                  onChange={(value) => set("paymentInfo", value)}
+                  placeholder="Bank, account, or payment instructions"
+                  ariaLabel="Payment information"
+                />
               </div>
-              <div className="payment-info">
-                <div className="payment-details">
-                  <strong>Payment Info</strong>
-                  <AreaField
-                    value={state.paymentInfo}
-                    onChange={(value) => set("paymentInfo", value)}
-                    placeholder="Bank, account, or payment instructions"
-                    ariaLabel="Payment information"
-                  />
-                </div>
-                <div className="signature-block">Authorized Signature</div>
-              </div>
-              <div className="thank-you">
-                <span>{isChallan ? "Received in Good Order" : "Thanks for your Business!"}</span>
-              </div>
-            </section>
-          </>
+              <div className="signature-block">Authorized Signature</div>
+            </div>
+            <div className="thank-you">
+              <span>{isChallan ? "Received in Good Order" : "Thanks for your Business!"}</span>
+            </div>
+          </section>
         )}
       </div>
 
-      {/* ۴. فوٹر صرف Page 1 پر ہمیشہ دکھے گا */}
+      {/* ۵. سیاہ فوٹر بار (Footer) - صرف فرنٹ پیج (isFirstPage) پر ہو گا */}
       {isFirstPage && (
         <footer className="document-footer">
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
