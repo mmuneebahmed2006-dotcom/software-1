@@ -227,8 +227,7 @@ const DocumentPage = memo(function DocumentPage({
   removeItem,
   addItem,
 }: PageProps) {
-  const isFirstPage = pageIndex === 0;
-  const isLastPage = pageIndex === pageCount - 1; // آخری پیج کی شناخت
+  const isFirstPage = pageIndex === 0; // صرف پہلا صفحہ
   const isTax = docType === "tax";
   const isChallan = docType === "dc";
   const isQuotation = docType === "quotation";
@@ -252,7 +251,7 @@ const DocumentPage = memo(function DocumentPage({
       <div className="top-accent" />
       <div className="document-content">
         
-        {/* ہر پیج پر ہیڈر اور بل ٹو کی تمام تفصیلات (لوگو اب پورے سائز میں آئے گا) */}
+        {/* ہر پیج پر ہیڈر اور بل ٹو کی مکمل تفصیلات (لوگو اب دونوں جگہ برابر اور اصلی سائز میں رہے گا) */}
         <header className="document-header">
           <img src={logoMark} alt="8 Ways Communications" className="document-logo" />
         </header>
@@ -435,8 +434,8 @@ const DocumentPage = memo(function DocumentPage({
           </section>
         )}
 
-        {/* Terms & Conditions اور Thank You اب صرف آخری پیج (isLastPage) پر آئیں گے */}
-        {isLastPage && (
+        {/* Terms & Conditions اور Thank You صرف اور صرف فرنٹ پیج (isFirstPage) پر آئیں گے */}
+        {isFirstPage && (
           <section className="closing-content">
             <div className="terms-block">
               <h3>Terms &amp; Conditions</h3>
@@ -461,8 +460,8 @@ const DocumentPage = memo(function DocumentPage({
         )}
       </div>
 
-      {/* Footer صرف آخری پیج (isLastPage) پر آئے گا */}
-      {isLastPage && (
+      {/* Footer صرف اور صرف فرنٹ پیج (isFirstPage) پر آئے گا */}
+      {isFirstPage && (
         <footer className="document-footer">
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
             <MapPin size={18} style={{ flexShrink: 0 }} />
