@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
-  const [zoom, setZoom] =0;
+  const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
   const firstPageCapacity = 10; // پہلے صفحے پر بالکل پوری 10 لائنیں
   const laterPageCapacity = PAPER_SIZES[paperSize].rows || 14;
@@ -146,7 +146,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
           type="button"
           variant="ghost"
           size="icon"
-          onClick={() => handleZoom((zoom || 100) - 10)}
+          onClick={() => handleZoom(zoom - 10)}
           style={{ color: "#fff", height: "30px", width: "30px" }}
           title="Zoom Out"
         >
@@ -154,14 +154,14 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
         </Button>
 
         <span style={{ fontSize: "13px", fontWeight: "bold", minWidth: "45px", textAlign: "center" }}>
-          {zoom || 100}%
+          {zoom}%
         </span>
 
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          onClick={() => handleZoom((zoom || 100) + 10)}
+          onClick={() => handleZoom(zoom + 10)}
           style={{ color: "#fff", height: "30px", width: "30px" }}
           title="Zoom In"
         >
@@ -185,7 +185,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
         id="document-pages"
         className="document-pages"
         style={{
-          transform: `scale(${(zoom || 100) / 100})`,
+          transform: `scale(${zoom / 100})`,
           transformOrigin: "top center",
           transition: "transform 0.15s ease-out",
           display: "flex",
@@ -467,7 +467,6 @@ const DocumentPage = memo(function DocumentPage({
               </div>
               <div className="signature-block">Authorized Signature</div>
             </div>
-            {/* تھینکس فار یور بزنس اور اس کے نیچے بلیک بارڈر کی لائن */}
             <div
               className="thank-you"
               style={{
