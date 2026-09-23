@@ -16,7 +16,7 @@ interface Props {
 export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
-  const capacity = PAPER_SIZES[paperSize].rows;
+  const capacity = PAPER_SIZES[paperSize].rows || 14;
 
   const pages = useMemo(() => {
     const chunks: LineItem[][] = [];
@@ -86,7 +86,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
 
   return (
     <div className="document-paper-wrapper" style={{ position: "relative", width: "100%" }}>
-      {/* Floating Control Toolbar */}
+      {/* Floating Toolbar */}
       <div
         className="no-print"
         style={{
@@ -227,7 +227,8 @@ const DocumentPage = memo(function DocumentPage({
   removeItem,
   addItem,
 }: PageProps) {
-  const isFirstPage = pageIndex === 0; // صرف اور صرف پہلا صفحہ
+  const isFirstPage = pageIndex === 0;
+  const isLastPage = pageIndex === pageCount - 1;
   const isTax = docType === "tax";
   const isChallan = docType === "dc";
   const isQuotation = docType === "quotation";
@@ -251,108 +252,99 @@ const DocumentPage = memo(function DocumentPage({
       <div className="top-accent" />
       <div className="document-content">
         
-        {/* ۱. ہیڈر (Page 1 پر مکمل Bill To اور Details، باقی تمام صفحات پر مختصر Header) */}
-        {isFirstPage ? (
-          <>
-            <header className="document-header">
-              <img src={logoMark} alt="8 Ways Communications" className="document-logo" />
-            </header>
+        {/* ہر پیج پر ہیڈر اور بل ٹو کی تمام تفصیلات موجود ہوں گی */}
+        <header className="document-header">
+          <img src={logoMark} alt="8 Ways Communications" className="document-logo" style={!isFirstPage ? { height: "32px" } : undefined} />
+        </header>
 
-            <section className="identity-grid">
-              <div className="bill-to">
-                <h2>Bill To</h2>
+        <section className="identity-grid">
+          <div className="bill-to">
+            <h2>Bill To</h2>
+            <TextField
+              value={state.client.name}
+              onChange={(value) => set("client", { ...state.client, name: value })}
+              placeholder="Client name"
+              ariaLabel="Client name"
+              className="client-name"
+            />
+            <ContactRow icon={Phone}>
+              <TextField
+                value={state.client.phone}
+                onChange={(value) => set("client", { ...state.client, phone: value })}
+                placeholder="Phone number"
+                ariaLabel="Client phone"
+              />
+            </ContactRow>
+            <ContactRow icon={Mail}>
+              <TextField
+                value={state.client.email}
+                onChange={(value) => set("client", { ...state.client, email: value })}
+                placeholder="Email address"
+                ariaLabel="Client email"
+              />
+            </ContactRow>
+            <ContactRow icon={MapPin}>
+              <AreaField
+                value={state.client.address}
+                onChange={(value) => set("client", { ...state.client, address: value })}
+                placeholder="Client address"
+                ariaLabel="Client address"
+              />
+            </ContactRow>
+            <ContactRow icon={Globe2}>
+              <TextField
+                value={state.client.website}
+                onChange={(value) => set("client", { ...state.client, website: value })}
+                placeholder="Website"
+                ariaLabel="Client website"
+              />
+            </ContactRow>
+          </div>
+
+          <div className="document-meta">
+            <div className="meta-grid">
+              <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
                 <TextField
-                  value={state.client.name}
-                  onChange={(value) => set("client", { ...state.client, name: value })}
-                  placeholder="Client name"
-                  ariaLabel="Client name"
-                  className="client-name"
+                  value={state.meta.number}
+                  onChange={(value) => set("meta", { ...state.meta, number: value })}
+                  placeholder="#351-34"
+                  ariaLabel="Document number"
+                  align="right"
                 />
-                <ContactRow icon={Phone}>
+              </MetaRow>
+              <MetaRow label="Document Date">
+                <TextField
+                  value={state.meta.date}
+                  onChange={(value) => set("meta", { ...state.meta, date: value })}
+                  placeholder="DD/MM/YYYY"
+                  ariaLabel="Document date"
+                  align="right"
+                />
+              </MetaRow>
+              {!isChallan && (
+                <MetaRow label={isQuotation ? "Valid Until" : "Due Date"}>
                   <TextField
-                    value={state.client.phone}
-                    onChange={(value) => set("client", { ...state.client, phone: value })}
-                    placeholder="Phone number"
-                    ariaLabel="Client phone"
+                    value={isQuotation ? state.meta.validUntil : state.meta.dueDate}
+                    onChange={(value) =>
+                      set("meta", {
+                        ...state.meta,
+                        [isQuotation ? "validUntil" : "dueDate"]: value,
+                      })
+                    }
+                    placeholder="DD/MM/YYYY"
+                    ariaLabel={isQuotation ? "Valid until" : "Due date"}
+                    align="right"
                   />
-                </ContactRow>
-                <ContactRow icon={Mail}>
-                  <TextField
-                    value={state.client.email}
-                    onChange={(value) => set("client", { ...state.client, email: value })}
-                    placeholder="Email address"
-                    ariaLabel="Client email"
-                  />
-                </ContactRow>
-                <ContactRow icon={MapPin}>
-                  <AreaField
-                    value={state.client.address}
-                    onChange={(value) => set("client", { ...state.client, address: value })}
-                    placeholder="Client address"
-                    ariaLabel="Client address"
-                  />
-                </ContactRow>
-                <ContactRow icon={Globe2}>
-                  <TextField
-                    value={state.client.website}
-                    onChange={(value) => set("client", { ...state.client, website: value })}
-                    placeholder="Website"
-                    ariaLabel="Client website"
-                  />
-                </ContactRow>
-              </div>
+                </MetaRow>
+              )}
+            </div>
+            <h1 className={`document-title document-title-${docType}`}>
+              {DOC_LABELS[docType]} {!isFirstPage ? `- Page ${pageIndex + 1}` : ""}
+            </h1>
+          </div>
+        </section>
 
-              <div className="document-meta">
-                <div className="meta-grid">
-                  <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
-                    <TextField
-                      value={state.meta.number}
-                      onChange={(value) => set("meta", { ...state.meta, number: value })}
-                      placeholder="#351-34"
-                      ariaLabel="Document number"
-                      align="right"
-                    />
-                  </MetaRow>
-                  <MetaRow label="Document Date">
-                    <TextField
-                      value={state.meta.date}
-                      onChange={(value) => set("meta", { ...state.meta, date: value })}
-                      placeholder="DD/MM/YYYY"
-                      ariaLabel="Document date"
-                      align="right"
-                    />
-                  </MetaRow>
-                  {!isChallan && (
-                    <MetaRow label={isQuotation ? "Valid Until" : "Due Date"}>
-                      <TextField
-                        value={isQuotation ? state.meta.validUntil : state.meta.dueDate}
-                        onChange={(value) =>
-                          set("meta", {
-                            ...state.meta,
-                            [isQuotation ? "validUntil" : "dueDate"]: value,
-                          })
-                        }
-                        placeholder="DD/MM/YYYY"
-                        ariaLabel={isQuotation ? "Valid until" : "Due date"}
-                        align="right"
-                      />
-                    </MetaRow>
-                  )}
-                </div>
-                <h1 className={`document-title document-title-${docType}`}>{DOC_LABELS[docType]}</h1>
-              </div>
-            </section>
-          </>
-        ) : (
-          <header className="document-header" style={{ paddingBottom: "16px", marginBottom: "20px", borderBottom: "1px solid #e2e8f0" }}>
-            <img src={logoMark} alt="8 Ways Communications" className="document-logo" style={{ height: "32px" }} />
-            <span style={{ fontSize: "14px", fontWeight: "bold", color: "#64748b" }}>
-              {DOC_LABELS[docType]} - Page {pageIndex + 1}
-            </span>
-          </header>
-        )}
-
-        {/* ۲. بلیو لائن سے اوپر کا تمام مواد (تمام صفحات پر آئٹمز والا ٹیبل رہے گا) */}
+        {/* آئٹمز ٹیبل */}
         <section className="items-section">
           <table>
             <thead>
@@ -419,7 +411,7 @@ const DocumentPage = memo(function DocumentPage({
           </Button>
         </section>
 
-        {/* ۳. بلیو لائن سے اوپر کا Totals حصہ (تمام صفحات ۲، ۳، ۴... وغیرہ پر بھی موجود رہے گا) */}
+        {/* Totals ہر پیج پر شو ہوں گے */}
         {showAmounts && (
           <section className="totals">
             <div className="total-row">
@@ -443,7 +435,7 @@ const DocumentPage = memo(function DocumentPage({
           </section>
         )}
 
-        {/* ۴. بلیو لائن کے نیچے والا تمام حصہ (Terms, Payment Info) - صرف فرنٹ پیج (isFirstPage) پر ہو گا */}
+        {/* Terms & Conditions اور Thank You صرف فرنٹ پیج پر */}
         {isFirstPage && (
           <section className="closing-content">
             <div className="terms-block">
@@ -469,7 +461,7 @@ const DocumentPage = memo(function DocumentPage({
         )}
       </div>
 
-      {/* ۵. سیاہ فوٹر بار (Footer) - صرف فرنٹ پیج (isFirstPage) پر ہو گا */}
+      {/* Footer صرف فرنٹ پیج پر */}
       {isFirstPage && (
         <footer className="document-footer">
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
