@@ -41,28 +41,43 @@ const DocumentPage = memo(function DocumentPage({ docType, state, setState, item
     </div>{last && <footer className="document-footer">
       <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
         <MapPin size={18} style={{ flexShrink: 0 }} />
-        <textarea
-          value={state.footer.address}
-          onChange={(e) => set("footer", { ...state.footer, address: e.target.value })}
-          placeholder="Business address"
-          aria-label="Business address"
-          rows={1}
+        <div
           style={{
+            display: "grid",
             width: "100%",
-            background: "transparent",
-            border: "none",
-            outline: "none",
-            resize: "none",
-            color: "inherit",
-            fontFamily: "inherit",
-            fontSize: "11px",
-            lineHeight: "1.2",
-            padding: "0",
-            margin: "0",
-            display: "block",
-            overflow: "hidden"
+            alignItems: "center"
           }}
-        />
+        >
+          {/* یہ خودکار آٹو سائزنگ اور مڈل الائنمنٹ کے لیے بہترین تکنیک ہے */}
+          <textarea
+            value={state.footer.address}
+            onChange={(e) => set("footer", { ...state.footer, address: e.target.value })}
+            placeholder="Business address"
+            aria-label="Business address"
+            rows={1}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = "auto";
+              target.style.height = `${target.scrollHeight}px`;
+            }}
+            style={{
+              gridArea: "1 / 1 / 2 / 2",
+              width: "100%",
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              resize: "none",
+              color: "inherit",
+              fontFamily: "inherit",
+              fontSize: "inherit",
+              lineHeight: "1.2",
+              padding: "0",
+              margin: "0",
+              alignSelf: "center",
+              overflow: "hidden"
+            }}
+          />
+        </div>
       </div>
       <FooterField icon={Phone}><TextField value={state.footer.phone} onChange={(value) => set("footer", { ...state.footer, phone: value })} placeholder="Phone" ariaLabel="Business phone"/></FooterField>
       <FooterField icon={Mail}><TextField value={state.footer.email} onChange={(value) => set("footer", { ...state.footer, email: value })} placeholder="Email" ariaLabel="Business email"/></FooterField>
