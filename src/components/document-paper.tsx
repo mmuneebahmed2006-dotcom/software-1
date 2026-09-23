@@ -16,18 +16,15 @@ interface Props {
 export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
-  const firstPageCapacity = 10; // پہلے صفحے پر صرف 10 لائنیں
-  const laterPageCapacity = PAPER_SIZES[paperSize].rows || 14; // اگلے صفحات کے لیے
+  const firstPageCapacity = 8; // پہلے صفحے پر بالکل محفوظ 8 لائنیں تاکہ Thanks for your business نہ کٹے
+  const laterPageCapacity = PAPER_SIZES[paperSize].rows || 14;
 
   const pages = useMemo(() => {
     const chunks: LineItem[][] = [];
     if (state.items.length === 0) {
       chunks.push([]);
     } else {
-      // پہلا حصہ: پہلے صفحے کے لیے صرف 10 آئٹمز
       chunks.push(state.items.slice(0, firstPageCapacity));
-      
-      // باقی آئٹمز کے لیے اگلے صفحات
       let remainingIndex = firstPageCapacity;
       while (remainingIndex < state.items.length) {
         chunks.push(state.items.slice(remainingIndex, remainingIndex + laterPageCapacity));
@@ -92,7 +89,6 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
     }
   };
 
-  // ہر صفحے پر آئٹم کا صحیح نمبر (Index) نکالنے کا حساب
   const getItemOffset = (pageIdx: number) => {
     if (pageIdx === 0) return 0;
     let offset = firstPageCapacity;
@@ -245,7 +241,7 @@ const DocumentPage = memo(function DocumentPage({
   removeItem,
   addItem,
 }: PageProps) {
-  const isFirstPage = pageIndex === 0; // صرف پہلا صفحہ
+  const isFirstPage = pageIndex === 0;
   const isTax = docType === "tax";
   const isChallan = docType === "dc";
   const isQuotation = docType === "quotation";
@@ -269,7 +265,7 @@ const DocumentPage = memo(function DocumentPage({
       <div className="top-accent" />
       <div className="document-content">
         
-        {/* ہر پیج پر ہیڈر اور بل ٹو کی مکمل تفصیلات */}
+        {/* ہیڈر اور لوگو */}
         <header className="document-header">
           <img src={logoMark} alt="8 Ways Communications" className="document-logo" />
         </header>
@@ -355,8 +351,9 @@ const DocumentPage = memo(function DocumentPage({
                 </MetaRow>
               )}
             </div>
+            {/* عنوان اب بالکل صاف ستھرا رہے گا، کوئی سلیش یا پیج کا لفظ نہیں کٹے گا */}
             <h1 className={`document-title document-title-${docType}`}>
-              {DOC_LABELS[docType]} {!isFirstPage ? `- Page ${pageIndex + 1}` : ""}
+              {DOC_LABELS[docType]}
             </h1>
           </div>
         </section>
@@ -428,7 +425,7 @@ const DocumentPage = memo(function DocumentPage({
           </Button>
         </section>
 
-        {/* Totals ہر پیج پر شو ہوں گے */}
+        {/* Totals */}
         {showAmounts && (
           <section className="totals">
             <div className="total-row">
@@ -452,7 +449,7 @@ const DocumentPage = memo(function DocumentPage({
           </section>
         )}
 
-        {/* Terms & Conditions اور Thank You صرف اور صرف فرنٹ پیج پر آئیں گے */}
+        {/* Terms & Conditions اور Thank You اب بالکل واضح اور صحیح جگہ پر نظر آئیں گے */}
         {isFirstPage && (
           <section className="closing-content">
             <div className="terms-block">
@@ -478,7 +475,7 @@ const DocumentPage = memo(function DocumentPage({
         )}
       </div>
 
-      {/* Footer صرف اور صرف فرنٹ پیج پر آئے گا */}
+      {/* Footer صرف فرنٹ پیج پر */}
       {isFirstPage && (
         <footer className="document-footer">
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
