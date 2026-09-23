@@ -16,26 +16,21 @@ interface Props {
 export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
-  const firstPageCapacity = 15; // 15 lines exact for single page fitting
-  const laterPageCapacity = PAPER_SIZES[paperSize].rows || 15;
+  const capacity = PAPER_SIZES[paperSize].rows || 15;
 
   const pages = useMemo(() => {
     const chunks: LineItem[][] = [];
-    if (state.items.length === 0) {
+    for (let index = 0; index < state.items.length; index += capacity) {
+      chunks.push(state.items.slice(index, index + capacity));
+    }
+    if (chunks.length === 0) {
       chunks.push([]);
-    } else {
-      chunks.push(state.items.slice(0, firstPageCapacity));
-      let remainingIndex = firstPageCapacity;
-      while (remainingIndex < state.items.length) {
-        chunks.push(state.items.slice(remainingIndex, remainingIndex + laterPageCapacity));
-        remainingIndex += laterPageCapacity;
-      }
     }
     while (chunks.length < state.minimumPages) {
       chunks.push([]);
     }
     return chunks;
-  }, [state.items, state.minimumPages, laterPageCapacity]);
+  }, [capacity, state.items, state.minimumPages]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -87,15 +82,6 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
     if (pageElem) {
       pageElem.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  };
-
-  const getItemOffset = (pageIdx: number) => {
-    if (pageIdx === 0) return 0;
-    let offset = firstPageCapacity;
-    for (let i = 1; i < pageIdx; i++) {
-      offset += laterPageCapacity;
-    }
-    return offset;
   };
 
   return (
@@ -202,7 +188,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
             state={state}
             setState={setState}
             items={items}
-            itemOffset={getItemOffset(pageIndex)}
+            itemOffset={pageIndex * capacity}
             pageIndex={pageIndex}
             pageCount={pages.length}
             paperStyle={paperStyle}
@@ -263,17 +249,17 @@ const DocumentPage = memo(function DocumentPage({
       data-pdf-page
     >
       <div className="top-accent" />
-      <div className="document-content" style={{ paddingBottom: "6px" }}>
+      <div className="document-content">
         
-        {/* Header & Logo */}
-        <header className="document-header" style={{ marginBottom: "2px" }}>
-          <img src={logoMark} alt="PrintMark" className="document-logo" style={{ maxHeight: "35px" }} />
+        {/* Original Header */}
+        <header className="document-header">
+          <img src={logoMark} alt="Logo" className="document-logo" />
         </header>
 
-        {/* Identity Grid - Original Layout with 1pt reduced size */}
-        <section className="identity-grid" style={{ marginBottom: "2px", gap: "8px" }}>
-          <div className="bill-to" style={{ fontSize: "10px" }}>
-            <h2 style={{ fontSize: "11px", marginBottom: "1px" }}>BILL TO</h2>
+        {/* Original Identity Grid */}
+        <section className="identity-grid">
+          <div className="bill-to">
+            <h2>Bill To</h2>
             <TextField
               value={state.client.name}
               onChange={(value) => set("client", { ...state.client, name: value })}
@@ -316,50 +302,57 @@ const DocumentPage = memo(function DocumentPage({
           </div>
 
           <div className="document-meta">
-            <div className="meta-grid" style={{ fontSize: "10px", gap: "1px" }}>
+            <div className="meta-grid">
               <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
                 <TextField
                   value={state.meta.number}
                   onChange={(value) => set("meta", { ...state.meta, number: value })}
-                  placeholder="Invoice #"
+                  placeholder="#351-34"
                   ariaLabel="Document number"
                   align="right"
                 />
               </MetaRow>
-              <MetaRow label="Account">
-                <TextField
-                  value={state.meta.account || ""}
-                  onChange={(value) => set("meta", { ...state.meta, account: value })}
-                  placeholder="Account"
-                  ariaLabel="Account number"
-                  align="right"
-                />
-              </MetaRow>
-              <MetaRow label="Date">
+              <MetaRow label="Document Date">
                 <TextField
                   value={state.meta.date}
                   onChange={(value) => set("meta", { ...state.meta, date: value })}
-                  placeholder="Date"
+                  placeholder="DD/MM/YYYY"
                   ariaLabel="Document date"
                   align="right"
                 />
               </MetaRow>
+              {!isChallan && (
+                <MetaRow label={isQuotation ? "Valid Until" : "Due Date"}>
+                  <TextField
+                    value={isQuotation ? state.meta.validUntil : state.meta.dueDate}
+                    onChange={(value) =>
+                      set("meta", {
+                        ...state.meta,
+                        [isQuotation ? "validUntil" : "dueDate"]: value,
+                      })
+                    }
+                    placeholder="DD/MM/YYYY"
+                    ariaLabel={isQuotation ? "Valid until" : "Due date"}
+                    align="right"
+                  />
+                </MetaRow>
+              )}
             </div>
-            <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "20px", marginTop: "2px" }}>
+            <h1 className={`document-title document-title-${docType}`}>
               {DOC_LABELS[docType]}
             </h1>
           </div>
         </section>
 
-        {/* Items Table - Exactly 15 Lines Fit */}
-        <section className="items-section" style={{ marginBottom: "2px" }}>
-          <table style={{ fontSize: "10px" }}>
+        {/* Original Items Table */}
+        <section className="items-section">
+          <table>
             <thead>
               <tr>
-                <th className="number-col" style={{ width: "28px" }}>NO</th>
+                <th className="number-col">No</th>
                 <th>Description</th>
-                <th className="unit-col" style={{ width: "40px" }}>Unit</th>
-                <th className="qty-col" style={{ width: "40px" }}>QTY</th>
+                <th className="unit-col">Unit</th>
+                <th className="qty-col">Qty</th>
                 {showAmounts && <th className="unit-price-col">Unit Price</th>}
                 {showAmounts && <th className="amount-col">Amount</th>}
                 <th className="no-print action-col" />
@@ -368,13 +361,13 @@ const DocumentPage = memo(function DocumentPage({
             <tbody>
               {items.length > 0 ? (
                 items.map((item, index) => (
-                  <tr key={item.id} style={{ height: isFirstPage ? "18px" : "auto" }}>
+                  <tr key={item.id}>
                     <td className="number-col">{itemOffset + index + 1}</td>
                     <td className="description-col">
                       <AreaField
                         value={item.description}
                         onChange={(value) => updateItem(item.id, { description: value })}
-                        placeholder=""
+                        placeholder="Item or service description"
                         ariaLabel={`Description for row ${itemOffset + index + 1}`}
                       />
                     </td>
@@ -382,7 +375,7 @@ const DocumentPage = memo(function DocumentPage({
                       <TextField
                         value={item.unit}
                         onChange={(value) => updateItem(item.id, { unit: value })}
-                        placeholder=""
+                        placeholder="pcs"
                         ariaLabel="Unit"
                         align="center"
                       />
@@ -405,7 +398,7 @@ const DocumentPage = memo(function DocumentPage({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={showAmounts ? 7 : 5} style={{ textAlign: "center", padding: "10px", color: "#94a3b8" }}>
+                  <td colSpan={showAmounts ? 7 : 5} style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}>
                     Continuation Page {pageIndex + 1}
                   </td>
                 </tr>
@@ -418,75 +411,61 @@ const DocumentPage = memo(function DocumentPage({
           </Button>
         </section>
 
-        {/* Totals & Payment Info Layout */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", marginBottom: "2px" }}>
-          <div style={{ flex: 1 }}>
-            <div className="payment-info" style={{ padding: "3px 6px", fontSize: "10px", marginBottom: "2px" }}>
+        {/* Original Totals */}
+        {showAmounts && (
+          <section className="totals">
+            <div className="total-row">
+              <span>Sub Total</span>
+              <strong>{money(subtotal, state.currency)}</strong>
+            </div>
+            <div className="total-row">
+              <span>
+                {isTax ? "Sales Tax" : "Taxes"}
+                <span className="tax-editor">
+                  {" "}
+                  (<NumberField value={state.taxRate} onChange={(value) => set("taxRate", value)} ariaLabel="Tax rate percent" />%)
+                </span>
+              </span>
+              <strong>{money(taxAmount, state.currency)}</strong>
+            </div>
+            <div className="total-banner">
+              <span>{isQuotation ? "Estimate" : "Total"}</span>
+              <strong>{money(total, state.currency)}</strong>
+            </div>
+          </section>
+        )}
+
+        {/* Original Closing Content */}
+        {isFirstPage && (
+          <section className="closing-content">
+            <div className="terms-block">
+              <h3>Terms &amp; Conditions</h3>
+              <AreaField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
+            </div>
+            <div className="payment-info">
               <div className="payment-details">
                 <strong>Payment Info</strong>
                 <AreaField
                   value={state.paymentInfo}
                   onChange={(value) => set("paymentInfo", value)}
-                  placeholder="Payment instructions..."
+                  placeholder="Bank, account, or payment instructions"
                   ariaLabel="Payment information"
                 />
               </div>
+              <div className="signature-block">Authorized Signature</div>
             </div>
-            <div style={{ fontSize: "10px", fontWeight: "bold", marginTop: "8px" }}>
-              <span>Signature</span>
-              <div style={{ borderBottom: "1px solid #000000", width: "150px", marginTop: "10px" }} />
-            </div>
-          </div>
-
-          {showAmounts && (
-            <section className="totals" style={{ fontSize: "10px", width: "200px", margin: 0 }}>
-              <div className="total-row" style={{ padding: "1px 0" }}>
-                <span>Sub Total</span>
-                <strong>{money(subtotal, state.currency)}</strong>
-              </div>
-              <div className="total-row" style={{ padding: "1px 0" }}>
-                <span>
-                  {isTax ? "Sales Tax" : "Taxes"}
-                  <span className="tax-editor">
-                    {" "}
-                    (<NumberField value={state.taxRate} onChange={(value) => set("taxRate", value)} ariaLabel="Tax rate percent" />%)
-                  </span>
-                </span>
-                <strong>{money(taxAmount, state.currency)}</strong>
-              </div>
-              <div className="total-banner" style={{ padding: "2px 6px", marginTop: "2px" }}>
-                <span style={{ fontWeight: "bold" }}>TOTAL</span>
-                <strong>{money(total, state.currency)}</strong>
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* Closing Thank You */}
-        {isFirstPage && (
-          <section className="closing-content" style={{ marginTop: "2px" }}>
-            <div
-              className="thank-you"
-              style={{
-                textAlign: "center",
-                fontWeight: "bold",
-                fontSize: "12px",
-                paddingBottom: "3px",
-                borderBottom: "2px solid #000000",
-                marginBottom: "2px",
-              }}
-            >
-              <span>{isChallan ? "Received in Good Order" : "Thanks for your business"}</span>
+            <div className="thank-you">
+              <span>{isChallan ? "Received in Good Order" : "Thanks for your Business!"}</span>
             </div>
           </section>
         )}
       </div>
 
-      {/* Footer */}
+      {/* Original Footer */}
       {isFirstPage && (
-        <footer className="document-footer" style={{ padding: "3px 16px" }}>
+        <footer className="document-footer">
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
-            <MapPin size={16} style={{ flexShrink: 0 }} />
+            <MapPin size={18} style={{ flexShrink: 0 }} />
             <textarea
               value={state.footer.address}
               onChange={(e) => set("footer", { ...state.footer, address: e.target.value })}
@@ -495,8 +474,8 @@ const DocumentPage = memo(function DocumentPage({
               rows={1}
               style={{
                 width: "100%",
-                height: "1.2em",
-                minHeight: "1.2em",
+                height: "1.3em",
+                minHeight: "1.3em",
                 background: "transparent",
                 border: "none",
                 outline: "none",
@@ -504,7 +483,7 @@ const DocumentPage = memo(function DocumentPage({
                 color: "inherit",
                 fontFamily: "inherit",
                 fontSize: "inherit",
-                lineHeight: "1.2",
+                lineHeight: "1.3",
                 padding: "0",
                 margin: "0",
                 display: "block",
@@ -529,7 +508,7 @@ const DocumentPage = memo(function DocumentPage({
 });
 
 function ContactRow({ icon: Icon, children }: { icon: typeof Phone; children: React.ReactNode }) {
-  return <div className="contact-row" style={{ marginBottom: "1px" }}><Icon size={12} />{children}</div>;
+  return <div className="contact-row"><Icon size={14} />{children}</div>;
 }
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -537,5 +516,5 @@ function MetaRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 function FooterFooterField({ icon: Icon, children }: { icon: typeof Phone; children: React.ReactNode }) {
-  return <div className="footer-field" style={{ display: "flex", alignItems: "center" }}><Icon size={16} />{children}</div>;
+  return <div className="footer-field" style={{ display: "flex", alignItems: "center" }}><Icon size={18} />{children}</div>;
 }
