@@ -258,14 +258,14 @@ const DocumentPage = memo(function DocumentPage({
         <div>
           {/* Header & Logo - Bada Logo */}
           <header className="document-header" style={{ marginBottom: "2px" }}>
-            <img src={logoMark} alt="Logo" className="document-logo" style={{ maxHeight: "42px" }} />
+            <img src={logoMark} alt="Logo" className="document-logo" style={{ maxHeight: "68px" }} />
           </header>
 
           {/* Identity Grid */}
           <section className="identity-grid" style={{ marginBottom: "2px", gap: "8px" }}>
             <div className="bill-to">
               {/* BILL TO - Bada */}
-              <h2 style={{ fontSize: "15px", fontWeight: "bold", marginBottom: "2px" }}>BILL TO</h2>
+              <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "2px" }}>BILL TO</h2>
               {/* Client details - 1 point smaller */}
               <TextField
                 value={state.client.name}
@@ -355,7 +355,7 @@ const DocumentPage = memo(function DocumentPage({
                 )}
               </div>
               {/* INVOICE Title - Bada */}
-              <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "24px", fontWeight: "bold", marginTop: "2px" }}>
+              <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "26px", fontWeight: 600, marginTop: "2px" }}>
                 {DOC_LABELS[docType]}
               </h1>
             </div>
