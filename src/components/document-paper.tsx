@@ -253,200 +253,211 @@ const DocumentPage = memo(function DocumentPage({
       data-pdf-page
     >
       <div className="top-accent" />
-      <div className="document-content" style={{ paddingBottom: "4px" }}>
+      {/* document-content ko flex column aur space-between de diya hai taaki bottom items bilkul neechay chale jayen */}
+      <div className="document-content" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", paddingBottom: "10px" }}>
         
-        {/* Header & Logo */}
-        <header className="document-header" style={{ marginBottom: "2px" }}>
-          <img src={logoMark} alt="Logo" className="document-logo" style={{ maxHeight: "33px" }} />
-        </header>
+        <div>
+          {/* Header & Logo */}
+          <header className="document-header" style={{ marginBottom: "2px" }}>
+            <img src={logoMark} alt="Logo" className="document-logo" style={{ maxHeight: "30px" }} />
+          </header>
 
-        {/* Identity Grid (Bill To & Invoice) - Just 1 point adjusted for 15 lines fit */}
-        <section className="identity-grid" style={{ marginBottom: "4px", gap: "10px" }}>
-          <div className="bill-to" style={{ fontSize: "10px" }}>
-            <h2 style={{ fontSize: "11px", marginBottom: "1px" }}>BILL TO</h2>
-            <TextField
-              value={state.client.name}
-              onChange={(value) => set("client", { ...state.client, name: value })}
-              placeholder="Client name"
-              ariaLabel="Client name"
-              className="client-name"
-            />
-            <ContactRow icon={Phone}>
+          {/* Identity Grid: Bill To & Invoice Meta */}
+          <section className="identity-grid" style={{ marginBottom: "2px", gap: "8px" }}>
+            <div className="bill-to" style={{ fontSize: "9.5px" }}>
+              <h2 style={{ fontSize: "12px", marginBottom: "2px", fontWeight: "bold" }}>BILL TO</h2>
               <TextField
-                value={state.client.phone}
-                onChange={(value) => set("client", { ...state.client, phone: value })}
-                placeholder="Phone number"
-                ariaLabel="Client phone"
+                value={state.client.name}
+                onChange={(value) => set("client", { ...state.client, name: value })}
+                placeholder="Client name"
+                ariaLabel="Client name"
+                className="client-name"
+                style={{ fontSize: "10px" }}
               />
-            </ContactRow>
-            <ContactRow icon={Mail}>
-              <TextField
-                value={state.client.email}
-                onChange={(value) => set("client", { ...state.client, email: value })}
-                placeholder="Email address"
-                ariaLabel="Client email"
-              />
-            </ContactRow>
-            <ContactRow icon={MapPin}>
-              <AreaField
-                value={state.client.address}
-                onChange={(value) => set("client", { ...state.client, address: value })}
-                placeholder="Client address"
-                ariaLabel="Client address"
-              />
-            </ContactRow>
-            <ContactRow icon={Globe2}>
-              <TextField
-                value={state.client.website}
-                onChange={(value) => set("client", { ...state.client, website: value })}
-                placeholder="Website"
-                ariaLabel="Client website"
-              />
-            </ContactRow>
-          </div>
+              <ContactRow icon={Phone}>
+                <TextField
+                  value={state.client.phone}
+                  onChange={(value) => set("client", { ...state.client, phone: value })}
+                  placeholder="Phone number"
+                  ariaLabel="Client phone"
+                  style={{ fontSize: "9.5px" }}
+                />
+              </ContactRow>
+              <ContactRow icon={Mail}>
+                <TextField
+                  value={state.client.email}
+                  onChange={(value) => set("client", { ...state.client, email: value })}
+                  placeholder="Email address"
+                  ariaLabel="Client email"
+                  style={{ fontSize: "9.5px" }}
+                />
+              </ContactRow>
+              <ContactRow icon={MapPin}>
+                <AreaField
+                  value={state.client.address}
+                  onChange={(value) => set("client", { ...state.client, address: value })}
+                  placeholder="Client address"
+                  ariaLabel="Client address"
+                  style={{ fontSize: "9.5px" }}
+                />
+              </ContactRow>
+              <ContactRow icon={Globe2}>
+                <TextField
+                  value={state.client.website}
+                  onChange={(value) => set("client", { ...state.client, website: value })}
+                  placeholder="Website"
+                  ariaLabel="Client website"
+                  style={{ fontSize: "9.5px" }}
+                />
+              </ContactRow>
+            </div>
 
-          <div className="document-meta">
-            <div className="meta-grid" style={{ fontSize: "10px", gap: "1px" }}>
-              <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
-                <TextField
-                  value={state.meta.number}
-                  onChange={(value) => set("meta", { ...state.meta, number: value })}
-                  placeholder="#351-34"
-                  ariaLabel="Document number"
-                  align="right"
-                />
-              </MetaRow>
-              <MetaRow label="Document Date">
-                <TextField
-                  value={state.meta.date}
-                  onChange={(value) => set("meta", { ...state.meta, date: value })}
-                  placeholder="DD/MM/YYYY"
-                  ariaLabel="Document date"
-                  align="right"
-                />
-              </MetaRow>
-              {!isChallan && (
-                <MetaRow label={isQuotation ? "Valid Until" : "Due Date"}>
+            <div className="document-meta">
+              <div className="meta-grid" style={{ fontSize: "9.5px", gap: "1px" }}>
+                <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
                   <TextField
-                    value={isQuotation ? state.meta.validUntil : state.meta.dueDate}
-                    onChange={(value) =>
-                      set("meta", {
-                        ...state.meta,
-                        [isQuotation ? "validUntil" : "dueDate"]: value,
-                      })
-                    }
-                    placeholder="DD/MM/YYYY"
-                    ariaLabel={isQuotation ? "Valid until" : "Due date"}
+                    value={state.meta.number}
+                    onChange={(value) => set("meta", { ...state.meta, number: value })}
+                    placeholder="#351-34"
+                    ariaLabel="Document number"
                     align="right"
+                    style={{ fontSize: "9.5px" }}
                   />
                 </MetaRow>
-              )}
-            </div>
-            <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "20px", marginTop: "2px" }}>
-              {DOC_LABELS[docType]}
-            </h1>
-          </div>
-        </section>
-
-        {/* Items Table - Exactly 15 Lines */}
-        <section className="items-section" style={{ marginBottom: "4px" }}>
-          <table style={{ fontSize: "10px" }}>
-            <thead>
-              <tr>
-                <th className="number-col">No</th>
-                <th>Description</th>
-                <th className="unit-col">Unit</th>
-                <th className="qty-col">Qty</th>
-                {showAmounts && <th className="unit-price-col">Unit Price</th>}
-                {showAmounts && <th className="amount-col">Amount</th>}
-                <th className="no-print action-col" />
-              </tr>
-            </thead>
-            <tbody>
-              {items.length > 0 ? (
-                items.map((item, index) => (
-                  <tr key={item.id} style={{ height: "18px" }}>
-                    <td className="number-col">{itemOffset + index + 1}</td>
-                    <td className="description-col">
-                      <AreaField
-                        value={item.description}
-                        onChange={(value) => updateItem(item.id, { description: value })}
-                        placeholder="Item or service description"
-                        ariaLabel={`Description for row ${itemOffset + index + 1}`}
-                      />
-                    </td>
-                    <td className="unit-col">
-                      <TextField
-                        value={item.unit}
-                        onChange={(value) => updateItem(item.id, { unit: value })}
-                        placeholder="pcs"
-                        ariaLabel="Unit"
-                        align="center"
-                      />
-                    </td>
-                    <td className="qty-col">
-                      <NumberField value={item.qty} onChange={(value) => updateItem(item.id, { qty: value })} ariaLabel="Quantity" />
-                    </td>
-                    {showAmounts && (
-                      <td className="unit-price-col unit-price">
-                        <NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel="Unit price" step={0.01} />
-                      </td>
-                    )}
-                    {showAmounts && <td className="amount-col line-total">{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
-                    <td className="no-print action-col">
-                      <Button type="button" size="icon" variant="danger" onClick={() => removeItem(item.id)} aria-label="Remove row">
-                        <Trash2 size={14} />
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={showAmounts ? 7 : 5} style={{ textAlign: "center", padding: "15px", color: "#94a3b8" }}>
-                    Continuation Page {pageIndex + 1}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          <Button type="button" variant="ghost" className="no-print add-line" onClick={addItem}>
-            <Plus size={14} /> Add line item
-          </Button>
-        </section>
-
-        {/* Totals */}
-        {showAmounts && (
-          <section className="totals" style={{ fontSize: "10px", marginBottom: "4px" }}>
-            <div className="total-row" style={{ padding: "1px 0" }}>
-              <span>Sub Total</span>
-              <strong>{money(subtotal, state.currency)}</strong>
-            </div>
-            <div className="total-row" style={{ padding: "1px 0" }}>
-              <span>
-                {isTax ? "Sales Tax" : "Taxes"}
-                <span className="tax-editor">
-                  {" "}
-                  (<NumberField value={state.taxRate} onChange={(value) => set("taxRate", value)} ariaLabel="Tax rate percent" />%)
-                </span>
-              </span>
-              <strong>{money(taxAmount, state.currency)}</strong>
-            </div>
-            <div className="total-banner" style={{ padding: "3px 6px" }}>
-              <span>{isQuotation ? "Estimate" : "Total"}</span>
-              <strong>{money(total, state.currency)}</strong>
+                <MetaRow label="Document Date">
+                  <TextField
+                    value={state.meta.date}
+                    onChange={(value) => set("meta", { ...state.meta, date: value })}
+                    placeholder="DD/MM/YYYY"
+                    ariaLabel="Document date"
+                    align="right"
+                    style={{ fontSize: "9.5px" }}
+                  />
+                </MetaRow>
+                {!isChallan && (
+                  <MetaRow label={isQuotation ? "Valid Until" : "Due Date"}>
+                    <TextField
+                      value={isQuotation ? state.meta.validUntil : state.meta.dueDate}
+                      onChange={(value) =>
+                        set("meta", {
+                          ...state.meta,
+                          [isQuotation ? "validUntil" : "dueDate"]: value,
+                        })
+                      }
+                      placeholder="DD/MM/YYYY"
+                      ariaLabel={isQuotation ? "Valid until" : "Due date"}
+                      align="right"
+                      style={{ fontSize: "9.5px" }}
+                    />
+                  </MetaRow>
+                )}
+              </div>
+              <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "20px", marginTop: "2px", fontWeight: "bold" }}>
+                {DOC_LABELS[docType]}
+              </h1>
             </div>
           </section>
-        )}
 
-        {/* Closing Content (Terms, Payment Info, Thanks at Bottom) */}
+          {/* Items Table - Exactly 15 Lines Perfect Fit */}
+          <section className="items-section" style={{ marginBottom: "2px" }}>
+            <table style={{ fontSize: "9.5px" }}>
+              <thead>
+                <tr>
+                  <th className="number-col">No</th>
+                  <th>Description</th>
+                  <th className="unit-col">Unit</th>
+                  <th className="qty-col">Qty</th>
+                  {showAmounts && <th className="unit-price-col">Unit Price</th>}
+                  {showAmounts && <th className="amount-col">Amount</th>}
+                  <th className="no-print action-col" />
+                </tr>
+              </thead>
+              <tbody>
+                {items.length > 0 ? (
+                  items.map((item, index) => (
+                    <tr key={item.id} style={{ height: "16px" }}>
+                      <td className="number-col">{itemOffset + index + 1}</td>
+                      <td className="description-col">
+                        <AreaField
+                          value={item.description}
+                          onChange={(value) => updateItem(item.id, { description: value })}
+                          placeholder="Item or service description"
+                          ariaLabel={`Description for row ${itemOffset + index + 1}`}
+                        />
+                      </td>
+                      <td className="unit-col">
+                        <TextField
+                          value={item.unit}
+                          onChange={(value) => updateItem(item.id, { unit: value })}
+                          placeholder="pcs"
+                          ariaLabel="Unit"
+                          align="center"
+                        />
+                      </td>
+                      <td className="qty-col">
+                        <NumberField value={item.qty} onChange={(value) => updateItem(item.id, { qty: value })} ariaLabel="Quantity" />
+                      </td>
+                      {showAmounts && (
+                        <td className="unit-price-col unit-price">
+                          <NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel="Unit price" step={0.01} />
+                        </td>
+                      )}
+                      {showAmounts && <td className="amount-col line-total">{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
+                      <td className="no-print action-col">
+                        <Button type="button" size="icon" variant="danger" onClick={() => removeItem(item.id)} aria-label="Remove row">
+                          <Trash2 size={13} />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={showAmounts ? 7 : 5} style={{ textAlign: "center", padding: "10px", color: "#94a3b8" }}>
+                      Continuation Page {pageIndex + 1}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+
+            <Button type="button" variant="ghost" className="no-print add-line" onClick={addItem}>
+              <Plus size={13} /> Add line item
+            </Button>
+          </section>
+
+          {/* Totals */}
+          {showAmounts && (
+            <section className="totals" style={{ fontSize: "9.5px", marginBottom: "2px" }}>
+              <div className="total-row" style={{ padding: "1px 0" }}>
+                <span>Sub Total</span>
+                <strong>{money(subtotal, state.currency)}</strong>
+              </div>
+              <div className="total-row" style={{ padding: "1px 0" }}>
+                <span>
+                  {isTax ? "Sales Tax" : "Taxes"}
+                  <span className="tax-editor">
+                    {" "}
+                    (<NumberField value={state.taxRate} onChange={(value) => set("taxRate", value)} ariaLabel="Tax rate percent" />%)
+                  </span>
+                </span>
+                <strong>{money(taxAmount, state.currency)}</strong>
+              </div>
+              <div className="total-banner" style={{ padding: "2px 6px" }}>
+                <span>{isQuotation ? "Estimate" : "Total"}</span>
+                <strong>{money(total, state.currency)}</strong>
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* Closing Content (Terms, Payment Info, Thanks at Bottom properly anchored) */}
         {isFirstPage && (
-          <section className="closing-content" style={{ marginTop: "4px" }}>
-            <div className="terms-block" style={{ marginBottom: "3px", fontSize: "10px" }}>
-              <h3 style={{ fontSize: "10.5px", marginBottom: "1px" }}>Terms &amp; Conditions</h3>
+          <section className="closing-content" style={{ marginTop: "auto", paddingTop: "4px" }}>
+            <div className="terms-block" style={{ marginBottom: "2px", fontSize: "9.5px" }}>
+              <h3 style={{ fontSize: "10px", marginBottom: "1px" }}>Terms &amp; Conditions</h3>
               <AreaField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
             </div>
-            <div className="payment-info" style={{ padding: "3px 6px", marginBottom: "4px", fontSize: "10px" }}>
+            <div className="payment-info" style={{ padding: "2px 6px", marginBottom: "3px", fontSize: "9.5px" }}>
               <div className="payment-details">
                 <strong>Payment Info</strong>
                 <AreaField
@@ -458,7 +469,7 @@ const DocumentPage = memo(function DocumentPage({
               </div>
               <div className="signature-block">Authorized Signature</div>
             </div>
-            <div className="thank-you" style={{ fontSize: "11.5px", paddingBottom: "4px" }}>
+            <div className="thank-you" style={{ fontSize: "11px", paddingBottom: "2px" }}>
               <span>{isChallan ? "Received in Good Order" : "Thanks for your Business!"}</span>
             </div>
           </section>
@@ -467,9 +478,9 @@ const DocumentPage = memo(function DocumentPage({
 
       {/* Footer */}
       {isFirstPage && (
-        <footer className="document-footer" style={{ padding: "4px 16px" }}>
+        <footer className="document-footer" style={{ padding: "3px 16px" }}>
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
-            <MapPin size={16} style={{ flexShrink: 0 }} />
+            <MapPin size={15} style={{ flexShrink: 0 }} />
             <textarea
               value={state.footer.address}
               onChange={(e) => set("footer", { ...state.footer, address: e.target.value })}
@@ -512,7 +523,7 @@ const DocumentPage = memo(function DocumentPage({
 });
 
 function ContactRow({ icon: Icon, children }: { icon: typeof Phone; children: React.ReactNode }) {
-  return <div className="contact-row" style={{ marginBottom: "1px" }}><Icon size={12} />{children}</div>;
+  return <div className="contact-row" style={{ marginBottom: "1px" }}><Icon size={11} />{children}</div>;
 }
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -520,5 +531,5 @@ function MetaRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 function FooterFooterField({ icon: Icon, children }: { icon: typeof Phone; children: React.ReactNode }) {
-  return <div className="footer-field" style={{ display: "flex", alignItems: "center" }}><Icon size={16} />{children}</div>;
+  return <div className="footer-field" style={{ display: "flex", alignItems: "center" }}><Icon size={15} />{children}</div>;
 }
