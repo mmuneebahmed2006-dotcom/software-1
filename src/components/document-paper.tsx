@@ -18,24 +18,21 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
   const [currentPage, setCurrentPage] = useState(1);
   const capacity = PAPER_SIZES[paperSize].rows;
 
-  // Exact Page Splitting: Page 1 hamesha sabse pehle (Top) rahega.
+  // Pages array generation: Front Page is strictly first (index 0)
   const pages = useMemo(() => {
     const chunks: LineItem[][] = [];
     for (let index = 0; index < state.items.length; index += capacity) {
       chunks.push(state.items.slice(index, index + capacity));
     }
-    // ensure front page (index 0) exists
     if (chunks.length === 0) {
       chunks.push([]);
     }
-    // Append additional custom pages to the END (bottom) of array
     while (chunks.length < state.minimumPages) {
       chunks.push([]);
     }
     return chunks;
   }, [capacity, state.items, state.minimumPages]);
 
-  // Active page detection on scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -90,7 +87,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
 
   return (
     <div className="document-paper-wrapper" style={{ position: "relative", width: "100%" }}>
-      {/* Zoom and Page selector toolbar */}
+      {/* Dynamic Floating Toolbar */}
       <div
         className="no-print"
         style={{
@@ -170,7 +167,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
         </Button>
       </div>
 
-      {/* Pages Container - Explicitly Top to Bottom */}
+      {/* Pages Container - Sequentially stacked */}
       <div
         id="document-pages"
         className="document-pages"
@@ -179,7 +176,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
           transformOrigin: "top center",
           transition: "transform 0.15s ease-out",
           display: "flex",
-          flexDirection: "column", // Ensures Top-to-Bottom order
+          flexDirection: "column",
           alignItems: "center",
           gap: "32px",
           paddingBottom: "100px"
@@ -232,7 +229,6 @@ const DocumentPage = memo(function DocumentPage({
   addItem,
 }: PageProps) {
   const isFirstPage = pageIndex === 0;
-  const isLastPage = pageIndex === pageCount - 1;
   const isTax = docType === "tax";
   const isChallan = docType === "dc";
   const isQuotation = docType === "quotation";
@@ -256,7 +252,7 @@ const DocumentPage = memo(function DocumentPage({
       <div className="top-accent" />
       <div className="document-content">
         
-        {/* Main Document Header & Front Info on Page 1 */}
+        {/* ۱. اگر پہلا پیج (Page 1) ہے تو پورا Main Header آئے گا */}
         {isFirstPage ? (
           <>
             <header className="document-header">
@@ -349,7 +345,7 @@ const DocumentPage = memo(function DocumentPage({
             </section>
           </>
         ) : (
-          /* Simple continuation header for page 2, 3... */
+          /* ذیلی صفحات (Page 2, 3...) کا مختصر ہیڈر */
           <header className="document-header" style={{ paddingBottom: "16px", marginBottom: "20px", borderBottom: "1px solid #e2e8f0" }}>
             <img src={logoMark} alt="8 Ways Communications" className="document-logo" style={{ height: "32px" }} />
             <span style={{ fontSize: "14px", fontWeight: "bold", color: "#64748b" }}>
@@ -358,7 +354,7 @@ const DocumentPage = memo(function DocumentPage({
           </header>
         )}
 
-        {/* Table items */}
+        {/* ۲. ٹیبل آئٹمز */}
         <section className="items-section">
           <table>
             <thead>
@@ -420,15 +416,13 @@ const DocumentPage = memo(function DocumentPage({
             </tbody>
           </table>
 
-          {isLastPage && (
-            <Button type="button" variant="ghost" className="no-print add-line" onClick={addItem}>
-              <Plus size={15} /> Add line item
-            </Button>
-          )}
+          <Button type="button" variant="ghost" className="no-print add-line" onClick={addItem}>
+            <Plus size={15} /> Add line item
+          </Button>
         </section>
 
-        {/* Totals & Terms on last page */}
-        {isLastPage && (
+        {/* ۳. فرنٹ پیج (Page 1) پر ٹوٹلز اور پیمنٹ انفو لازمی رہیں گے */}
+        {isFirstPage && (
           <>
             {showAmounts && (
               <section className="totals">
@@ -478,7 +472,8 @@ const DocumentPage = memo(function DocumentPage({
         )}
       </div>
 
-      {isLastPage && (
+      {/* ۴. فوٹر صرف Page 1 پر ہمیشہ دکھے گا */}
+      {isFirstPage && (
         <footer className="document-footer">
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
             <MapPin size={18} style={{ flexShrink: 0 }} />
