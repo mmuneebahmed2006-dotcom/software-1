@@ -228,7 +228,7 @@ const DocumentPage = memo(function DocumentPage({
   addItem,
 }: PageProps) {
   const isFirstPage = pageIndex === 0;
-  const isLastPage = pageIndex === pageCount - 1;
+  const isLastPage = pageIndex === pageCount - 1; // آخری پیج کی شناخت
   const isTax = docType === "tax";
   const isChallan = docType === "dc";
   const isQuotation = docType === "quotation";
@@ -252,9 +252,9 @@ const DocumentPage = memo(function DocumentPage({
       <div className="top-accent" />
       <div className="document-content">
         
-        {/* ہر پیج پر ہیڈر اور بل ٹو کی تمام تفصیلات موجود ہوں گی */}
+        {/* ہر پیج پر ہیڈر اور بل ٹو کی تمام تفصیلات (لوگو اب پورے سائز میں آئے گا) */}
         <header className="document-header">
-          <img src={logoMark} alt="8 Ways Communications" className="document-logo" style={!isFirstPage ? { height: "32px" } : undefined} />
+          <img src={logoMark} alt="8 Ways Communications" className="document-logo" />
         </header>
 
         <section className="identity-grid">
@@ -435,8 +435,8 @@ const DocumentPage = memo(function DocumentPage({
           </section>
         )}
 
-        {/* Terms & Conditions اور Thank You صرف فرنٹ پیج پر */}
-        {isFirstPage && (
+        {/* Terms & Conditions اور Thank You اب صرف آخری پیج (isLastPage) پر آئیں گے */}
+        {isLastPage && (
           <section className="closing-content">
             <div className="terms-block">
               <h3>Terms &amp; Conditions</h3>
@@ -461,8 +461,8 @@ const DocumentPage = memo(function DocumentPage({
         )}
       </div>
 
-      {/* Footer صرف فرنٹ پیج پر */}
-      {isFirstPage && (
+      {/* Footer صرف آخری پیج (isLastPage) پر آئے گا */}
+      {isLastPage && (
         <footer className="document-footer">
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
             <MapPin size={18} style={{ flexShrink: 0 }} />
@@ -491,12 +491,12 @@ const DocumentPage = memo(function DocumentPage({
               }}
             />
           </div>
-          <FooterField icon={Phone}>
+          <FooterFooterField icon={Phone}>
             <TextField value={state.footer.phone} onChange={(value) => set("footer", { ...state.footer, phone: value })} placeholder="Phone" ariaLabel="Business phone" />
-          </FooterField>
-          <FooterField icon={Mail}>
+          </FooterFooterField>
+          <FooterFooterField icon={Mail}>
             <TextField value={state.footer.email} onChange={(value) => set("footer", { ...state.footer, email: value })} placeholder="Email" ariaLabel="Business email" />
-          </FooterField>
+          </FooterFooterField>
         </footer>
       )}
 
@@ -515,6 +515,6 @@ function MetaRow({ label, children }: { label: string; children: React.ReactNode
   return <div className="meta-row"><span>{label}</span><div>{children}</div></div>;
 }
 
-function FooterField({ icon: Icon, children }: { icon: typeof Phone; children: React.ReactNode }) {
+function FooterFooterField({ icon: Icon, children }: { icon: typeof Phone; children: React.ReactNode }) {
   return <div className="footer-field" style={{ display: "flex", alignItems: "center" }}><Icon size={18} />{children}</div>;
 }
