@@ -16,21 +16,29 @@ interface Props {
 export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
-  const capacity = PAPER_SIZES[paperSize].rows || 14;
+  const firstPageCapacity = 10; // پہلے صفحے پر صرف 10 لائنیں
+  const laterPageCapacity = PAPER_SIZES[paperSize].rows || 14; // اگلے صفحات کے لیے
 
   const pages = useMemo(() => {
     const chunks: LineItem[][] = [];
-    for (let index = 0; index < state.items.length; index += capacity) {
-      chunks.push(state.items.slice(index, index + capacity));
-    }
-    if (chunks.length === 0) {
+    if (state.items.length === 0) {
       chunks.push([]);
+    } else {
+      // پہلا حصہ: پہلے صفحے کے لیے صرف 10 آئٹمز
+      chunks.push(state.items.slice(0, firstPageCapacity));
+      
+      // باقی آئٹمز کے لیے اگلے صفحات
+      let remainingIndex = firstPageCapacity;
+      while (remainingIndex < state.items.length) {
+        chunks.push(state.items.slice(remainingIndex, remainingIndex + laterPageCapacity));
+        remainingIndex += laterPageCapacity;
+      }
     }
     while (chunks.length < state.minimumPages) {
       chunks.push([]);
     }
     return chunks;
-  }, [capacity, state.items, state.minimumPages]);
+  }, [state.items, state.minimumPages, laterPageCapacity]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -82,6 +90,16 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
     if (pageElem) {
       pageElem.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+  };
+
+  // ہر صفحے پر آئٹم کا صحیح نمبر (Index) نکالنے کا حساب
+  const getItemOffset = (pageIdx: number) => {
+    if (pageIdx === 0) return 0;
+    let offset = firstPageCapacity;
+    for (let i = 1; i < pageIdx; i++) {
+      offset += laterPageCapacity;
+    }
+    return offset;
   };
 
   return (
@@ -188,7 +206,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
             state={state}
             setState={setState}
             items={items}
-            itemOffset={pageIndex * capacity}
+            itemOffset={getItemOffset(pageIndex)}
             pageIndex={pageIndex}
             pageCount={pages.length}
             paperStyle={paperStyle}
@@ -251,7 +269,7 @@ const DocumentPage = memo(function DocumentPage({
       <div className="top-accent" />
       <div className="document-content">
         
-        {/* ہر پیج پر ہیڈر اور بل ٹو کی مکمل تفصیلات (لوگو اب دونوں جگہ برابر اور اصلی سائز میں رہے گا) */}
+        {/* ہر پیج پر ہیڈر اور بل ٹو کی مکمل تفصیلات */}
         <header className="document-header">
           <img src={logoMark} alt="8 Ways Communications" className="document-logo" />
         </header>
@@ -434,7 +452,7 @@ const DocumentPage = memo(function DocumentPage({
           </section>
         )}
 
-        {/* Terms & Conditions اور Thank You صرف اور صرف فرنٹ پیج (isFirstPage) پر آئیں گے */}
+        {/* Terms & Conditions اور Thank You صرف اور صرف فرنٹ پیج پر آئیں گے */}
         {isFirstPage && (
           <section className="closing-content">
             <div className="terms-block">
@@ -460,7 +478,7 @@ const DocumentPage = memo(function DocumentPage({
         )}
       </div>
 
-      {/* Footer صرف اور صرف فرنٹ پیج (isFirstPage) پر آئے گا */}
+      {/* Footer صرف اور صرف فرنٹ پیج پر آئے گا */}
       {isFirstPage && (
         <footer className="document-footer">
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
