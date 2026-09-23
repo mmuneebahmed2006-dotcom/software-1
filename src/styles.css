@@ -198,8 +198,11 @@
 .select-control option { color: var(--foreground); background: var(--paper); }
 .print-area { padding: 40px 24px 64px; overflow-x: auto; }
 .document-pages { display: grid; gap: 30px; }
-.paper { position: relative; width: var(--paper-width); height: var(--paper-height); min-height: 0; margin: 0 auto; display: flex; flex-direction: column; overflow: hidden; background: var(--paper); color: var(--foreground); box-shadow: 0 24px 70px oklch(0 0 0 / 0.22); print-color-adjust: exact; }
-.top-accent { box-sizing: border-box; width: 100%; height: 10px; flex: 0 0 10px; border-top: 10px solid var(--primary); background: var(--primary); print-color-adjust: exact; }
+.paper { position: relative; width: var(--paper-width); height: var(--paper-height); min-height: 0; margin: 0 auto; display: flex; flex-direction: column; overflow: hidden; background: var(--paper); color: var(--foreground); box-shadow: 0 24px 70px oklch(0 0 0 / 0.22); -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+/* Top Accent Fix for Print and Display */
+.top-accent { box-sizing: border-box; width: 100%; height: 10px; flex: 0 0 10px; border-top: 10px solid var(--primary) !important; background-color: var(--primary) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
 .document-content { min-height: 0; flex: 1; display: flex; flex-direction: column; padding: calc(14px * var(--paper-scale)) calc(62px * var(--paper-scale)) calc(20px * var(--paper-scale)); }
 .document-header { height: calc(88px * var(--paper-scale)); display: flex; align-items: center; justify-content: center; margin-bottom: calc(20px * var(--paper-scale)); }
 .document-logo { display: block; width: auto; max-width: calc(230px * var(--paper-scale)); height: calc(72px * var(--paper-scale)); margin: 0 auto; object-fit: contain; image-rendering: -webkit-optimize-contrast; }
@@ -208,15 +211,20 @@
 .client-name { font-size: calc(16pt * var(--paper-scale)); font-weight: 600; }
 .contact-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 6px; margin-top: 3px; font-size: calc(11pt * var(--paper-scale)); font-weight: 400; }
 .contact-row svg { margin-top: 3px; }
-.document-meta { min-width: 0; padding-top: 4px; margin-left: auto; width: fit-content; max-width: 100%; }
-.meta-grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: calc(4px * var(--paper-scale)); }
-.meta-row { min-width: 0; display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: end; gap: calc(12px * var(--paper-scale)); font-size: calc(11pt * var(--paper-scale)); font-weight: 400; }
-.meta-row > span { min-width: 0; font-weight: 700; line-height: 1.2; white-space: nowrap; }
-.meta-row > div { min-width: 0; }
-.meta-row .editable { width: 100%; min-width: 0; text-align: right !important; white-space: nowrap; }
-.document-title { width: 100%; margin: calc(12px * var(--paper-scale)) 0 0; overflow: hidden; font-family: var(--font-display); font-size: calc(48pt * var(--paper-scale)); font-weight: 600; line-height: 1; text-align: right; text-transform: uppercase; white-space: nowrap; letter-spacing: 0; }
+
+/* Meta & Alignment Adjustments */
+.document-meta { min-width: 0; padding-top: 4px; margin-left: auto; width: 100%; max-width: 260px; display: flex; flex-direction: column; align-items: flex-start; }
+.meta-grid { display: grid; grid-template-columns: 1fr; align-items: start; gap: calc(4px * var(--paper-scale)); width: 100%; }
+.meta-row { min-width: 0; display: grid; grid-template-columns: 120px 1fr; align-items: baseline; justify-content: start; gap: calc(12px * var(--paper-scale)); font-size: calc(11pt * var(--paper-scale)); font-weight: 400; text-align: left; }
+.meta-row > span { min-width: 0; font-weight: 700; line-height: 1.2; white-space: nowrap; text-align: left; }
+.meta-row > div { min-width: 0; text-align: left; }
+.meta-row .editable { width: 100%; min-width: 0; text-align: left !important; white-space: nowrap; }
+
+/* INVOICE Title Alignment Fix */
+.document-title { width: 100%; margin: calc(12px * var(--paper-scale)) 0 0; overflow: hidden; font-family: var(--font-display); font-size: calc(48pt * var(--paper-scale)); font-weight: 600; line-height: 1; text-align: left !important; text-transform: uppercase; white-space: nowrap; letter-spacing: 0; }
 .document-title-dc { font-size: 37px; }
 .document-title-tax { font-size: 34px; }
+
 .detail-strip { display: grid; gap: 24px; margin-top: 10px; padding: 6px 12px; background: var(--paper-soft); border: 1px solid var(--paper-line); }
 .detail-strip.two-columns { grid-template-columns: repeat(2, 1fr); }
 .detail-strip.three-columns { grid-template-columns: repeat(3, 1fr); }
@@ -254,7 +262,7 @@
 .continuation-heading { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--primary); padding-bottom: 8px; }.continuation-heading strong { font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); }.continuation-heading span { font-size: calc(11pt * var(--paper-scale)); }
 .page-number { position: absolute; right: calc(18px * var(--paper-scale)); bottom: calc(5px * var(--paper-scale)); font-size: calc(8pt * var(--paper-scale)); color: var(--muted-foreground); }
 .startup-overlay { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; background: var(--toolbar); color: var(--toolbar-foreground); }.startup-splash { animation: splash-exit 400ms ease 2.6s both; }.startup-splash h1 { margin: 16px 0 6px; font-family: var(--font-display); font-size: 46px; font-weight: 700; }.startup-splash p { margin: 0; color: oklch(1 0 0 / .7); font-size: 13px; }.splash-mark { width: 58px; height: 58px; display: grid; place-items: center; border: 1px solid oklch(1 0 0 / .28); }.setup-dialog { width: min(520px, calc(100vw - 32px)); background: var(--paper); color: var(--foreground); padding: 32px; box-shadow: 0 24px 70px oklch(0 0 0 / .36); }.setup-dialog > span { color: var(--muted-foreground); font-size: 11px; font-weight: 700; text-transform: uppercase; }.setup-dialog h1 { margin: 8px 0; font-family: var(--font-display); font-size: 36px; }.setup-dialog p { color: var(--muted-foreground); font-size: 13px; }.setup-actions { display: grid; gap: 10px; margin-top: 24px; }.setup-actions button { width: 100%; }
-.management-check { display: flex; align-items: center; gap: 9px; font-size: 13px; }.management-list { max-height: 330px; display: grid; gap: 16px; overflow-y: auto; border-block: 1px solid var(--border); padding-block: 14px; }.management-list section { display: grid; gap: 8px; }.management-list h3 { margin: 0; font-size: 11px; text-transform: uppercase; }.management-list p { color: var(--muted-foreground); font-size: 13px; }.backup-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.backup-dates label { display: grid; gap: 6px; }.backup-dates span { font-size: 12px; font-weight: 700; }
+.management-check { display: flex; align-items: center; gap: 99px; font-size: 13px; }.management-list { max-height: 330px; display: grid; gap: 16px; overflow-y: auto; border-block: 1px solid var(--border); padding-block: 14px; }.management-list section { display: grid; gap: 8px; }.management-list h3 { margin: 0; font-size: 11px; text-transform: uppercase; }.management-list p { color: var(--muted-foreground); font-size: 13px; }.backup-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.backup-dates label { display: grid; gap: 6px; }.backup-dates span { font-size: 12px; font-weight: 700; }
 .dialog-field { display: grid; gap: 6px; }.dialog-field > span { font-size: 12px; font-weight: 700; }.dialog-field select { height: 36px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--background); padding: 0 10px; }.dialog-grid,.scope-options { display: grid; gap: 10px; }.scope-options button { min-height: 42px; justify-content: flex-start; }
 @keyframes splash-exit { to { opacity: 0; } }
 .footer-field + .footer-field { border-left: 1px solid oklch(1 0 0 / 0.48); }.footer-field .editable:hover,.footer-field .editable:focus { background: oklch(1 0 0 / 0.12); }
@@ -270,15 +278,32 @@
   .payment-info { grid-template-columns: minmax(0, 1fr) 180px; gap: 18px; }
 }
 
+/* Updated Print Styles */
 @media print {
   html, body { width: 100%; height: auto; background: var(--paper) !important; }
   .no-print, .saved-sidebar, .toolbar, button { display: none !important; }
   .print-area { margin: 0 !important; padding: 0 !important; overflow: visible !important; background: var(--paper) !important; }
-  .document-pages { display: block !important; }.paper { width: var(--paper-width) !important; height: var(--paper-height) !important; min-height: 0 !important; margin: 0 !important; break-after: page !important; page-break-after: always !important; break-inside: avoid !important; page-break-inside: avoid !important; box-shadow: none !important; }.paper:last-child { break-after: auto !important; page-break-after: auto !important; }
+  .document-pages { display: block !important; }
+  .paper { width: var(--paper-width) !important; height: var(--paper-height) !important; min-height: 0 !important; margin: 0 !important; break-after: page !important; page-break-after: always !important; break-inside: avoid !important; page-break-inside: avoid !important; box-shadow: none !important; }
+  .paper:last-child { break-after: auto !important; page-break-after: auto !important; }
   .totals { margin-right: 0; }
   input, textarea, select, .editable, .editable:hover, .editable:focus { border: 0 !important; outline: 0 !important; background: transparent !important; box-shadow: none !important; }
-  .top-accent { display: block !important; width: 100% !important; height: 10px !important; border-top: 10px solid var(--primary) !important; background: var(--primary) !important; }
-  * { print-color-adjust: exact !important; }
+  
+  /* Black Strip Print Guarantee */
+  .top-accent { 
+    display: block !important; 
+    width: 100% !important; 
+    height: 10px !important; 
+    border-top: 10px solid var(--primary) !important; 
+    background-color: var(--primary) !important; 
+    -webkit-print-color-adjust: exact !important; 
+    print-color-adjust: exact !important; 
+  }
+  
+  * { 
+    -webkit-print-color-adjust: exact !important; 
+    print-color-adjust: exact !important; 
+  }
 }
 
 .paper.exporting { box-shadow: none; }
