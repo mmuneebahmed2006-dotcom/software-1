@@ -18,19 +18,24 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
   const [currentPage, setCurrentPage] = useState(1);
   const capacity = PAPER_SIZES[paperSize].rows;
 
-  // Generate chunks: Page 1 top par rahega, aage ke items next pages mein vertical list honge
+  // Exact Page Splitting: Page 1 hamesha sabse pehle (Top) rahega.
   const pages = useMemo(() => {
     const chunks: LineItem[][] = [];
     for (let index = 0; index < state.items.length; index += capacity) {
       chunks.push(state.items.slice(index, index + capacity));
     }
+    // ensure front page (index 0) exists
+    if (chunks.length === 0) {
+      chunks.push([]);
+    }
+    // Append additional custom pages to the END (bottom) of array
     while (chunks.length < state.minimumPages) {
       chunks.push([]);
     }
-    return chunks.length ? chunks : [[]];
+    return chunks;
   }, [capacity, state.items, state.minimumPages]);
 
-  // Active page tracking on scroll using Intersection Observer
+  // Active page detection on scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -41,7 +46,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
           }
         });
       },
-      { threshold: 0.5 }
+      { threshold: 0.4 }
     );
 
     pages.forEach((_, idx) => {
@@ -85,7 +90,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
 
   return (
     <div className="document-paper-wrapper" style={{ position: "relative", width: "100%" }}>
-      {/* Dynamic Floating Toolbar */}
+      {/* Zoom and Page selector toolbar */}
       <div
         className="no-print"
         style={{
@@ -104,7 +109,6 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
           border: "1px solid #334155"
         }}
       >
-        {/* Dynamic Current Page Selector */}
         <select
           value={currentPage}
           onChange={(e) => jumpToPage(Number(e.target.value))}
@@ -128,7 +132,6 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
 
         <div style={{ width: "1px", height: "18px", backgroundColor: "#475569" }} />
 
-        {/* Zoom Out */}
         <Button
           type="button"
           variant="ghost"
@@ -144,7 +147,6 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
           {zoom}%
         </span>
 
-        {/* Zoom In */}
         <Button
           type="button"
           variant="ghost"
@@ -156,20 +158,19 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
           <ZoomIn size={16} />
         </Button>
 
-        {/* Reset Zoom */}
         <Button
           type="button"
           variant="ghost"
           size="icon"
           onClick={() => handleZoom(100)}
           style={{ color: "#fff", height: "30px", width: "30px" }}
-          title="Reset Zoom (100%)"
+          title="Reset Zoom"
         >
           <RotateCcw size={14} />
         </Button>
       </div>
 
-      {/* Pages Container - Top to Bottom Stack */}
+      {/* Pages Container - Explicitly Top to Bottom */}
       <div
         id="document-pages"
         className="document-pages"
@@ -178,7 +179,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
           transformOrigin: "top center",
           transition: "transform 0.15s ease-out",
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "column", // Ensures Top-to-Bottom order
           alignItems: "center",
           gap: "32px",
           paddingBottom: "100px"
@@ -186,7 +187,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
       >
         {pages.map((items, pageIndex) => (
           <DocumentPage
-            key={`page-${pageIndex}-${items[0]?.id ?? "empty"}`}
+            key={`paper-page-key-${pageIndex}`}
             docType={docType}
             state={state}
             setState={setState}
@@ -230,8 +231,8 @@ const DocumentPage = memo(function DocumentPage({
   removeItem,
   addItem,
 }: PageProps) {
-  const first = pageIndex === 0;
-  const last = pageIndex === pageCount - 1;
+  const isFirstPage = pageIndex === 0;
+  const isLastPage = pageIndex === pageCount - 1;
   const isTax = docType === "tax";
   const isChallan = docType === "dc";
   const isQuotation = docType === "quotation";
@@ -249,115 +250,115 @@ const DocumentPage = memo(function DocumentPage({
       id={`paper-page-${pageIndex + 1}`}
       data-page-num={pageIndex + 1}
       className={`paper paper-${paperSize.toLowerCase()}`}
-      style={{ ...paperStyle, position: "relative" }}
+      style={{ ...paperStyle, position: "relative", minHeight: "1056px" }}
       data-pdf-page
     >
       <div className="top-accent" />
       <div className="document-content">
-        <header className="document-header">
-          <img src={logoMark} alt="8 Ways Communications" className="document-logo" />
-        </header>
+        
+        {/* Main Document Header & Front Info on Page 1 */}
+        {isFirstPage ? (
+          <>
+            <header className="document-header">
+              <img src={logoMark} alt="8 Ways Communications" className="document-logo" />
+            </header>
 
-        <section className="identity-grid">
-          <div className="bill-to">
-            <h2>Bill To</h2>
-            <TextField
-              value={state.client.name}
-              onChange={(value) => set("client", { ...state.client, name: value })}
-              placeholder="Client name"
-              ariaLabel="Client name"
-              className="client-name"
-            />
-            <ContactRow icon={Phone}>
-              <TextField
-                value={state.client.phone}
-                onChange={(value) => set("client", { ...state.client, phone: value })}
-                placeholder="Phone number"
-                ariaLabel="Client phone"
-              />
-            </ContactRow>
-            <ContactRow icon={Mail}>
-              <TextField
-                value={state.client.email}
-                onChange={(value) => set("client", { ...state.client, email: value })}
-                placeholder="Email address"
-                ariaLabel="Client email"
-              />
-            </ContactRow>
-            <ContactRow icon={MapPin}>
-              <AreaField
-                value={state.client.address}
-                onChange={(value) => set("client", { ...state.client, address: value })}
-                placeholder="Client address"
-                ariaLabel="Client address"
-              />
-            </ContactRow>
-            <ContactRow icon={Globe2}>
-              <TextField
-                value={state.client.website}
-                onChange={(value) => set("client", { ...state.client, website: value })}
-                placeholder="Website"
-                ariaLabel="Client website"
-              />
-            </ContactRow>
-          </div>
-
-          <div className="document-meta">
-            <div className="meta-grid">
-              <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
+            <section className="identity-grid">
+              <div className="bill-to">
+                <h2>Bill To</h2>
                 <TextField
-                  value={state.meta.number}
-                  onChange={(value) => set("meta", { ...state.meta, number: value })}
-                  placeholder="#351-34"
-                  ariaLabel="Document number"
-                  align="right"
+                  value={state.client.name}
+                  onChange={(value) => set("client", { ...state.client, name: value })}
+                  placeholder="Client name"
+                  ariaLabel="Client name"
+                  className="client-name"
                 />
-              </MetaRow>
-              <MetaRow label="Document Date">
-                <TextField
-                  value={state.meta.date}
-                  onChange={(value) => set("meta", { ...state.meta, date: value })}
-                  placeholder="DD/MM/YYYY"
-                  ariaLabel="Document date"
-                  align="right"
-                />
-              </MetaRow>
-              {!isChallan && (
-                <MetaRow label={isQuotation ? "Valid Until" : "Due Date"}>
+                <ContactRow icon={Phone}>
                   <TextField
-                    value={isQuotation ? state.meta.validUntil : state.meta.dueDate}
-                    onChange={(value) =>
-                      set("meta", {
-                        ...state.meta,
-                        [isQuotation ? "validUntil" : "dueDate"]: value,
-                      })
-                    }
-                    placeholder="DD/MM/YYYY"
-                    ariaLabel={isQuotation ? "Valid until" : "Due date"}
-                    align="right"
+                    value={state.client.phone}
+                    onChange={(value) => set("client", { ...state.client, phone: value })}
+                    placeholder="Phone number"
+                    ariaLabel="Client phone"
                   />
-                </MetaRow>
-              )}
-            </div>
-            <h1 className={`document-title document-title-${docType}`}>{DOC_LABELS[docType]}</h1>
-          </div>
-        </section>
+                </ContactRow>
+                <ContactRow icon={Mail}>
+                  <TextField
+                    value={state.client.email}
+                    onChange={(value) => set("client", { ...state.client, email: value })}
+                    placeholder="Email address"
+                    ariaLabel="Client email"
+                  />
+                </ContactRow>
+                <ContactRow icon={MapPin}>
+                  <AreaField
+                    value={state.client.address}
+                    onChange={(value) => set("client", { ...state.client, address: value })}
+                    placeholder="Client address"
+                    ariaLabel="Client address"
+                  />
+                </ContactRow>
+                <ContactRow icon={Globe2}>
+                  <TextField
+                    value={state.client.website}
+                    onChange={(value) => set("client", { ...state.client, website: value })}
+                    placeholder="Website"
+                    ariaLabel="Client website"
+                  />
+                </ContactRow>
+              </div>
 
-        {isTax && (
-          <section className="detail-strip two-columns">
-            <InlineDetail label="NTN" value={state.meta.ntn} onChange={(value) => set("meta", { ...state.meta, ntn: value })} />
-            <InlineDetail label="STRN" value={state.meta.strn} onChange={(value) => set("meta", { ...state.meta, strn: value })} />
-          </section>
+              <div className="document-meta">
+                <div className="meta-grid">
+                  <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
+                    <TextField
+                      value={state.meta.number}
+                      onChange={(value) => set("meta", { ...state.meta, number: value })}
+                      placeholder="#351-34"
+                      ariaLabel="Document number"
+                      align="right"
+                    />
+                  </MetaRow>
+                  <MetaRow label="Document Date">
+                    <TextField
+                      value={state.meta.date}
+                      onChange={(value) => set("meta", { ...state.meta, date: value })}
+                      placeholder="DD/MM/YYYY"
+                      ariaLabel="Document date"
+                      align="right"
+                    />
+                  </MetaRow>
+                  {!isChallan && (
+                    <MetaRow label={isQuotation ? "Valid Until" : "Due Date"}>
+                      <TextField
+                        value={isQuotation ? state.meta.validUntil : state.meta.dueDate}
+                        onChange={(value) =>
+                          set("meta", {
+                            ...state.meta,
+                            [isQuotation ? "validUntil" : "dueDate"]: value,
+                          })
+                        }
+                        placeholder="DD/MM/YYYY"
+                        ariaLabel={isQuotation ? "Valid until" : "Due date"}
+                        align="right"
+                      />
+                    </MetaRow>
+                  )}
+                </div>
+                <h1 className={`document-title document-title-${docType}`}>{DOC_LABELS[docType]}</h1>
+              </div>
+            </section>
+          </>
+        ) : (
+          /* Simple continuation header for page 2, 3... */
+          <header className="document-header" style={{ paddingBottom: "16px", marginBottom: "20px", borderBottom: "1px solid #e2e8f0" }}>
+            <img src={logoMark} alt="8 Ways Communications" className="document-logo" style={{ height: "32px" }} />
+            <span style={{ fontSize: "14px", fontWeight: "bold", color: "#64748b" }}>
+              {DOC_LABELS[docType]} - Page {pageIndex + 1}
+            </span>
+          </header>
         )}
 
-        {first && isChallan && (
-          <section className="detail-strip three-columns">
-            <InlineDetail label="Dispatch Via" value={state.dispatch.method} onChange={(value) => set("dispatch", { ...state.dispatch, method: value })} />
-            <InlineDetail label="Vehicle No." value={state.dispatch.vehicleNo} onChange={(value) => set("dispatch", { ...state.dispatch, vehicleNo: value })} />
-            <InlineDetail label="Gate Pass No." value={state.dispatch.gatePassNo} onChange={(value) => set("dispatch", { ...state.dispatch, gatePassNo: value })} />
-          </section>
-        )}
-
+        {/* Table items */}
         <section className="items-section">
           <table>
             <thead>
@@ -372,52 +373,62 @@ const DocumentPage = memo(function DocumentPage({
               </tr>
             </thead>
             <tbody>
-              {items.map((item, index) => (
-                <tr key={item.id}>
-                  <td className="number-col">{itemOffset + index + 1}</td>
-                  <td className="description-col">
-                    <AreaField
-                      value={item.description}
-                      onChange={(value) => updateItem(item.id, { description: value })}
-                      placeholder="Item or service description"
-                      ariaLabel={`Description for row ${itemOffset + index + 1}`}
-                    />
-                  </td>
-                  <td className="unit-col">
-                    <TextField
-                      value={item.unit}
-                      onChange={(value) => updateItem(item.id, { unit: value })}
-                      placeholder="pcs"
-                      ariaLabel="Unit"
-                      align="center"
-                    />
-                  </td>
-                  <td className="qty-col">
-                    <NumberField value={item.qty} onChange={(value) => updateItem(item.id, { qty: value })} ariaLabel="Quantity" />
-                  </td>
-                  {showAmounts && (
-                    <td className="unit-price-col unit-price">
-                      <NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel="Unit price" step={0.01} />
+              {items.length > 0 ? (
+                items.map((item, index) => (
+                  <tr key={item.id}>
+                    <td className="number-col">{itemOffset + index + 1}</td>
+                    <td className="description-col">
+                      <AreaField
+                        value={item.description}
+                        onChange={(value) => updateItem(item.id, { description: value })}
+                        placeholder="Item or service description"
+                        ariaLabel={`Description for row ${itemOffset + index + 1}`}
+                      />
                     </td>
-                  )}
-                  {showAmounts && <td className="amount-col line-total">{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
-                  <td className="no-print action-col">
-                    <Button type="button" size="icon" variant="danger" onClick={() => removeItem(item.id)} aria-label="Remove row">
-                      <Trash2 size={15} />
-                    </Button>
+                    <td className="unit-col">
+                      <TextField
+                        value={item.unit}
+                        onChange={(value) => updateItem(item.id, { unit: value })}
+                        placeholder="pcs"
+                        ariaLabel="Unit"
+                        align="center"
+                      />
+                    </td>
+                    <td className="qty-col">
+                      <NumberField value={item.qty} onChange={(value) => updateItem(item.id, { qty: value })} ariaLabel="Quantity" />
+                    </td>
+                    {showAmounts && (
+                      <td className="unit-price-col unit-price">
+                        <NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel="Unit price" step={0.01} />
+                      </td>
+                    )}
+                    {showAmounts && <td className="amount-col line-total">{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
+                    <td className="no-print action-col">
+                      <Button type="button" size="icon" variant="danger" onClick={() => removeItem(item.id)} aria-label="Remove row">
+                        <Trash2 size={15} />
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={showAmounts ? 7 : 5} style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}>
+                    Continuation Page {pageIndex + 1}
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
-          {last && (
+
+          {isLastPage && (
             <Button type="button" variant="ghost" className="no-print add-line" onClick={addItem}>
               <Plus size={15} /> Add line item
             </Button>
           )}
         </section>
 
-        {last && (
+        {/* Totals & Terms on last page */}
+        {isLastPage && (
           <>
             {showAmounts && (
               <section className="totals">
@@ -467,7 +478,7 @@ const DocumentPage = memo(function DocumentPage({
         )}
       </div>
 
-      {last && (
+      {isLastPage && (
         <footer className="document-footer">
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
             <MapPin size={18} style={{ flexShrink: 0 }} />
@@ -518,10 +529,6 @@ function ContactRow({ icon: Icon, children }: { icon: typeof Phone; children: Re
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="meta-row"><span>{label}</span><div>{children}</div></div>;
-}
-
-function InlineDetail({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return <div><strong>{label}</strong><TextField value={value} onChange={onChange} placeholder="—" ariaLabel={label} /></div>;
 }
 
 function FooterField({ icon: Icon, children }: { icon: typeof Phone; children: React.ReactNode }) {
