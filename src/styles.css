@@ -393,3 +393,11 @@
 .paper .closing-content { flex-shrink: 0; padding-top: calc(4px * var(--paper-scale, 1)) !important; }
 .paper .payment-info { margin-top: calc(6px * var(--paper-scale, 1)) !important; min-height: 0 !important; padding-block: calc(5px * var(--paper-scale, 1)) !important; }
 .paper .thank-you { margin-top: calc(6px * var(--paper-scale, 1)) !important; padding-block: calc(4px * var(--paper-scale, 1)) !important; }
+
+/* Items ka font thora bara (readable) */
+.paper .items-section td,
+.paper .items-section td input,
+.paper .items-section td textarea,
+.paper .items-section td select {
+  font-size: calc(12px * var(--paper-scale, 1)) !important;
+}
