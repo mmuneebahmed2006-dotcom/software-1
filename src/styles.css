@@ -355,16 +355,16 @@
 /* ===== 14 LINES FIT + "Thanks for your Business" FIX ===== */
 
 /* Item rows chhoti (compact) */
-.paper .items-section tr { height: calc(22px * var(--paper-scale, 1)); }
+.paper .items-section tr { height: calc(26px * var(--paper-scale, 1)); }
 .paper .items-section th,
 .paper .items-section td {
-  padding-block: calc(1.5px * var(--paper-scale, 1)) !important;
+  padding-block: calc(2px * var(--paper-scale, 1)) !important;
   line-height: 1.15 !important;
 }
 .paper .items-section td input,
 .paper .items-section td select,
 .paper .items-section td textarea {
-  height: calc(18px * var(--paper-scale, 1)) !important;
+  height: calc(22px * var(--paper-scale, 1)) !important;
   min-height: 0 !important;
   margin: 0 !important;
   padding-block: 0 !important;
@@ -380,7 +380,7 @@
 }
 /* delete (trash) button row ko bara na kare */
 .paper .items-section .action-col button {
-  height: calc(18px * var(--paper-scale, 1)) !important;
+  height: calc(22px * var(--paper-scale, 1)) !important;
   min-height: 0 !important;
   padding-block: 0 !important;
 }
