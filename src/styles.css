@@ -401,3 +401,58 @@
 .paper .items-section td select {
   font-size: calc(12px * var(--paper-scale, 1)) !important;
 }
+
+/* ===== PRINT FIX: upar ki kali patti + logo na kate + 2 pages ===== */
+@page { margin: 0; }
+
+@media print {
+  html, body { margin: 0 !important; padding: 0 !important; }
+  .studio-shell, .studio-main { display: block !important; min-height: 0 !important; }
+  .print-area { margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+  .document-pages { gap: 0 !important; }
+
+  /* har page upar se shuru ho, kahin shift na ho */
+  .paper {
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    break-after: page !important;
+    page-break-after: always !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .paper:last-child { break-after: auto !important; page-break-after: auto !important; }
+
+  /* upar ki kali patti (8 WAYS COMMUNICATIONS ke upar) */
+  .paper .top-accent {
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 10px !important;
+    min-height: 10px !important;
+    flex: 0 0 10px !important;
+    border-top: 10px solid #141414 !important;
+    background: #141414 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 8WC logo na kate */
+  .paper .document-header {
+    height: auto !important;
+    min-height: calc(92px * var(--paper-scale, 1)) !important;
+    overflow: visible !important;
+  }
+  .paper .document-logo {
+    display: block !important;
+    height: calc(92px * var(--paper-scale, 1)) !important;
+    width: auto !important;
+    max-height: none !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .paper .document-content { overflow: visible !important; }
+}
