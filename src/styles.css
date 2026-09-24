@@ -351,3 +351,45 @@
 .paper .meta-grid {
   column-gap: calc(24px * var(--paper-scale, 1)) !important;
 }
+
+/* ===== 14 LINES FIT + "Thanks for your Business" FIX ===== */
+
+/* Item rows chhoti (compact) */
+.paper .items-section tr { height: calc(22px * var(--paper-scale, 1)); }
+.paper .items-section th,
+.paper .items-section td {
+  padding-block: calc(1.5px * var(--paper-scale, 1)) !important;
+  line-height: 1.15 !important;
+}
+.paper .items-section td input,
+.paper .items-section td select,
+.paper .items-section td textarea {
+  height: calc(18px * var(--paper-scale, 1)) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding-block: 0 !important;
+  line-height: 1.15 !important;
+  resize: none !important;
+}
+@supports (field-sizing: content) {
+  .paper .items-section td textarea {
+    height: auto !important;
+    field-sizing: content;
+    overflow: hidden;
+  }
+}
+/* delete (trash) button row ko bara na kare */
+.paper .items-section .action-col button {
+  height: calc(18px * var(--paper-scale, 1)) !important;
+  min-height: 0 !important;
+  padding-block: 0 !important;
+}
+.paper .add-line { min-height: 0 !important; height: calc(26px * var(--paper-scale, 1)) !important; margin-top: calc(4px * var(--paper-scale, 1)) !important; }
+
+/* Baqi hisson ke faltu fasle kam, taake neechay wala hissa (Thanks for your Business + footer) kate nahi */
+.paper .document-header { margin-bottom: calc(8px * var(--paper-scale, 1)) !important; }
+.paper .items-section { margin-top: calc(8px * var(--paper-scale, 1)) !important; padding-top: calc(4px * var(--paper-scale, 1)) !important; }
+.paper .totals { margin-top: calc(6px * var(--paper-scale, 1)) !important; }
+.paper .closing-content { flex-shrink: 0; padding-top: calc(4px * var(--paper-scale, 1)) !important; }
+.paper .payment-info { margin-top: calc(6px * var(--paper-scale, 1)) !important; min-height: 0 !important; padding-block: calc(5px * var(--paper-scale, 1)) !important; }
+.paper .thank-you { margin-top: calc(6px * var(--paper-scale, 1)) !important; padding-block: calc(4px * var(--paper-scale, 1)) !important; }
