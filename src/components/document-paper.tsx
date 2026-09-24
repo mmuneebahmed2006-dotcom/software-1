@@ -265,15 +265,15 @@ const DocumentPage = memo(function DocumentPage({
           <section className="identity-grid" style={{ marginBottom: "2px", gap: "8px" }}>
             <div className="bill-to">
               {/* BILL TO - Bada */}
-              <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "2px" }}>BILL TO</h2>
-              {/* Client details - 1 point smaller */}
+              <h2 style={{ fontSize: "24px", fontWeight: 400, marginBottom: "2px" }}>BILL TO</h2>
+              {/* Client details */}
               <TextField
                 value={state.client.name}
                 onChange={(value) => set("client", { ...state.client, name: value })}
                 placeholder="Client name"
                 ariaLabel="Client name"
                 className="client-name"
-                style={{ fontSize: "11px" }}
+                style={{ fontSize: "10px" }}
               />
               <ContactRow icon={Phone}>
                 <TextField
@@ -281,7 +281,7 @@ const DocumentPage = memo(function DocumentPage({
                   onChange={(value) => set("client", { ...state.client, phone: value })}
                   placeholder="Phone number"
                   ariaLabel="Client phone"
-                  style={{ fontSize: "10px" }}
+                  style={{ fontSize: "9px" }}
                 />
               </ContactRow>
               <ContactRow icon={Mail}>
@@ -290,7 +290,7 @@ const DocumentPage = memo(function DocumentPage({
                   onChange={(value) => set("client", { ...state.client, email: value })}
                   placeholder="Email address"
                   ariaLabel="Client email"
-                  style={{ fontSize: "10px" }}
+                  style={{ fontSize: "9px" }}
                 />
               </ContactRow>
               <ContactRow icon={MapPin}>
@@ -299,7 +299,7 @@ const DocumentPage = memo(function DocumentPage({
                   onChange={(value) => set("client", { ...state.client, address: value })}
                   placeholder="Client address"
                   ariaLabel="Client address"
-                  style={{ fontSize: "10px" }}
+                  style={{ fontSize: "9px" }}
                 />
               </ContactRow>
               <ContactRow icon={Globe2}>
@@ -308,14 +308,14 @@ const DocumentPage = memo(function DocumentPage({
                   onChange={(value) => set("client", { ...state.client, website: value })}
                   placeholder="Website"
                   ariaLabel="Client website"
-                  style={{ fontSize: "10px" }}
+                  style={{ fontSize: "9px" }}
                 />
               </ContactRow>
             </div>
 
             <div className="document-meta">
-              {/* Invoice details (Invoice #, Date, Due Date) - 1 point smaller */}
-              <div className="meta-grid" style={{ fontSize: "10px", gap: "1px" }}>
+              {/* Invoice details */}
+              <div className="meta-grid" style={{ fontSize: "9px", gap: "1px" }}>
                 <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
                   <TextField
                     value={state.meta.number}
@@ -323,7 +323,7 @@ const DocumentPage = memo(function DocumentPage({
                     placeholder="#351-34"
                     ariaLabel="Document number"
                     align="right"
-                    style={{ fontSize: "10px" }}
+                    style={{ fontSize: "9px" }}
                   />
                 </MetaRow>
                 <MetaRow label="Document Date">
@@ -333,7 +333,7 @@ const DocumentPage = memo(function DocumentPage({
                     placeholder="DD/MM/YYYY"
                     ariaLabel="Document date"
                     align="right"
-                    style={{ fontSize: "10px" }}
+                    style={{ fontSize: "9px" }}
                   />
                 </MetaRow>
                 {!isChallan && (
@@ -349,19 +349,19 @@ const DocumentPage = memo(function DocumentPage({
                       placeholder="DD/MM/YYYY"
                       ariaLabel={isQuotation ? "Valid until" : "Due date"}
                       align="right"
-                      style={{ fontSize: "10px" }}
+                      style={{ fontSize: "9px" }}
                     />
                   </MetaRow>
                 )}
               </div>
               {/* INVOICE Title - Bada */}
-              <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "26px", fontWeight: 600, marginTop: "2px" }}>
+              <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "36px", fontWeight: 400, marginTop: "2px" }}>
                 {DOC_LABELS[docType]}
               </h1>
             </div>
           </section>
 
-          {/* Items Table - Exactly 15 Lines */}
+          {/* Items Table */}
           <section className="items-section" style={{ marginBottom: "2px" }}>
             <table>
               <thead>
@@ -453,7 +453,7 @@ const DocumentPage = memo(function DocumentPage({
           )}
         </div>
 
-        {/* Closing Content (Terms, Payment Info, Thanks at Bottom properly anchored) */}
+        {/* Closing Content */}
         {isFirstPage && (
           <section className="closing-content" style={{ marginTop: "auto", paddingTop: "4px" }}>
             <div className="terms-block">
