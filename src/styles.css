@@ -293,3 +293,42 @@
 .folder-menu button { justify-content: flex-start; gap: 7px; padding: 6px 9px; border-radius: 7px; font-weight: 500; }
 .folder-menu button:hover { background: hsl(var(--muted)); }
 .pdf-render-host { position: fixed; top: 0; left: -20000px; z-index: -1; pointer-events: none; }
+
+/* ===== FORCE INVOICE FONT SIZES ===== */
+
+/* INVOICE title = 50 */
+.paper .document-title:not(.document-title-dc):not(.document-title-tax),
+.paper .document-title:not(.document-title-dc):not(.document-title-tax) * {
+  font-size: calc(50pt * var(--paper-scale, 1)) !important;
+  line-height: 1 !important;
+}
+
+/* BILL TO = 28 */
+.paper .bill-to h2,
+.paper .bill-to h2 * {
+  font-size: calc(28pt * var(--paper-scale, 1)) !important;
+}
+
+/* TOTAL = 28 */
+.paper .total-banner span,
+.paper .total-banner span * {
+  font-size: calc(28pt * var(--paper-scale, 1)) !important;
+}
+
+/* Client name = 16 */
+.paper .client-name,
+.paper .client-name * {
+  font-size: calc(16pt * var(--paper-scale, 1)) !important;
+}
+
+/* Phone, email, address, website = 11 */
+.paper .contact-row,
+.paper .contact-row * {
+  font-size: calc(11pt * var(--paper-scale, 1)) !important;
+}
+
+/* Invoice #, Document Date, Due Date (labels and values) = 11 */
+.paper .meta-row,
+.paper .meta-row * {
+  font-size: calc(11pt * var(--paper-scale, 1)) !important;
+}
