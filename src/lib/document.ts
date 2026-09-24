@@ -24,11 +24,11 @@ export type CompanyScope = "current" | "future" | "previous" | "all";
 export const DOC_LABELS: Record<DocType, string> = { invoice: "Invoice", quotation: "Quotation", dc: "Delivery Challan", tax: "Sales Tax Invoice" };
 export const CATEGORY_FOLDERS: Record<DocType, string> = { invoice: "Invoice", quotation: "Quotation", dc: "Delivery Challan", tax: "Sales Tax Invoice" };
 export const CURRENCIES = ["Rs. ", "$", "€", "£", "AED "] as const;
-export const PAPER_SIZES: Record<PaperSizeKey, { width: string; height: string; page: string; scale: number; rows: number; pdf: [number, number] }> = {
-  A4: { width: "210mm", height: "297mm", page: "A4", scale: 1, rows: 10, pdf: [210, 297] },
-  A5: { width: "148mm", height: "210mm", page: "A5", scale: .73, rows: 7, pdf: [148, 210] },
-  Letter: { width: "8.5in", height: "11in", page: "letter", scale: .96, rows: 9, pdf: [215.9, 279.4] },
-  Legal: { width: "8.5in", height: "14in", page: "legal", scale: 1, rows: 14, pdf: [215.9, 355.6] },
+export const PAPER_SIZES: Record<PaperSizeKey, { width: string; height: string; page: string; scale: number; rows: number; contRows: number; pdf: [number, number] }> = {
+  A4: { width: "210mm", height: "297mm", page: "A4", scale: 1, rows: 13, contRows: 19, pdf: [210, 297] },
+  A5: { width: "148mm", height: "210mm", page: "A5", scale: .73, rows: 7, contRows: 11, pdf: [148, 210] },
+  Letter: { width: "8.5in", height: "11in", page: "letter", scale: .96, rows: 9, contRows: 15, pdf: [215.9, 279.4] },
+  Legal: { width: "8.5in", height: "14in", page: "legal", scale: 1, rows: 14, contRows: 20, pdf: [215.9, 355.6] },
 };
 
 export function uid() { return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}` }
