@@ -510,11 +510,11 @@ const DocumentPage = memo(function DocumentPage({
               onChange={(e) => set("footer", { ...state.footer, address: e.target.value })}
               placeholder="Business address"
               aria-label="Business address"
-              rows={1}
+              rows={2}
               style={{
                 width: "100%",
-                height: "1.3em",
-                minHeight: "1.3em",
+                height: "auto",
+                minHeight: "2.6em",
                 background: "transparent",
                 border: "none",
                 outline: "none",
@@ -526,7 +526,8 @@ const DocumentPage = memo(function DocumentPage({
                 padding: "0",
                 margin: "0",
                 display: "block",
-                overflow: "hidden",
+                overflow: "visible",
+                whiteSpace: "pre-wrap",
               }}
             />
           </div>
