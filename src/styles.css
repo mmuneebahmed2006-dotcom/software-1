@@ -408,6 +408,14 @@
 
 @media print {
   html, body { margin: 0 !important; padding: 0 !important; }
+  /* footer aur thank-you ko poora ek sath rakhne ki koshish; agar jagah kam pade
+     to adha katne ki bajaye poora agle page par chala jaye */
+  .paper .document-footer,
+  .paper .thank-you,
+  .paper .closing-content {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
   .studio-shell, .studio-main { display: block !important; min-height: 0 !important; }
   .print-area { margin: 0 !important; padding: 0 !important; overflow: visible !important; }
   .document-pages { gap: 0 !important; }
