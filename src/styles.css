@@ -228,13 +228,13 @@
 .tax-editor { display: inline-flex; align-items: center; gap: calc(2px * var(--paper-scale)); white-space: nowrap; }.tax-editor input { box-sizing: border-box; width: calc(52px * var(--paper-scale)); min-width: calc(52px * var(--paper-scale)); padding-inline: calc(3px * var(--paper-scale)); overflow: visible; text-align: center; }
 .total-banner { margin-top: 5px; width: 100%; min-width: 0; min-height: 38px; display: grid; grid-template-columns: calc(140px * var(--paper-scale)) minmax(0, calc(210px * var(--paper-scale))); align-items: center; overflow: hidden; border-bottom: 3px double var(--primary); background: var(--primary); color: var(--primary-foreground); text-transform: uppercase; white-space: nowrap; }
 .total-banner span { min-width: 0; padding: 0 8px; font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); font-weight: 400; letter-spacing: 0; text-align: left; }.total-banner strong { min-width: 0; max-width: 100%; padding: 0 8px; overflow: hidden; font-size: calc(12px * var(--paper-scale)); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.closing-content { margin-top: auto; padding-top: 4px; }
-.terms-block { max-width: 54%; }.terms-block h3 { margin: 0; font-family: var(--font-body); font-size: calc(12pt * var(--paper-scale)); font-style: italic; font-weight: 600; }.terms-block textarea { margin-top: 2px; font-family: var(--font-body); font-size: calc(10pt * var(--paper-scale)); font-style: italic; line-height: 1.1; }
-.payment-info { margin-top: 4px; display: grid; grid-template-columns: minmax(0, 1fr) 210px; align-items: end; gap: 28px; min-height: 38px; padding: 4px 14px; background: var(--paper-muted); font-size: calc(10pt * var(--paper-scale)); }.payment-info strong { display: block; margin-bottom: 2px; font-size: calc(11pt * var(--paper-scale)); font-weight: 600; text-transform: uppercase; }.payment-info textarea { line-height: 1.1; }
+.closing-content { margin-top: auto; padding-top: 10px; }
+.terms-block { max-width: 54%; }.terms-block h3 { margin: 0; font-family: var(--font-body); font-size: calc(16pt * var(--paper-scale)); font-style: italic; font-weight: 600; }.terms-block textarea { margin-top: 2px; font-family: var(--font-body); font-size: calc(12pt * var(--paper-scale)); font-style: italic; line-height: 1.15; }
+.payment-info { margin-top: 8px; display: grid; grid-template-columns: minmax(0, 1fr) 210px; align-items: end; gap: 28px; min-height: 52px; padding: 7px 16px; background: var(--paper-muted); font-size: calc(11pt * var(--paper-scale)); }.payment-info strong { display: block; margin-bottom: 2px; font-size: calc(12pt * var(--paper-scale)); font-weight: 600; text-transform: uppercase; }.payment-info textarea { line-height: 1.15; }
 .payment-details { min-width: 0; }
 .signature-block { width: 100%; margin: 0; border-top: 1px solid var(--primary); padding-top: 6px; font-size: 10px; text-align: center; }
-.thank-you { margin-top: 4px; padding: 4px 0; border-top: 1px solid var(--paper-line); border-bottom: 1px solid var(--paper-line); text-align: center; }
-.thank-you span { font-family: var(--font-body); font-size: calc(16pt * var(--paper-scale)); font-style: italic; font-weight: 500; }
+.thank-you { margin-top: 8px; padding: 7px 0; border-top: 1px solid var(--paper-line); border-bottom: 1px solid var(--paper-line); text-align: center; }
+.thank-you span { font-family: var(--font-body); font-size: calc(22pt * var(--paper-scale)); font-style: italic; font-weight: 500; }
 .document-footer { min-height: 58px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; padding: 7px calc(48px * var(--paper-scale)); background: var(--primary); color: var(--primary-foreground); }
 .footer-field { min-width: 0; min-height: 38px; display: grid; grid-template-columns: calc(18px * var(--paper-scale)) minmax(0, 1fr); align-items: center; gap: calc(5px * var(--paper-scale)); padding: 0 calc(10px * var(--paper-scale)); font-size: calc(7.5pt * var(--paper-scale)); }
 .footer-field svg { width: calc(14px * var(--paper-scale)); height: calc(14px * var(--paper-scale)); }
@@ -263,7 +263,8 @@
   html, body { width: 100%; height: auto; background: var(--paper) !important; }
   .no-print, .saved-sidebar, .toolbar, button { display: none !important; }
   .print-area { margin: 0 !important; padding: 0 !important; overflow: visible !important; background: var(--paper) !important; }
-  .document-pages { display: block !important; }.paper { width: var(--paper-width) !important; height: var(--paper-height) !important; min-height: 0 !important; margin: 0 !important; break-after: page !important; page-break-after: always !important; break-inside: avoid !important; page-break-inside: avoid !important; box-shadow: none !important; }.paper:last-child { break-after: auto !important; page-break-after: auto !important; }
+  /* height fix kar dene aur usi ke sath overflow:hidden rakhne se hi neechay wala hissa kat raha tha, is liye height ko min-height bana diya aur overflow visible */
+  .document-pages { display: block !important; }.paper { width: var(--paper-width) !important; height: auto !important; min-height: var(--paper-height) !important; overflow: visible !important; margin: 0 !important; break-after: page !important; page-break-after: always !important; break-inside: avoid !important; page-break-inside: avoid !important; box-shadow: none !important; }.paper:last-child { break-after: auto !important; page-break-after: auto !important; }
   .totals { margin-right: 0; }
   input, textarea, select, .editable, .editable:hover, .editable:focus { border: 0 !important; outline: 0 !important; background: transparent !important; box-shadow: none !important; }
   .top-accent { display: block !important; width: 100% !important; height: 10px !important; border-top: 10px solid var(--primary) !important; background: var(--primary) !important; }
@@ -417,7 +418,8 @@
     top: 0 !important;
     left: 0 !important;
     margin: 0 !important;
-    overflow: hidden !important;
+    /* overflow:hidden hi neechay wale box (footer) aur Thanks-for-Business ko kaat raha tha, isliye visible kar diya */
+    overflow: visible !important;
     box-sizing: border-box !important;
     break-after: page !important;
     page-break-after: always !important;
@@ -440,28 +442,62 @@
     print-color-adjust: exact !important;
   }
 
-  /* 8WC logo na kate */
-  .paper .document-header {
-    height: auto !important;
-    min-height: calc(92px * var(--paper-scale, 1)) !important;
-    overflow: visible !important;
-  }
+  /* 8WC logo: print me bhi bilkul screen jaisa size, aur na kate */
+  .paper .document-header { overflow: visible !important; }
   .paper .document-logo {
     display: block !important;
-    height: calc(92px * var(--paper-scale, 1)) !important;
-    width: auto !important;
-    max-height: none !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
   .paper .document-content { overflow: visible !important; }
 
-  /* neeche ka black footer box kabhi na kate */
-  .paper .document-footer {
-    flex-shrink: 0 !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  /* zoom wale container ki extra neechay ki jagah print me na aaye (faltu blank page na bane) */
+  #document-pages { padding-bottom: 0 !important; transform: none !important; }
+}
+
+/* ===== PRINT: upar/neechay ki kali patti printer ke kinare me kat jati thi ===== */
+/* Printer kinaron (~4mm) par print nahi kar sakta, isliye page ko thora sa chhota karke beech me rakha hai.
+   Agar patti kinare tak chahiye to 0.97 ki jagah 1 likh dein. */
+@media print {
+  .paper {
+    transform: scale(0.97) !important;
+    transform-origin: center center !important;
   }
+}
+
+/* ===== AUTOFILL BLUE/WHITE BACKGROUND FIX ===== */
+/* Browser (Chrome/Edge) khud phone, email, address jaise fields ko "autofill" samajh
+   kar apna neela/safed background laga deta hai. Ye us ko hata kar page ke asal
+   rang se badal deta hai. */
+
+/* Upar wale (safed paper) hisse ke fields */
+.paper .bill-to input:-webkit-autofill,
+.paper .bill-to textarea:-webkit-autofill,
+.paper .contact-row input:-webkit-autofill,
+.paper .contact-row textarea:-webkit-autofill {
+  -webkit-text-fill-color: inherit !important;
+  caret-color: inherit !important;
+  box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  transition: background-color 9999s ease-in-out 0s !important;
+}
+
+/* Neechay wali kali footer patti ke fields (phone, email, address) */
+.paper .document-footer input:-webkit-autofill,
+.paper .document-footer textarea:-webkit-autofill {
+  -webkit-text-fill-color: var(--primary-foreground) !important;
+  caret-color: var(--primary-foreground) !important;
+  box-shadow: 0 0 0px 1000px var(--primary) inset !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--primary) inset !important;
+  transition: background-color 9999s ease-in-out 0s !important;
+}
+
+/* Footer ka address 2 lines tak barh sake, isliye us hissay ko thora height de di */
+.paper .document-footer .footer-field:first-child {
+  align-items: flex-start !important;
+  padding-block: calc(6px * var(--paper-scale, 1)) !important;
+}
+.paper .document-footer {
+  min-height: calc(58px * var(--paper-scale, 1)) !important;
+  height: auto !important;
 }
