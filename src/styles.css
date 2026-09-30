@@ -225,7 +225,10 @@
 .total-row { display: grid; grid-template-columns: calc(140px * var(--paper-scale)) minmax(0, calc(210px * var(--paper-scale))); align-items: center; }
 .total-row > span { padding: 4px 9px; text-align: left; }
 .total-row > strong { min-width: 0; padding: 4px 8px; overflow: hidden; font-size: calc(11px * var(--paper-scale)); font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.tax-editor { display: inline-flex; align-items: center; gap: calc(2px * var(--paper-scale)); white-space: nowrap; }.tax-editor input { box-sizing: border-box; width: calc(52px * var(--paper-scale)); min-width: calc(52px * var(--paper-scale)); padding-inline: calc(3px * var(--paper-scale)); overflow: visible; text-align: center; }
+.tax-editor { display: inline-flex; align-items: center; gap: calc(2px * var(--paper-scale)); white-space: nowrap; }.tax-editor input { box-sizing: border-box; width: calc(24px * var(--paper-scale)); min-width: calc(14px * var(--paper-scale)); max-width: calc(52px * var(--paper-scale)); padding-inline: calc(1px * var(--paper-scale)); overflow: visible; text-align: right; }
+@supports (field-sizing: content) {
+  .tax-editor input { field-sizing: content; width: auto; }
+}
 .total-banner { margin-top: 5px; width: 100%; min-width: 0; min-height: 38px; display: grid; grid-template-columns: calc(140px * var(--paper-scale)) minmax(0, calc(210px * var(--paper-scale))); align-items: center; overflow: hidden; border-bottom: 3px double var(--primary); background: var(--primary); color: var(--primary-foreground); text-transform: uppercase; white-space: nowrap; }
 .total-banner span { min-width: 0; padding: 0 8px; font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); font-weight: 400; letter-spacing: 0; text-align: left; }.total-banner strong { min-width: 0; max-width: 100%; padding: 0 8px; overflow: hidden; font-size: calc(12px * var(--paper-scale)); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .closing-content { margin-top: auto; padding-top: 10px; }
@@ -301,6 +304,27 @@
 .paper .document-title:not(.document-title-dc):not(.document-title-tax),
 .paper .document-title:not(.document-title-dc):not(.document-title-tax) * {
   font-size: calc(50pt * var(--paper-scale, 1)) !important;
+  line-height: 1 !important;
+  text-align: left !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  text-indent: 0 !important;
+}
+
+/* DELIVERY CHALLAN aur SALES TAX INVOICE ka title bhi INVOICE jaisa hi design/scale follow kare,
+   bas text lamba hone ki wajah se size thora kam taake ek hi line mein fit ho */
+.paper .document-title.document-title-dc,
+.paper .document-title.document-title-dc * {
+  font-size: calc(34pt * var(--paper-scale, 1)) !important;
+  line-height: 1 !important;
+  text-align: left !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  text-indent: 0 !important;
+}
+.paper .document-title.document-title-tax,
+.paper .document-title.document-title-tax * {
+  font-size: calc(32pt * var(--paper-scale, 1)) !important;
   line-height: 1 !important;
   text-align: left !important;
   margin-left: 0 !important;
@@ -502,7 +526,7 @@
 
 /* Footer ka address 2 lines tak barh sake, isliye us hissay ko thora height de di */
 .paper .document-footer .footer-field:first-child {
-  align-items: flex-start !important;
+  align-items: center !important;
   padding-block: calc(6px * var(--paper-scale, 1)) !important;
 }
 .paper .document-footer {
