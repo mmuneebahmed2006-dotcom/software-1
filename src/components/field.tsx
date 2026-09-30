@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 interface TextFieldProps {
@@ -52,9 +52,10 @@ interface NumberFieldProps {
   ariaLabel: string;
   className?: string;
   step?: number;
+  style?: CSSProperties;
 }
 
-export function NumberField({ value, onChange, ariaLabel, className, step = 1 }: NumberFieldProps) {
+export function NumberField({ value, onChange, ariaLabel, className, step = 1, style }: NumberFieldProps) {
   return (
     <input
       type="number"
@@ -64,6 +65,7 @@ export function NumberField({ value, onChange, ariaLabel, className, step = 1 }:
       aria-label={ariaLabel}
       onChange={(event) => onChange(event.target.valueAsNumber)}
       className={cn("editable w-full border-0 bg-transparent p-0.5 text-right tabular-nums", className)}
+      style={style}
     />
   );
 }
