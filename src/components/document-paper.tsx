@@ -461,7 +461,12 @@ const DocumentPage = memo(function DocumentPage({
                   {isTax ? "Sales Tax" : "Taxes"}
                   <span className="tax-editor">
                     {" "}
-                    (<NumberField value={state.taxRate} onChange={(value) => set("taxRate", value)} ariaLabel="Tax rate percent" />%)
+                    (<NumberField
+                      value={state.taxRate}
+                      onChange={(value) => set("taxRate", value)}
+                      ariaLabel="Tax rate percent"
+                      style={{ width: `${Math.max(1, String(Number.isFinite(state.taxRate) ? state.taxRate : 0).length)}ch`, textAlign: "right", padding: 0 }}
+                    />%)
                   </span>
                 </span>
                 <strong>{money(taxAmount, state.currency)}</strong>
@@ -510,11 +515,11 @@ const DocumentPage = memo(function DocumentPage({
               onChange={(e) => set("footer", { ...state.footer, address: e.target.value })}
               placeholder="Business address"
               aria-label="Business address"
-              rows={2}
+              rows={1}
               style={{
                 width: "100%",
-                height: "auto",
-                minHeight: "2.6em",
+                height: `${Math.min(3, (state.footer.address.match(/\n/g)?.length ?? 0) + 1) * 1.3}em`,
+                minHeight: "1.3em",
                 background: "transparent",
                 border: "none",
                 outline: "none",
@@ -526,7 +531,7 @@ const DocumentPage = memo(function DocumentPage({
                 padding: "0",
                 margin: "0",
                 display: "block",
-                overflow: "visible",
+                overflow: "hidden",
                 whiteSpace: "pre-wrap",
               }}
             />
