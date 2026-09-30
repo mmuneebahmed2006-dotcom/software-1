@@ -500,19 +500,27 @@
   transition: background-color 9999s ease-in-out 0s !important;
 }
 
-/* Sales Tax / Taxes ka % number box: digits ke hisab se khud chhota-bara ho, gap na aaye */
+/* Sales Tax / Taxes ka % number box: up/down arrows hatao, number seedha "%" se jure,
+   koi gap na aaye */
 .paper .tax-editor input {
-  box-sizing: content-box !important;
-  width: auto !important;
-  min-width: 1ch !important;
-  max-width: 3.2ch !important;
-  padding-inline: 1px !important;
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+  box-sizing: border-box !important;
+  width: 2.4ch !important;
+  min-width: 2.4ch !important;
+  max-width: 2.4ch !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
   text-align: right !important;
 }
-@supports (field-sizing: content) {
-  .paper .tax-editor input {
-    field-sizing: content !important;
-  }
+.paper .tax-editor input::-webkit-outer-spin-button,
+.paper .tax-editor input::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.paper .tax-editor {
+  gap: 0 !important;
 }
 
 /* Footer (kali patti) ke phone aur email box ka placeholder text bhi
