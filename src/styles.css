@@ -196,7 +196,7 @@
 .contact-row .editable, .contact-row input { font-size: calc(9pt * var(--paper-scale)); }
 .contact-row svg { margin-top: 3px; }
 .document-meta { min-width: 0; padding-top: 4px; margin-left: auto; width: fit-content; max-width: 100%; }
-.meta-grid { display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: start; column-gap: calc(12px * var(--paper-scale)); row-gap: calc(4px * var(--paper-scale)); }
+.meta-grid { display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: end; column-gap: calc(12px * var(--paper-scale)); row-gap: calc(4px * var(--paper-scale)); }
 .meta-row { display: contents; }
 .meta-row > span { min-width: 0; font-size: calc(9pt * var(--paper-scale)); font-weight: 700; line-height: 1.2; white-space: nowrap; }
 .meta-row > div { min-width: 0; }
@@ -225,7 +225,7 @@
 .total-row { display: grid; grid-template-columns: calc(140px * var(--paper-scale)) minmax(0, calc(210px * var(--paper-scale))); align-items: center; }
 .total-row > span { padding: 4px 9px; text-align: left; }
 .total-row > strong { min-width: 0; padding: 4px 8px; overflow: hidden; font-size: calc(11px * var(--paper-scale)); font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.tax-editor { display: inline-flex; align-items: center; gap: 0; white-space: nowrap; }.tax-editor input { box-sizing: content-box; min-width: 1ch; max-width: calc(52px * var(--paper-scale)); overflow: visible; text-align: right; }
+.tax-editor { display: inline-flex; align-items: center; gap: calc(2px * var(--paper-scale)); white-space: nowrap; }.tax-editor input { box-sizing: border-box; width: calc(52px * var(--paper-scale)); min-width: calc(52px * var(--paper-scale)); padding-inline: calc(3px * var(--paper-scale)); overflow: visible; text-align: center; }
 .total-banner { margin-top: 5px; width: 100%; min-width: 0; min-height: 38px; display: grid; grid-template-columns: calc(140px * var(--paper-scale)) minmax(0, calc(210px * var(--paper-scale))); align-items: center; overflow: hidden; border-bottom: 3px double var(--primary); background: var(--primary); color: var(--primary-foreground); text-transform: uppercase; white-space: nowrap; }
 .total-banner span { min-width: 0; padding: 0 8px; font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); font-weight: 400; letter-spacing: 0; text-align: left; }.total-banner strong { min-width: 0; max-width: 100%; padding: 0 8px; overflow: hidden; font-size: calc(12px * var(--paper-scale)); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .closing-content { margin-top: auto; padding-top: 10px; }
@@ -301,27 +301,6 @@
 .paper .document-title:not(.document-title-dc):not(.document-title-tax),
 .paper .document-title:not(.document-title-dc):not(.document-title-tax) * {
   font-size: calc(50pt * var(--paper-scale, 1)) !important;
-  line-height: 1 !important;
-  text-align: left !important;
-  margin-left: 0 !important;
-  padding-left: 0 !important;
-  text-indent: 0 !important;
-}
-
-/* DELIVERY CHALLAN aur SALES TAX INVOICE ka title bhi INVOICE jaisa hi design/scale follow kare,
-   bas text lamba hone ki wajah se size thora kam taake ek hi line mein fit ho */
-.paper .document-title.document-title-dc,
-.paper .document-title.document-title-dc * {
-  font-size: calc(34pt * var(--paper-scale, 1)) !important;
-  line-height: 1 !important;
-  text-align: left !important;
-  margin-left: 0 !important;
-  padding-left: 0 !important;
-  text-indent: 0 !important;
-}
-.paper .document-title.document-title-tax,
-.paper .document-title.document-title-tax * {
-  font-size: calc(32pt * var(--paper-scale, 1)) !important;
   line-height: 1 !important;
   text-align: left !important;
   margin-left: 0 !important;
@@ -521,9 +500,36 @@
   transition: background-color 9999s ease-in-out 0s !important;
 }
 
+/* Sales Tax / Taxes ka % number box: digits ke hisab se khud chhota-bara ho, gap na aaye */
+.paper .tax-editor input {
+  box-sizing: content-box !important;
+  width: auto !important;
+  min-width: 1ch !important;
+  max-width: 3.2ch !important;
+  padding-inline: 1px !important;
+  text-align: right !important;
+}
+@supports (field-sizing: content) {
+  .paper .tax-editor input {
+    field-sizing: content !important;
+  }
+}
+
+/* Footer (kali patti) ke phone aur email box ka placeholder text bhi
+   "Business address" jaisa saaf/halka safed nazar aaye, kala-par-kala na ho */
+.paper .document-footer input,
+.paper .document-footer .editable {
+  color: var(--primary-foreground) !important;
+}
+.paper .document-footer input::placeholder,
+.paper .document-footer .editable::placeholder {
+  color: color-mix(in oklab, var(--primary-foreground) 55%, transparent) !important;
+  opacity: 1 !important;
+}
+
 /* Footer ka address 2 lines tak barh sake, isliye us hissay ko thora height de di */
 .paper .document-footer .footer-field:first-child {
-  align-items: center !important;
+  align-items: flex-start !important;
   padding-block: calc(6px * var(--paper-scale, 1)) !important;
 }
 .paper .document-footer {
