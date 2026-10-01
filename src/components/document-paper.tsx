@@ -79,19 +79,11 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
       items: current.items.length > 1 ? current.items.filter((item) => item.id !== id) : current.items,
     }));
 
-  const addItemAtPage = (pageIndex: number) => {
+  const addItemAfter = (globalIndex: number) => {
     setState((current) => {
       const blankItem = (): LineItem => ({ id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 });
       const updatedItems = [...current.items];
-      // Agar pichle pages poore nahi bhare, to unhe khali rows se bhar do,
-      // taake nayi line usi page par aaye jis par click kiya (pehle page par nahi)
-      const start = pageStart(pageIndex);
-      while (updatedItems.length < start) {
-        updatedItems.push(blankItem());
-      }
-      // nayi line is page ki aakhri row ke baad
-      const insertIndex = Math.min(start + pageRows(pageIndex), updatedItems.length);
-      updatedItems.splice(insertIndex, 0, blankItem());
+      updatedItems.splice(Math.min(globalIndex + 1, updatedItems.length), 0, blankItem());
       return { ...current, items: updatedItems };
     });
   };
@@ -220,7 +212,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
             paperSize={paperSize}
             updateItem={updateItem}
             removeItem={removeItem}
-            addItem={() => addItemAtPage(pageIndex)}
+            addItemAfter={addItemAfter}
           />
         ))}
       </div>
@@ -235,7 +227,7 @@ interface PageProps extends Props {
   pageCount: number;
   updateItem: (id: string, patch: Partial<LineItem>) => void;
   removeItem: (id: string) => void;
-  addItem: () => void;
+  addItemAfter: (globalIndex: number) => void;
 }
 
 const DocumentPage = memo(function DocumentPage({
@@ -250,7 +242,7 @@ const DocumentPage = memo(function DocumentPage({
   paperSize,
   updateItem,
   removeItem,
-  addItem,
+  addItemAfter,
 }: PageProps) {
   const isFirstPage = pageIndex === 0;
   const isTax = docType === "tax";
@@ -399,8 +391,21 @@ const DocumentPage = memo(function DocumentPage({
               <tbody>
                 {items.length > 0 ? (
                   items.map((item, index) => (
-                    <tr key={item.id} style={{ height: "18px" }}>
-                      <td className="number-col">{itemOffset + index + 1}</td>
+                    <tr key={item.id} className="line-item-row" style={{ height: "18px" }}>
+                      <td className="number-col">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="row-add-line no-print"
+                          onClick={() => addItemAfter(itemOffset + index)}
+                          aria-label={"Add line after row " + (itemOffset + index + 1)}
+                          title="Add line after this row"
+                        >
+                          <Plus size={14} />
+                        </Button>
+                        {itemOffset + index + 1}
+                      </td>
                       <td className="description-col">
                         <AreaField
                           value={item.description}
@@ -444,11 +449,6 @@ const DocumentPage = memo(function DocumentPage({
               </tbody>
             </table>
 
-            <div className="no-print add-line-row">
-              <Button type="button" variant="ghost" size="icon" className="add-line" onClick={addItem} aria-label="Add line item">
-                <Plus size={16} />
-              </Button>
-            </div>
           </section>
 
           {/* Totals */}
@@ -487,7 +487,7 @@ const DocumentPage = memo(function DocumentPage({
             <div className="terms-block">
               <h3>Terms &amp; Conditions</h3>
               <TermsField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
-              <div className="terms-full" aria-hidden>{state.terms}</div>
+              <div className="terms-full" aria-hidden />
             </div>
             <div className="payment-info">
               <div className="payment-details">
