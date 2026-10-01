@@ -274,7 +274,7 @@ const DocumentPage = memo(function DocumentPage({
       data-pdf-page
     >
       <div className="top-accent" />
-      <div className="document-content" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", paddingBottom: "10px" }}>
+      <div className="document-content" style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", height: "100%", paddingBottom: "10px" }}>
         
         <div>
           {/* Header & Logo - Bada Logo */}
@@ -444,9 +444,11 @@ const DocumentPage = memo(function DocumentPage({
               </tbody>
             </table>
 
-            <Button type="button" variant="ghost" className="no-print add-line" onClick={addItem}>
-              <Plus size={14} /> Add line item
-            </Button>
+            <div className="no-print add-line-row">
+              <Button type="button" variant="ghost" size="icon" className="add-line" onClick={addItem} aria-label="Add line item">
+                <Plus size={16} />
+              </Button>
+            </div>
           </section>
 
           {/* Totals */}
