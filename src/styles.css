@@ -216,7 +216,7 @@
 .items-section input,.items-section textarea { min-width: 0; width: 100%; font: inherit; }
 .number-col { width: calc(36px * var(--paper-scale)); text-align: center; }.unit-col { width: calc(58px * var(--paper-scale)); }.qty-col,.unit-price-col { width: calc(108px * var(--paper-scale)); min-width: calc(108px * var(--paper-scale)); }.amount-col { width: calc(142px * var(--paper-scale)); min-width: calc(142px * var(--paper-scale)); }.action-col { width: 38px; padding: 2px !important; border: 0 !important; background: transparent !important; }
 .qty-col input,.unit-price,.unit-price input,.line-total { min-width: 0; width: 100%; white-space: nowrap; font-size: calc(11px * var(--paper-scale)); font-variant-numeric: tabular-nums; text-align: right; }
-.add-line-row { display: flex; justify-content: flex-start; margin-top: 2px; margin-left: calc(-34px * var(--paper-scale, 1)); }
+.add-line-row { display: flex; justify-content: flex-start; margin-top: 7px; }
 .add-line { color: var(--foreground); border: 1px dashed var(--border); border-radius: 999px; width: 28px; height: 28px; padding: 0; }
 .editable { outline: none; border-radius: 3px; transition: background-color 120ms ease, box-shadow 120ms ease; }
 .editable::placeholder { color: color-mix(in oklab, var(--foreground) 35%, transparent); }
