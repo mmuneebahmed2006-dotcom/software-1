@@ -20,6 +20,7 @@ const A4_NEXT_PAGE_ROWS = 19;
 export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeAddRowId, setActiveAddRowId] = useState<string | null>(state.items[0]?.id ?? null);
   const baseRows = PAPER_SIZES[paperSize].rows || 15;
   const isA4 = String(paperSize).toLowerCase() === "a4";
   const firstRows = isA4 ? A4_FIRST_PAGE_ROWS : baseRows;
@@ -79,13 +80,15 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
       items: current.items.length > 1 ? current.items.filter((item) => item.id !== id) : current.items,
     }));
 
-  const addItemAfter = (globalIndex: number) => {
+  const addItemAfter = (globalIndex: number): string => {
+    const newId = uid();
     setState((current) => {
-      const blankItem = (): LineItem => ({ id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 });
+      const blankItem: LineItem = { id: newId, description: "", unit: "pcs", qty: 1, rate: 0 };
       const updatedItems = [...current.items];
-      updatedItems.splice(Math.min(globalIndex + 1, updatedItems.length), 0, blankItem());
+      updatedItems.splice(Math.min(globalIndex + 1, updatedItems.length), 0, blankItem);
       return { ...current, items: updatedItems };
     });
+    return newId;
   };
 
   const handleZoom = (newZoom: number) => {
@@ -213,6 +216,8 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
             updateItem={updateItem}
             removeItem={removeItem}
             addItemAfter={addItemAfter}
+            activeAddRowId={activeAddRowId}
+            setActiveAddRowId={setActiveAddRowId}
           />
         ))}
       </div>
@@ -227,7 +232,9 @@ interface PageProps extends Props {
   pageCount: number;
   updateItem: (id: string, patch: Partial<LineItem>) => void;
   removeItem: (id: string) => void;
-  addItemAfter: (globalIndex: number) => void;
+  addItemAfter: (globalIndex: number) => string;
+  activeAddRowId: string | null;
+  setActiveAddRowId: (id: string) => void;
 }
 
 const DocumentPage = memo(function DocumentPage({
@@ -243,6 +250,8 @@ const DocumentPage = memo(function DocumentPage({
   updateItem,
   removeItem,
   addItemAfter,
+  activeAddRowId,
+  setActiveAddRowId,
 }: PageProps) {
   const isFirstPage = pageIndex === 0;
   const isTax = docType === "tax";
@@ -393,17 +402,19 @@ const DocumentPage = memo(function DocumentPage({
                   items.map((item, index) => (
                     <tr key={item.id} className="line-item-row" style={{ height: "18px" }}>
                       <td className="number-col">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="row-add-line no-print"
-                          onClick={() => addItemAfter(itemOffset + index)}
-                          aria-label={"Add line after row " + (itemOffset + index + 1)}
-                          title="Add line after this row"
-                        >
-                          <Plus size={14} />
-                        </Button>
+                        {activeAddRowId === item.id && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="row-add-line no-print"
+                            onClick={() => setActiveAddRowId(addItemAfter(itemOffset + index))}
+                            aria-label={"Add line after row " + (itemOffset + index + 1)}
+                            title="Add line after this row"
+                          >
+                            <Plus size={14} />
+                          </Button>
+                        )}
                         {itemOffset + index + 1}
                       </td>
                       <td className="description-col">
