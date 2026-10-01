@@ -46,31 +46,31 @@ export function AreaField({ value, onChange, placeholder, className, ariaLabel }
   );
 }
 
-/** One-line-at-a-time editor: shows a single line; Enter shifts the view to the next line. */
+/** Terms editor: starts at one line, grows to two/three lines on Enter, then stops. */
 export function TermsField({ value, onChange, placeholder, className, ariaLabel }: Omit<TextFieldProps, "align">) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  const syncScroll = () => {
+  const syncHeight = () => {
     const element = ref.current;
     if (!element) return;
-    const caret = element.selectionStart ?? element.value.length;
-    const line = element.value.slice(0, caret).split("\n").length - 1;
-    const lineHeight = parseFloat(getComputedStyle(element).lineHeight) || element.clientHeight;
-    element.scrollTop = line * lineHeight;
+    const styles = getComputedStyle(element);
+    const lineHeight = parseFloat(styles.lineHeight) || 18;
+    const lineCount = Math.min(3, Math.max(1, (element.value.match(/\n/g)?.length ?? 0) + 1));
+    element.style.height = lineHeight * lineCount + "px";
+    element.scrollTop = 0;
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter") {
-      const lineCount = (event.currentTarget.value.match(/\n/g)?.length ?? 0) + 1;
-      if (lineCount >= 3) {
-        event.preventDefault();
-        return;
-      }
+    if (event.key !== "Enter") return;
+    const lineCount = (event.currentTarget.value.match(/\n/g)?.length ?? 0) + 1;
+    if (lineCount >= 3) {
+      event.preventDefault();
+      return;
     }
-    requestAnimationFrame(syncScroll);
+    requestAnimationFrame(syncHeight);
   };
 
-  useLayoutEffect(syncScroll, [value]);
+  useLayoutEffect(syncHeight, [value]);
 
   return (
     <textarea
@@ -79,10 +79,11 @@ export function TermsField({ value, onChange, placeholder, className, ariaLabel 
       value={value}
       aria-label={ariaLabel}
       placeholder={placeholder}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={(event) => {
+        onChange(event.target.value);
+        requestAnimationFrame(syncHeight);
+      }}
       onKeyDown={handleKeyDown}
-      onKeyUp={syncScroll}
-      onClick={syncScroll}
       className={cn("editable w-full resize-none overflow-hidden border-0 bg-transparent p-0.5 leading-snug", className)}
     />
   );
