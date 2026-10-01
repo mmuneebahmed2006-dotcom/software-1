@@ -46,6 +46,36 @@ export function AreaField({ value, onChange, placeholder, className, ariaLabel }
   );
 }
 
+/** One-line-at-a-time editor: shows a single line; Enter shifts the view to the next line. */
+export function TermsField({ value, onChange, placeholder, className, ariaLabel }: Omit<TextFieldProps, "align">) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  const syncScroll = () => {
+    const element = ref.current;
+    if (!element) return;
+    const caret = element.selectionStart ?? element.value.length;
+    const line = element.value.slice(0, caret).split("\n").length - 1;
+    const lineHeight = parseFloat(getComputedStyle(element).lineHeight) || element.clientHeight;
+    element.scrollTop = line * lineHeight;
+  };
+
+  useLayoutEffect(syncScroll, [value]);
+
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      value={value}
+      aria-label={ariaLabel}
+      placeholder={placeholder}
+      onChange={(event) => onChange(event.target.value)}
+      onKeyUp={syncScroll}
+      onClick={syncScroll}
+      className={cn("editable w-full resize-none overflow-hidden border-0 bg-transparent p-0.5 leading-snug", className)}
+    />
+  );
+}
+
 interface NumberFieldProps {
   value: number;
   onChange: (value: number) => void;

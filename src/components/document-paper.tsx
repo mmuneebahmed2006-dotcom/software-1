@@ -3,7 +3,7 @@ import { Globe2, Mail, MapPin, Phone, Plus, Trash2, ZoomIn, ZoomOut, RotateCcw }
 import logoMark from "@/assets/logo-mark.png";
 import { DOC_LABELS, PAPER_SIZES, money, uid, type DocState, type DocType, type LineItem, type PaperSizeKey } from "@/lib/document";
 import { Button } from "@/components/ui/button";
-import { AreaField, NumberField, TextField } from "@/components/field";
+import { AreaField, NumberField, TermsField, TextField } from "@/components/field";
 
 interface Props {
   docType: DocType;
@@ -486,7 +486,8 @@ const DocumentPage = memo(function DocumentPage({
           <section className="closing-content" style={{ marginTop: "auto", paddingTop: "4px" }}>
             <div className="terms-block">
               <h3>Terms &amp; Conditions</h3>
-              <AreaField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
+              <TermsField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
+              <div className="terms-full" aria-hidden>{state.terms}</div>
             </div>
             <div className="payment-info">
               <div className="payment-details">
