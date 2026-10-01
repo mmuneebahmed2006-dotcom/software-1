@@ -486,7 +486,8 @@ const DocumentPage = memo(function DocumentPage({
           <section className="closing-content" style={{ marginTop: "auto", paddingTop: "4px" }}>
             <div className="terms-block">
               <h3>Terms &amp; Conditions</h3>
-              <AreaField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
+              <TermsField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
+              <div className="terms-full" aria-hidden>{state.terms}</div>
             </div>
             <div className="payment-info">
               <div className="payment-details">
