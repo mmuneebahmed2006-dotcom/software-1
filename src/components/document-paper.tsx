@@ -3,7 +3,7 @@ import { Globe2, Mail, MapPin, Phone, Plus, Trash2, ZoomIn, ZoomOut, RotateCcw }
 import logoMark from "@/assets/logo-mark.png";
 import { DOC_LABELS, PAPER_SIZES, money, uid, type DocState, type DocType, type LineItem, type PaperSizeKey } from "@/lib/document";
 import { Button } from "@/components/ui/button";
-import { AreaField, NumberField, TextField } from "@/components/field";
+import { AreaField, NumberField, TermsField, TextField } from "@/components/field";
 
 interface Props {
   docType: DocType;
