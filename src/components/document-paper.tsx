@@ -13,7 +13,7 @@ interface Props {
   paperSize: PaperSizeKey;
 }
 
-// A4: pehle page par 13 rows, uske baad har page par 19 rows
+// A4: pehle page par 12 rows, uske baad har page par 20 rows
 const A4_FIRST_PAGE_ROWS = 12;
 const A4_NEXT_PAGE_ROWS = 20;
 
@@ -215,8 +215,6 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
             updateItem={updateItem}
             removeItem={removeItem}
             addItemAfter={addItemAfter}
-            activeAddRowId={activeAddRowId}
-            setActiveAddRowId={setActiveAddRowId}
           />
         ))}
       </div>
@@ -232,8 +230,6 @@ interface PageProps extends Props {
   updateItem: (id: string, patch: Partial<LineItem>) => void;
   removeItem: (id: string) => void;
   addItemAfter: (globalIndex: number) => string;
-  activeAddRowId: string | null;
-  setActiveAddRowId: (id: string) => void;
 }
 
 const DocumentPage = memo(function DocumentPage({
@@ -249,8 +245,6 @@ const DocumentPage = memo(function DocumentPage({
   updateItem,
   removeItem,
   addItemAfter,
-  activeAddRowId,
-  setActiveAddRowId,
 }: PageProps) {
   const isFirstPage = pageIndex === 0;
   const isTax = docType === "tax";
