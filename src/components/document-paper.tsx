@@ -14,13 +14,12 @@ interface Props {
 }
 
 // A4: pehle page par 13 rows, uske baad har page par 19 rows
-const A4_FIRST_PAGE_ROWS = 13;
-const A4_NEXT_PAGE_ROWS = 19;
+const A4_FIRST_PAGE_ROWS = 12;
+const A4_NEXT_PAGE_ROWS = 20;
 
 export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeAddRowId, setActiveAddRowId] = useState<string | null>(state.items[0]?.id ?? null);
   const baseRows = PAPER_SIZES[paperSize].rows || 15;
   const isA4 = String(paperSize).toLowerCase() === "a4";
   const firstRows = isA4 ? A4_FIRST_PAGE_ROWS : baseRows;
@@ -402,13 +401,13 @@ const DocumentPage = memo(function DocumentPage({
                   items.map((item, index) => (
                     <tr key={item.id} className="line-item-row" style={{ height: "18px" }}>
                       <td className="number-col">
-                        {activeAddRowId === item.id && (
+                        {item.id === state.items[state.items.length - 1]?.id && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
                             className="row-add-line no-print"
-                            onClick={() => setActiveAddRowId(addItemAfter(itemOffset + index))}
+                            onClick={() => addItemAfter(itemOffset + index)}
                             aria-label={"Add line after row " + (itemOffset + index + 1)}
                             title="Add line after this row"
                           >
