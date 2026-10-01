@@ -59,6 +59,17 @@ export function TermsField({ value, onChange, placeholder, className, ariaLabel 
     element.scrollTop = line * lineHeight;
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter") {
+      const lineCount = (event.currentTarget.value.match(/\n/g)?.length ?? 0) + 1;
+      if (lineCount >= 3) {
+        event.preventDefault();
+        return;
+      }
+    }
+    requestAnimationFrame(syncScroll);
+  };
+
   useLayoutEffect(syncScroll, [value]);
 
   return (
@@ -69,6 +80,7 @@ export function TermsField({ value, onChange, placeholder, className, ariaLabel 
       aria-label={ariaLabel}
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
+      onKeyDown={handleKeyDown}
       onKeyUp={syncScroll}
       onClick={syncScroll}
       className={cn("editable w-full resize-none overflow-hidden border-0 bg-transparent p-0.5 leading-snug", className)}
