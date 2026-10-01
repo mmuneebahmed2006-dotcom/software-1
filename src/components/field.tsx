@@ -46,23 +46,26 @@ export function AreaField({ value, onChange, placeholder, className, ariaLabel }
   );
 }
 
-/** Terms editor: starts at one line, grows to two/three lines on Enter, then stops. */
+/** Terms editor: one visible line initially; Enter reveals line 2, then line 3. */
 export function TermsField({ value, onChange, placeholder, className, ariaLabel }: Omit<TextFieldProps, "align">) {
   const ref = useRef<HTMLTextAreaElement>(null);
+
+  const getLineCount = (text: string) => Math.min(3, Math.max(1, (text.match(/\n/g)?.length ?? 0) + 1));
 
   const syncHeight = () => {
     const element = ref.current;
     if (!element) return;
-    const styles = getComputedStyle(element);
-    const lineHeight = parseFloat(styles.lineHeight) || 18;
-    const lineCount = Math.min(3, Math.max(1, (element.value.match(/\n/g)?.length ?? 0) + 1));
-    element.style.height = lineHeight * lineCount + "px";
+    const lineCount = getLineCount(element.value);
+    element.style.height = `${lineCount * 1.15}em`;
+    element.style.minHeight = `${lineCount * 1.15}em`;
+    element.style.maxHeight = `${lineCount * 1.15}em`;
+    element.style.overflowY = "hidden";
     element.scrollTop = 0;
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key !== "Enter") return;
-    const lineCount = (event.currentTarget.value.match(/\n/g)?.length ?? 0) + 1;
+    const lineCount = getLineCount(event.currentTarget.value);
     if (lineCount >= 3) {
       event.preventDefault();
       return;
@@ -71,6 +74,9 @@ export function TermsField({ value, onChange, placeholder, className, ariaLabel 
   };
 
   useLayoutEffect(syncHeight, [value]);
+
+  const lineCount = getLineCount(value);
+  const lineHeight = "1.15em";
 
   return (
     <textarea
@@ -85,6 +91,13 @@ export function TermsField({ value, onChange, placeholder, className, ariaLabel 
       }}
       onKeyDown={handleKeyDown}
       className={cn("editable w-full resize-none overflow-hidden border-0 bg-transparent p-0.5 leading-snug", className)}
+      style={{
+        height: `${lineCount * 1.15}em`,
+        minHeight: `${lineCount * 1.15}em`,
+        maxHeight: `${lineCount * 1.15}em`,
+        lineHeight,
+        overflowY: "hidden",
+      }}
     />
   );
 }
