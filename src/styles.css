@@ -216,7 +216,7 @@
 .items-section input,.items-section textarea { min-width: 0; width: 100%; font: inherit; }
 .number-col { width: calc(36px * var(--paper-scale)); text-align: center; }.unit-col { width: calc(58px * var(--paper-scale)); }.qty-col,.unit-price-col { width: calc(108px * var(--paper-scale)); min-width: calc(108px * var(--paper-scale)); }.amount-col { width: calc(142px * var(--paper-scale)); min-width: calc(142px * var(--paper-scale)); }.action-col { width: 38px; padding: 2px !important; border: 0 !important; background: transparent !important; }
 .qty-col input,.unit-price,.unit-price input,.line-total { min-width: 0; width: 100%; white-space: nowrap; font-size: calc(11px * var(--paper-scale)); font-variant-numeric: tabular-nums; text-align: right; }
-.add-line-row { display: flex; justify-content: flex-end; margin-top: 7px; }
+.add-line-row { display: flex; justify-content: flex-start; margin-top: 7px; }
 .add-line { color: var(--foreground); border: 1px dashed var(--border); border-radius: 999px; width: 28px; height: 28px; padding: 0; }
 .editable { outline: none; border-radius: 3px; transition: background-color 120ms ease, box-shadow 120ms ease; }
 .editable::placeholder { color: color-mix(in oklab, var(--foreground) 35%, transparent); }
@@ -247,7 +247,7 @@
 .total-banner { margin-top: 5px; width: 100%; min-width: 0; min-height: 38px; display: grid; grid-template-columns: calc(140px * var(--paper-scale)) minmax(0, calc(210px * var(--paper-scale))); align-items: center; overflow: hidden; border-bottom: 3px double var(--primary); background: var(--primary); color: var(--primary-foreground); text-transform: uppercase; white-space: nowrap; }
 .total-banner span { min-width: 0; padding: 0 8px; font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); font-weight: 400; letter-spacing: 0; text-align: left; }.total-banner strong { min-width: 0; max-width: 100%; padding: 0 8px; overflow: hidden; font-size: calc(12px * var(--paper-scale)); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .closing-content { margin-top: auto; padding-top: 10px; }
-.terms-block { max-width: 54%; }.terms-block h3 { margin: 0; font-family: var(--font-body); font-size: calc(16pt * var(--paper-scale)); font-style: italic; font-weight: 600; }.terms-block textarea { margin-top: 2px; font-family: var(--font-body); font-size: calc(12pt * var(--paper-scale)); font-style: italic; line-height: 1.15; }
+.terms-block { max-width: 54%; }.terms-block h3 { margin: 0; font-family: var(--font-body); font-size: calc(16pt * var(--paper-scale)); font-style: italic; font-weight: 600; }.terms-block textarea { margin-top: 2px; max-height: calc(3 * 1.15 * 12pt * var(--paper-scale)); overflow-y: auto; font-family: var(--font-body); font-size: calc(12pt * var(--paper-scale)); font-style: italic; line-height: 1.15; }
 .payment-info { margin-top: 8px; display: grid; grid-template-columns: minmax(0, 1fr) 210px; align-items: end; gap: 28px; min-height: 52px; padding: 7px 16px; background: var(--paper-muted); font-size: calc(11pt * var(--paper-scale)); }.payment-info strong { display: block; margin-bottom: 2px; font-size: calc(12pt * var(--paper-scale)); font-weight: 600; text-transform: uppercase; }.payment-info textarea { line-height: 1.15; }
 .payment-details { min-width: 0; }
 .signature-block { width: 100%; margin: 0; border-top: 1px solid var(--primary); padding-top: 6px; font-size: 10px; text-align: center; }
