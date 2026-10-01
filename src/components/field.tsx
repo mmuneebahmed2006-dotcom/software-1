@@ -46,19 +46,22 @@ export function AreaField({ value, onChange, placeholder, className, ariaLabel }
   );
 }
 
-/** Terms editor: one visible line initially; Enter reveals line 2, then line 3. */
+/** Terms editor: starts at one line and grows only after Enter creates a new line. */
 export function TermsField({ value, onChange, placeholder, className, ariaLabel }: Omit<TextFieldProps, "align">) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  const getLineCount = (text: string) => Math.min(3, Math.max(1, (text.match(/\n/g)?.length ?? 0) + 1));
+  const getLineCount = (text: string) => Math.min(3, Math.max(1, text.split("\n").length));
 
   const syncHeight = () => {
     const element = ref.current;
     if (!element) return;
     const lineCount = getLineCount(element.value);
-    element.style.height = `${lineCount * 1.15}em`;
-    element.style.minHeight = `${lineCount * 1.15}em`;
-    element.style.maxHeight = `${lineCount * 1.15}em`;
+    const lineHeight = parseFloat(getComputedStyle(element).lineHeight) || 18;
+    const padding = 2;
+    const height = lineCount * lineHeight + padding;
+    element.style.height = `${height}px`;
+    element.style.minHeight = `${height}px`;
+    element.style.maxHeight = `${height}px`;
     element.style.overflowY = "hidden";
     element.scrollTop = 0;
   };
@@ -75,9 +78,6 @@ export function TermsField({ value, onChange, placeholder, className, ariaLabel 
 
   useLayoutEffect(syncHeight, [value]);
 
-  const lineCount = getLineCount(value);
-  const lineHeight = "1.15em";
-
   return (
     <textarea
       ref={ref}
@@ -92,10 +92,10 @@ export function TermsField({ value, onChange, placeholder, className, ariaLabel 
       onKeyDown={handleKeyDown}
       className={cn("editable w-full resize-none overflow-hidden border-0 bg-transparent p-0.5 leading-snug", className)}
       style={{
-        height: `${lineCount * 1.15}em`,
-        minHeight: `${lineCount * 1.15}em`,
-        maxHeight: `${lineCount * 1.15}em`,
-        lineHeight,
+        height: "20px",
+        minHeight: "20px",
+        maxHeight: "20px",
+        lineHeight: "18px",
         overflowY: "hidden",
       }}
     />
