@@ -475,7 +475,7 @@
 .paper .items-section { margin-top: calc(8px * var(--paper-scale, 1)) !important; padding-top: calc(4px * var(--paper-scale, 1)) !important; }
 .paper .totals { margin-top: calc(6px * var(--paper-scale, 1)) !important; }
 .paper .closing-content { flex-shrink: 0; padding-top: calc(4px * var(--paper-scale, 1)) !important; }
-.paper .payment-info { margin-top: calc(6px * var(--paper-scale, 1)) !important; min-height: 0 !important; padding-block: calc(5px * var(--paper-scale, 1)) !important; }
+.paper .payment-info { margin-top: calc(16px * var(--paper-scale, 1)) !important; min-height: 0 !important; padding-block: calc(5px * var(--paper-scale, 1)) !important; }
 .paper .thank-you { margin-top: calc(6px * var(--paper-scale, 1)) !important; padding-block: calc(4px * var(--paper-scale, 1)) !important; }
 
 /* Items ka font thora bara (readable) */
