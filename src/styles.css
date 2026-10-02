@@ -610,3 +610,13 @@
   min-height: calc(58px * var(--paper-scale, 1)) !important;
   height: auto !important;
 }
+
+
+/* Company Details Terms & Conditions: fixed three-line field. */
+.company-terms-textarea {
+  height: 72px !important;
+  min-height: 72px !important;
+  max-height: 72px !important;
+  resize: none !important;
+  overflow-y: auto !important;
+}
