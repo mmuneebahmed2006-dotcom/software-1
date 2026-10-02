@@ -633,9 +633,23 @@
 
 
 /* Company Details only: match the visible focus stroke of the standard inputs. */
+.company-terms-textarea:focus,
 .company-terms-textarea:focus-visible {
   outline: 1px solid hsl(var(--foreground) / 0.55) !important;
   outline-offset: 0 !important;
   border-color: hsl(var(--border)) !important;
   box-shadow: none !important;
+}
+
+/* Align only the totals block with the Amount column without changing its content. */
+.paper .totals {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.paper .totals .total-row,
+.paper .totals .total-banner {
+  width: 142px;
+  margin-left: auto;
 }
