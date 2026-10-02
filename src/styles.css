@@ -214,7 +214,7 @@
 .items-section th, .items-section td { border: 1px solid var(--paper-line); padding: calc(2.5px * var(--paper-scale)) calc(6px * var(--paper-scale)); vertical-align: middle; line-height: 1.1; overflow-wrap: anywhere; word-break: break-word; }
 .items-section th { background: var(--paper-soft); color: var(--primary); font-size: calc(12px * var(--paper-scale)); font-weight: 700; text-align: center; text-transform: uppercase; }
 .items-section input,.items-section textarea { min-width: 0; width: 100%; font: inherit; }
-.number-col { width: calc(36px * var(--paper-scale)); text-align: center; }.unit-col { width: calc(58px * var(--paper-scale)); }.qty-col,.unit-price-col { width: calc(108px * var(--paper-scale)); min-width: calc(108px * var(--paper-scale)); }.amount-col { width: calc(142px * var(--paper-scale)); min-width: calc(142px * var(--paper-scale)); }.action-col { width: 38px; padding: 2px !important; border: 0 !important; background: transparent !important; }
+.number-col { width: calc(36px * var(--paper-scale)); text-align: center; }.unit-col { width: calc(58px * var(--paper-scale)); }.qty-col,.unit-price-col { width: calc(108px * var(--paper-scale)); min-width: calc(108px * var(--paper-scale)); }.amount-col { width: calc(142px * var(--paper-scale)); min-width: calc(142px * var(--paper-scale)); }.action-col { width: 20px; padding: 0 !important; border: 0 !important; background: transparent !important; }
 .qty-col input,.unit-price,.unit-price input,.line-total { min-width: 0; width: 100%; white-space: nowrap; font-size: calc(11px * var(--paper-scale)); font-variant-numeric: tabular-nums; text-align: right; }
 .add-line-row { display: none !important; }
 
@@ -459,8 +459,10 @@
 /* delete (trash) button row ko bara na kare */
 .paper .items-section .action-col button {
   height: calc(24px * var(--paper-scale, 1)) !important;
+  width: calc(20px * var(--paper-scale, 1)) !important;
   min-height: 0 !important;
   padding-block: 0 !important;
+  transform: translateX(calc(10px * var(--paper-scale, 1)));
 }
 .paper .add-line {
   min-height: 0 !important;
