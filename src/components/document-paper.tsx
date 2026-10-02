@@ -336,7 +336,9 @@ const DocumentPage = memo(function DocumentPage({
   const isQuotation = docType === "quotation";
   const showAmounts = !isChallan;
 
-  const subtotal = state.items.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0);
+  // Calculate totals from THIS PAGE'S line items only.
+  // Page 1 = max 12 rows; every continuation page = max 20 rows.
+  const subtotal = items.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0);
   const taxAmount = showAmounts ? subtotal * ((state.taxRate || 0) / 100) : 0;
   const total = subtotal + taxAmount;
 
