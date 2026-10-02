@@ -610,3 +610,23 @@
   min-height: calc(58px * var(--paper-scale, 1)) !important;
   height: auto !important;
 }
+
+
+/* Company Details: make Terms & Conditions match the standard input fields. */
+.company-terms-textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border: 1px solid hsl(var(--input));
+  border-radius: 0.375rem;
+  background: transparent;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  box-shadow: none;
+}
+.company-terms-textarea:focus {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 1px hsl(var(--ring));
+}
