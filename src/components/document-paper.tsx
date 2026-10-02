@@ -25,26 +25,52 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
   const firstRows = isA4 ? A4_FIRST_PAGE_ROWS : baseRows;
   const nextRows = isA4 ? A4_NEXT_PAGE_ROWS : baseRows;
 
-  // page number (0 se shuru) ki pehli row ka index aur us page me kitni rows aati hain
-  const pageStart = (page: number) => (page === 0 ? 0 : firstRows + (page - 1) * nextRows);
-  const pageRows = (page: number) => (page === 0 ? firstRows : nextRows);
+  // Build pages from the user's manual page breaks first, then apply the normal
+  // A4 capacity (12 on page 1, 20 on continuation pages).
+  const pageStarts = useMemo(() => {
+    const starts: number[] = [0];
+    const manualBreaks = (state.pageBreaks ?? [])
+      .filter((n) => Number.isInteger(n) && n > 0 && n < state.items.length)
+      .sort((a, b) => a - b);
+
+    let start = 0;
+    let pageIndex = 0;
+    let breakCursor = 0;
+
+    while (start < state.items.length) {
+      const capacity = pageIndex === 0 ? firstRows : nextRows;
+      const capacityEnd = start + capacity;
+      while (breakCursor < manualBreaks.length && manualBreaks[breakCursor] <= start) breakCursor++;
+
+      const manualEnd = manualBreaks[breakCursor] ?? Infinity;
+      const end = Math.min(capacityEnd, manualEnd);
+
+      if (end <= start) {
+        breakCursor++;
+        continue;
+      }
+
+      if (end < state.items.length) {
+        starts.push(end);
+      }
+      start = end;
+      pageIndex++;
+    }
+
+    return starts;
+  }, [firstRows, nextRows, state.items.length, state.pageBreaks]);
 
   const pages = useMemo(() => {
-    const chunks: LineItem[][] = [];
-    let start = 0;
-    while (start < state.items.length) {
-      const size = chunks.length === 0 ? firstRows : nextRows;
-      chunks.push(state.items.slice(start, start + size));
-      start += size;
-    }
-    if (chunks.length === 0) {
-      chunks.push([]);
-    }
-    while (chunks.length < state.minimumPages) {
-      chunks.push([]);
-    }
+    const chunks = pageStarts.map((start, index) => {
+      const end = pageStarts[index + 1] ?? state.items.length;
+      return state.items.slice(start, end);
+    });
+    if (chunks.length === 0) chunks.push([]);
+    while (chunks.length < state.minimumPages) chunks.push([]);
     return chunks;
-  }, [firstRows, nextRows, state.items, state.minimumPages]);
+  }, [pageStarts, state.items, state.minimumPages]);
+
+  const pageStart = (page: number) => pageStarts[page] ?? state.items.length;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -82,19 +108,61 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
   const addItemToPage = (pageIndex: number): string => {
     const newId = uid();
     setState((current) => {
-      const blankItem: LineItem = { id: newId, description: "", unit: "pcs", qty: 1, rate: 0 };
-      const firstPageSize = isA4 ? A4_FIRST_PAGE_ROWS : baseRows;
-      const nextPageSize = isA4 ? A4_NEXT_PAGE_ROWS : baseRows;
-      const start = pageIndex === 0 ? 0 : firstPageSize + (pageIndex - 1) * nextPageSize;
-      const pageCapacity = pageIndex === 0 ? firstPageSize : nextPageSize;
-      const end = Math.min(start + pageCapacity, current.items.length);
+      const manualBreaks = (current.pageBreaks ?? [])
+        .filter((n) => Number.isInteger(n) && n > 0 && n < current.items.length)
+        .sort((a, b) => a - b);
+
+      const starts: number[] = [0];
+      let start = 0;
+      let page = 0;
+      let breakCursor = 0;
+
+      while (start < current.items.length) {
+        const capacity = page === 0 ? (isA4 ? A4_FIRST_PAGE_ROWS : baseRows) : (isA4 ? A4_NEXT_PAGE_ROWS : baseRows);
+        const capacityEnd = start + capacity;
+        while (breakCursor < manualBreaks.length && manualBreaks[breakCursor] <= start) breakCursor++;
+        const manualEnd = manualBreaks[breakCursor] ?? Infinity;
+        const end = Math.min(capacityEnd, manualEnd);
+        if (end <= start) break;
+        if (end < current.items.length) starts.push(end);
+        start = end;
+        page++;
+      }
+
+      while (starts.length < current.minimumPages) {
+        starts.push(current.items.length);
+      }
+
+      const insertAt = starts[pageIndex] !== undefined
+        ? Math.min(
+            pageIndex + 1 < starts.length ? starts[pageIndex + 1] : current.items.length,
+            starts[pageIndex] + (pageIndex === 0 ? (isA4 ? A4_FIRST_PAGE_ROWS : baseRows) : (isA4 ? A4_NEXT_PAGE_ROWS : baseRows))
+          )
+        : current.items.length;
+
       const updatedItems = [...current.items];
-      updatedItems.splice(end, 0, blankItem);
-      return { ...current, items: updatedItems };
+      updatedItems.splice(insertAt, 0, { id: newId, description: "", unit: "pcs", qty: 1, rate: 0 });
+
+      // Any manual break at or after the insertion point moves one row down.
+      const updatedBreaks = manualBreaks
+        .map((breakIndex) => (breakIndex >= insertAt ? breakIndex + 1 : breakIndex));
+
+      // If this page was explicitly empty (a manual/minimum page), create its break
+      // at the new item position so the new row stays on this page.
+      if (pageIndex > 0 && starts[pageIndex] === current.items.length && !updatedBreaks.includes(insertAt)) {
+        updatedBreaks.push(insertAt);
+      }
+
+      updatedBreaks.sort((a, b) => a - b);
+
+      return {
+        ...current,
+        items: updatedItems,
+        pageBreaks: updatedBreaks,
+      };
     });
     return newId;
   };
-
   const handleZoom = (newZoom: number) => {
     const clamped = Math.min(Math.max(newZoom, 40), 160);
     setZoom(clamped);
@@ -276,7 +344,7 @@ const DocumentPage = memo(function DocumentPage({
       <div className="document-content" style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", height: "100%", paddingBottom: "10px" }}>
         
         <div>
-          {isFirstPage && (
+          {(
             <>
                         {/* Header & Logo - Bada Logo */}
                         <header className="document-header" style={{ marginBottom: "2px" }}>
@@ -406,7 +474,7 @@ const DocumentPage = memo(function DocumentPage({
                   items.map((item, index) => (
                     <tr key={item.id} className="line-item-row" style={{ height: "18px" }}>
                       <td className="number-col">
-                        {pageIndex === pageCount - 1 && item.id === items[items.length - 1]?.id && (
+                        {item.id === items[items.length - 1]?.id && (
                           <Button
                             type="button"
                             variant="ghost"
@@ -457,7 +525,7 @@ const DocumentPage = memo(function DocumentPage({
                 ) : (
                   <tr className="empty-continuation-row">
                     <td colSpan={showAmounts ? 7 : 5} style={{ textAlign: "center", padding: "10px", color: "#94a3b8", position: "relative" }}>
-                      {pageIndex === pageCount - 1 && (
+                      {(
                         <Button
                           type="button"
                           variant="ghost"
