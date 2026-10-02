@@ -395,7 +395,7 @@ const DocumentPage = memo(function DocumentPage({
                   items.map((item, index) => (
                     <tr key={item.id} className="line-item-row" style={{ height: "18px" }}>
                       <td className="number-col">
-                        {item.id === state.items[state.items.length - 1]?.id && (
+                        {pageIndex === pageCount - 1 && item.id === items[items.length - 1]?.id && (
                           <Button
                             type="button"
                             variant="ghost"
@@ -444,8 +444,21 @@ const DocumentPage = memo(function DocumentPage({
                     </tr>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan={showAmounts ? 7 : 5} style={{ textAlign: "center", padding: "10px", color: "#94a3b8" }}>
+                  <tr className="empty-continuation-row">
+                    <td colSpan={showAmounts ? 7 : 5} style={{ textAlign: "center", padding: "10px", color: "#94a3b8", position: "relative" }}>
+                      {pageIndex === pageCount - 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="row-add-line no-print"
+                          onClick={() => addItemAfter(itemOffset - 1)}
+                          aria-label={"Add line to page " + (pageIndex + 1)}
+                          title="Add line to this page"
+                        >
+                          <Plus size={14} />
+                        </Button>
+                      )}
                       Continuation Page {pageIndex + 1}
                     </td>
                   </tr>
