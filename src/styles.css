@@ -639,15 +639,3 @@
   border-color: hsl(var(--border)) !important;
   box-shadow: none !important;
 }
-
-/* Keep totals numerically aligned with the Amount column edge. */
-.paper .totals {
-  width: calc(142px * var(--paper-scale, 1));
-  margin-left: auto !important;
-  margin-right: 0 !important;
-}
-.paper .totals .total-row,
-.paper .totals .total-banner {
-  width: 100%;
-  box-sizing: border-box;
-}
