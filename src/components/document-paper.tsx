@@ -100,10 +100,21 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
     }));
 
   const removeItem = (id: string) =>
-    setState((current) => ({
-      ...current,
-      items: current.items.length > 1 ? current.items.filter((item) => item.id !== id) : current.items,
-    }));
+    setState((current) => {
+      if (current.items.length <= 1) return current;
+      const removedIndex = current.items.findIndex((item) => item.id === id);
+      if (removedIndex < 0) return current;
+
+      const updatedBreaks = (current.pageBreaks ?? [])
+        .filter((breakIndex) => Number.isInteger(breakIndex) && breakIndex > 0)
+        .map((breakIndex) => (removedIndex < breakIndex ? breakIndex - 1 : breakIndex));
+
+      return {
+        ...current,
+        items: current.items.filter((item) => item.id !== id),
+        pageBreaks: updatedBreaks,
+      };
+    });
 
   const addItemToPage = (pageIndex: number): string => {
     const newId = uid();
