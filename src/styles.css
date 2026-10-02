@@ -241,7 +241,7 @@
 .editable::placeholder { color: color-mix(in oklab, var(--foreground) 35%, transparent); }
 .editable:hover { background: oklch(0.2 0 0 / 0.05); }
 .editable:focus { background: oklch(0.2 0 0 / 0.07); box-shadow: inset 0 0 0 1px oklch(0.2 0 0 / 0.35); }
-.totals { width: calc(350px * var(--paper-scale)); margin: 10px 38px 0 auto; font-size: calc(12px * var(--paper-scale)); }
+.totals { width: calc(350px * var(--paper-scale)); margin: 10px 0 0 auto; font-size: calc(12px * var(--paper-scale)); }
 .total-row { display: grid; grid-template-columns: calc(140px * var(--paper-scale)) minmax(0, calc(210px * var(--paper-scale))); align-items: center; }
 .total-row > span { padding: 4px 9px; text-align: left; }
 .total-row > strong { min-width: 0; padding: 4px 8px; overflow: hidden; font-size: calc(11px * var(--paper-scale)); font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
@@ -609,47 +609,4 @@
 .paper .document-footer {
   min-height: calc(58px * var(--paper-scale, 1)) !important;
   height: auto !important;
-}
-
-
-/* Company Details: make Terms & Conditions match the standard input fields. */
-.company-terms-textarea {
-  width: 100%;
-  min-height: 72px;
-  resize: vertical;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.375rem;
-  background: transparent;
-  padding: 0.5rem 0.75rem;
-  font: inherit;
-  color: inherit;
-  outline: none;
-  box-shadow: none;
-}
-.company-terms-textarea:focus {
-  border-color: hsl(var(--border));
-  box-shadow: none;
-}
-
-
-/* Company Details only: match the visible focus stroke of the standard inputs. */
-.company-terms-textarea:focus,
-.company-terms-textarea:focus-visible {
-  outline: 1px solid hsl(var(--foreground) / 0.55) !important;
-  outline-offset: 0 !important;
-  border-color: hsl(var(--border)) !important;
-  box-shadow: none !important;
-}
-
-/* Align only the totals block with the Amount column without changing its content. */
-.paper .totals {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-.paper .totals .total-row,
-.paper .totals .total-banner {
-  width: 142px;
-  margin-left: auto;
 }
