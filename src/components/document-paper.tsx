@@ -79,12 +79,17 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
       items: current.items.length > 1 ? current.items.filter((item) => item.id !== id) : current.items,
     }));
 
-  const addItemAfter = (globalIndex: number): string => {
+  const addItemToPage = (pageIndex: number): string => {
     const newId = uid();
     setState((current) => {
       const blankItem: LineItem = { id: newId, description: "", unit: "pcs", qty: 1, rate: 0 };
+      const firstPageSize = isA4 ? A4_FIRST_PAGE_ROWS : baseRows;
+      const nextPageSize = isA4 ? A4_NEXT_PAGE_ROWS : baseRows;
+      const start = pageIndex === 0 ? 0 : firstPageSize + (pageIndex - 1) * nextPageSize;
+      const pageCapacity = pageIndex === 0 ? firstPageSize : nextPageSize;
+      const end = Math.min(start + pageCapacity, current.items.length);
       const updatedItems = [...current.items];
-      updatedItems.splice(Math.min(globalIndex + 1, updatedItems.length), 0, blankItem);
+      updatedItems.splice(end, 0, blankItem);
       return { ...current, items: updatedItems };
     });
     return newId;
@@ -214,7 +219,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
             paperSize={paperSize}
             updateItem={updateItem}
             removeItem={removeItem}
-            addItemAfter={addItemAfter}
+            addItemToPage={addItemToPage}
           />
         ))}
       </div>
@@ -229,7 +234,7 @@ interface PageProps extends Props {
   pageCount: number;
   updateItem: (id: string, patch: Partial<LineItem>) => void;
   removeItem: (id: string) => void;
-  addItemAfter: (globalIndex: number) => string;
+  addItemToPage: (pageIndex: number) => string;
 }
 
 const DocumentPage = memo(function DocumentPage({
@@ -244,7 +249,7 @@ const DocumentPage = memo(function DocumentPage({
   paperSize,
   updateItem,
   removeItem,
-  addItemAfter,
+  addItemToPage,
 }: PageProps) {
   const isFirstPage = pageIndex === 0;
   const isTax = docType === "tax";
@@ -271,110 +276,116 @@ const DocumentPage = memo(function DocumentPage({
       <div className="document-content" style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", height: "100%", paddingBottom: "10px" }}>
         
         <div>
-          {/* Header & Logo - Bada Logo */}
-          <header className="document-header" style={{ marginBottom: "2px" }}>
-            <img src={logoMark} alt="Logo" className="document-logo" style={{ maxHeight: "68px" }} />
-          </header>
-
-          {/* Identity Grid */}
-          <section className="identity-grid" style={{ marginBottom: "2px", gap: "8px" }}>
-            <div className="bill-to">
-              {/* BILL TO - Bada */}
-              <h2 style={{ fontSize: "24px", fontWeight: 400, marginBottom: "2px" }}>BILL TO</h2>
-              {/* Client details */}
-              <TextField
-                value={state.client.name}
-                onChange={(value) => set("client", { ...state.client, name: value })}
-                placeholder="Client name"
-                ariaLabel="Client name"
-                className="client-name"
-                style={{ fontSize: "10px" }}
-              />
-              <ContactRow icon={Phone}>
-                <TextField
-                  value={state.client.phone}
-                  onChange={(value) => set("client", { ...state.client, phone: value })}
-                  placeholder="Phone number"
-                  ariaLabel="Client phone"
-                  style={{ fontSize: "9px" }}
-                />
-              </ContactRow>
-              <ContactRow icon={Mail}>
-                <TextField
-                  value={state.client.email}
-                  onChange={(value) => set("client", { ...state.client, email: value })}
-                  placeholder="Email address"
-                  ariaLabel="Client email"
-                  style={{ fontSize: "9px" }}
-                />
-              </ContactRow>
-              <ContactRow icon={MapPin}>
-                <AreaField
-                  value={state.client.address}
-                  onChange={(value) => set("client", { ...state.client, address: value })}
-                  placeholder="Client address"
-                  ariaLabel="Client address"
-                  style={{ fontSize: "9px" }}
-                />
-              </ContactRow>
-              <ContactRow icon={Globe2}>
-                <TextField
-                  value={state.client.website}
-                  onChange={(value) => set("client", { ...state.client, website: value })}
-                  placeholder="Website"
-                  ariaLabel="Client website"
-                  style={{ fontSize: "9px" }}
-                />
-              </ContactRow>
-            </div>
-
-            <div className="document-meta">
-              {/* Invoice details */}
-              <div className="meta-grid" style={{ fontSize: "9px", gap: "1px" }}>
-                <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
-                  <TextField
-                    value={state.meta.number}
-                    onChange={(value) => set("meta", { ...state.meta, number: value })}
-                    placeholder="#351-34"
-                    ariaLabel="Document number"
-                    align="right"
-                    style={{ fontSize: "9px" }}
-                  />
-                </MetaRow>
-                <MetaRow label="Document Date">
-                  <TextField
-                    value={state.meta.date}
-                    onChange={(value) => set("meta", { ...state.meta, date: value })}
-                    placeholder="DD/MM/YYYY"
-                    ariaLabel="Document date"
-                    align="right"
-                    style={{ fontSize: "9px" }}
-                  />
-                </MetaRow>
-                {!isChallan && (
-                  <MetaRow label={isQuotation ? "Valid Until" : "Due Date"}>
-                    <TextField
-                      value={isQuotation ? state.meta.validUntil : state.meta.dueDate}
-                      onChange={(value) =>
-                        set("meta", {
-                          ...state.meta,
-                          [isQuotation ? "validUntil" : "dueDate"]: value,
-                        })
-                      }
-                      placeholder="DD/MM/YYYY"
-                      ariaLabel={isQuotation ? "Valid until" : "Due date"}
-                      align="right"
-                      style={{ fontSize: "9px" }}
-                    />
-                  </MetaRow>
-                )}
-              </div>
-              {/* INVOICE Title - Bada */}
-              <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "36px", fontWeight: 400, marginTop: "2px" }}>
-                {DOC_LABELS[docType]}
-              </h1>
-            </div>
-          </section>
+          {isFirstPage && (
+            <>
+                        {/* Header & Logo - Bada Logo */}
+                        <header className="document-header" style={{ marginBottom: "2px" }}>
+                          <img src={logoMark} alt="Logo" className="document-logo" style={{ maxHeight: "68px" }} />
+                        </header>
+              
+                        {/* Identity Grid */}
+                        <section className="identity-grid" style={{ marginBottom: "2px", gap: "8px" }}>
+                          <div className="bill-to">
+                            {/* BILL TO - Bada */}
+                            <h2 style={{ fontSize: "24px", fontWeight: 400, marginBottom: "2px" }}>BILL TO</h2>
+                            {/* Client details */}
+                            <TextField
+                              value={state.client.name}
+                              onChange={(value) => set("client", { ...state.client, name: value })}
+                              placeholder="Client name"
+                              ariaLabel="Client name"
+                              className="client-name"
+                              style={{ fontSize: "10px" }}
+                            />
+                            <ContactRow icon={Phone}>
+                              <TextField
+                                value={state.client.phone}
+                                onChange={(value) => set("client", { ...state.client, phone: value })}
+                                placeholder="Phone number"
+                                ariaLabel="Client phone"
+                                style={{ fontSize: "9px" }}
+                              />
+                            </ContactRow>
+                            <ContactRow icon={Mail}>
+                              <TextField
+                                value={state.client.email}
+                                onChange={(value) => set("client", { ...state.client, email: value })}
+                                placeholder="Email address"
+                                ariaLabel="Client email"
+                                style={{ fontSize: "9px" }}
+                              />
+                            </ContactRow>
+                            <ContactRow icon={MapPin}>
+                              <AreaField
+                                value={state.client.address}
+                                onChange={(value) => set("client", { ...state.client, address: value })}
+                                placeholder="Client address"
+                                ariaLabel="Client address"
+                                style={{ fontSize: "9px" }}
+                              />
+                            </ContactRow>
+                            <ContactRow icon={Globe2}>
+                              <TextField
+                                value={state.client.website}
+                                onChange={(value) => set("client", { ...state.client, website: value })}
+                                placeholder="Website"
+                                ariaLabel="Client website"
+                                style={{ fontSize: "9px" }}
+                              />
+                            </ContactRow>
+                          </div>
+              
+                          <div className="document-meta">
+                            {/* Invoice details */}
+                            <div className="meta-grid" style={{ fontSize: "9px", gap: "1px" }}>
+                              <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
+                                <TextField
+                                  value={state.meta.number}
+                                  onChange={(value) => set("meta", { ...state.meta, number: value })}
+                                  placeholder="#351-34"
+                                  ariaLabel="Document number"
+                                  align="right"
+                                  style={{ fontSize: "9px" }}
+                                />
+                              </MetaRow>
+                              <MetaRow label="Document Date">
+                                <TextField
+                                  value={state.meta.date}
+                                  onChange={(value) => set("meta", { ...state.meta, date: value })}
+                                  placeholder="DD/MM/YYYY"
+                                  ariaLabel="Document date"
+                                  align="right"
+                                  style={{ fontSize: "9px" }}
+                                />
+                              </MetaRow>
+                              {!isChallan && (
+                                <MetaRow label={isQuotation ? "Valid Until" : "Due Date"}>
+                                  <TextField
+                                    value={isQuotation ? state.meta.validUntil : state.meta.dueDate}
+                                    onChange={(value) =>
+                                      set("meta", {
+                                        ...state.meta,
+                                        [isQuotation ? "validUntil" : "dueDate"]: value,
+                                      })
+                                    }
+                                    placeholder="DD/MM/YYYY"
+                                    ariaLabel={isQuotation ? "Valid until" : "Due date"}
+                                    align="right"
+                                    style={{ fontSize: "9px" }}
+                                  />
+                                </MetaRow>
+                              )}
+                            </div>
+                            {/* INVOICE Title - Bada */}
+                            <h1 className={`document-title document-title-${docType}`} style={{ fontSize: "36px", fontWeight: 400, marginTop: "2px" }}>
+                              {DOC_LABELS[docType]}
+                            </h1>
+                          </div>
+                        </section>
+              
+              
+            </>
+          )}
 
           {/* Items Table */}
           <section className="items-section" style={{ marginBottom: "2px" }}>
@@ -401,7 +412,7 @@ const DocumentPage = memo(function DocumentPage({
                             variant="ghost"
                             size="icon"
                             className="row-add-line no-print"
-                            onClick={() => addItemAfter(itemOffset + index)}
+                            onClick={() => addItemToPage(pageIndex)}
                             aria-label={"Add line after row " + (itemOffset + index + 1)}
                             title="Add line after this row"
                           >
@@ -452,14 +463,14 @@ const DocumentPage = memo(function DocumentPage({
                           variant="ghost"
                           size="icon"
                           className="row-add-line no-print"
-                          onClick={() => addItemAfter(itemOffset - 1)}
+                          onClick={() => addItemToPage(pageIndex)}
                           aria-label={"Add line to page " + (pageIndex + 1)}
                           title="Add line to this page"
                         >
                           <Plus size={14} />
                         </Button>
                       )}
-                      Continuation Page {pageIndex + 1}
+
                     </td>
                   </tr>
                 )}
