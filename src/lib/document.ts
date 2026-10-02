@@ -8,6 +8,9 @@ export interface DocState {
   meta: { number: string; date: string; dueDate: string; validUntil: string; poNumber: string; ntn: string; strn: string };
   dispatch: { method: string; vehicleNo: string; gatePassNo: string };
   items: LineItem[];
+  // Optional manual page breaks: each number is the zero-based item index where a new page starts.
+  // This lets every page keep its own Add Line button even when an earlier page is not full.
+  pageBreaks?: number[];
   taxRate: number;
   terms: string;
   paymentInfo: string;
@@ -33,13 +36,13 @@ export const PAPER_SIZES: Record<PaperSizeKey, { width: string; height: string; 
 
 export function uid() { return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}` }
 export function createBlankDocumentState(): DocState {
-  return { currency: "Rs. ", client: { name: "", phone: "", email: "", address: "", website: "" }, meta: { number: "", date: "", dueDate: "", validUntil: "", poNumber: "", ntn: "", strn: "" }, dispatch: { method: "", vehicleNo: "", gatePassNo: "" }, items: [{ id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 }], taxRate: 0, terms: "", paymentInfo: "", footer: { address: "", phone: "", email: "" }, minimumPages: 1 };
+  return { currency: "Rs. ", client: { name: "", phone: "", email: "", address: "", website: "" }, meta: { number: "", date: "", dueDate: "", validUntil: "", poNumber: "", ntn: "", strn: "" }, dispatch: { method: "", vehicleNo: "", gatePassNo: "" }, items: [{ id: uid(), description: "", unit: "pcs", qty: 1, rate: 0 }], pageBreaks: [], taxRate: 0, terms: "", paymentInfo: "", footer: { address: "", phone: "", email: "" }, minimumPages: 1 };
 }
 export function createDocumentState() { return createBlankDocumentState() }
 export function normalizeDocumentState(value: Partial<DocState> & { bank?: { name?: string; account?: string; paypal?: string } }): DocState {
   const blank = createBlankDocumentState();
   const legacyPayment = value.bank ? `Bank: ${value.bank.name ?? ""} • ${value.bank.account ?? ""} • PayPal: ${value.bank.paypal ?? ""}` : "";
-  return { ...blank, ...value, client: { ...blank.client, ...value.client }, meta: { ...blank.meta, ...value.meta }, dispatch: { ...blank.dispatch, ...value.dispatch }, footer: { ...blank.footer, ...value.footer }, items: value.items?.length ? value.items : blank.items, paymentInfo: value.paymentInfo ?? legacyPayment, minimumPages: Math.min(99, Math.max(1, value.minimumPages ?? 1)) };
+  return { ...blank, ...value, client: { ...blank.client, ...value.client }, meta: { ...blank.meta, ...value.meta }, dispatch: { ...blank.dispatch, ...value.dispatch }, footer: { ...blank.footer, ...value.footer }, items: value.items?.length ? value.items : blank.items, paymentInfo: value.paymentInfo ?? legacyPayment, minimumPages: Math.min(99, Math.max(1, value.minimumPages ?? 1)), pageBreaks: Array.isArray(value.pageBreaks) ? value.pageBreaks.filter((n) => Number.isInteger(n) && n > 0).sort((a, b) => a - b) : [] };
 }
 export function normalizeSavedDocument(value: Partial<SavedDocument> & Pick<SavedDocument, "id" | "title" | "docType" | "paperSize" | "state" | "updatedAt">): SavedDocument {
   return { ...value, id: value.id, title: value.title, docType: value.docType, paperSize: value.paperSize, state: normalizeDocumentState(value.state), folder: value.folder ?? "General", createdAt: value.createdAt ?? value.updatedAt, updatedAt: value.updatedAt, storagePath: value.storagePath };
