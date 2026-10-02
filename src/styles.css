@@ -618,5 +618,5 @@
   min-height: 72px !important;
   max-height: 72px !important;
   resize: none !important;
-  overflow-y: auto !important;
+  overflow: hidden !important;
 }
