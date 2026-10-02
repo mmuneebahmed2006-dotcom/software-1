@@ -119,7 +119,9 @@
     "win": {
       "icon": "electron/icon.ico",
       "requestedExecutionLevel": "asInvoker",
-      "target": "nsis"
+      "target": "nsis",
+      "publisherName": "Muhammad Muneeb Ahmed",
+      "signingHashAlgorithms": ["sha256"]
     },
     "nsis": {
       "oneClick": false,
