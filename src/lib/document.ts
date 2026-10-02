@@ -21,7 +21,7 @@ export interface SavedDocument {
   id: string; title: string; docType: DocType; paperSize: PaperSizeKey; state: DocState;
   folder: string; createdAt: number; updatedAt: number; storagePath?: string | undefined;
 }
-export interface CompanyDetails { address: string; phone: string; email: string; website: string; paymentInfo: string }
+export interface CompanyDetails { address: string; phone: string; email: string; terms: string }
 export type CompanyScope = "current" | "future" | "previous" | "all";
 
 export const DOC_LABELS: Record<DocType, string> = { invoice: "Invoice", quotation: "Quotation", dc: "Delivery Challan", tax: "Sales Tax Invoice" };
@@ -53,5 +53,5 @@ export function safeFileName(docType: DocType, number: string) { const clean = n
 export function groupLabel(timestamp: number) { const days = Math.floor((Date.now() - timestamp) / 86400000); if (days <= 0) return "Today"; if (days <= 7) return "Last Week"; if (days <= 31) return "Last Month"; const months = Math.max(2, Math.round(days / 30)); return `${months} Months Ago` }
 export function dateRangeStart(months: number) { const date = new Date(); date.setMonth(date.getMonth() - months); return date.getTime() }
 export function matchesDateRange(document: SavedDocument, from?: number, to?: number) { return (!from || document.updatedAt >= from) && (!to || document.updatedAt <= to) }
-export function companyFromState(state: DocState): CompanyDetails { return { ...state.footer, website: state.client.website, paymentInfo: state.paymentInfo } }
-export function applyCompanyDetails(state: DocState, details: CompanyDetails): DocState { return { ...state, footer: { address: details.address, phone: details.phone, email: details.email }, client: { ...state.client, website: details.website }, paymentInfo: details.paymentInfo } }
+export function companyFromState(state: DocState): CompanyDetails { return { address: state.footer.address, phone: state.footer.phone, email: state.footer.email, terms: state.terms } }
+export function applyCompanyDetails(state: DocState, details: CompanyDetails): DocState { return { ...state, footer: { address: details.address, phone: details.phone, email: details.email }, terms: details.terms } }
