@@ -89,19 +89,44 @@ function installIpc() {
 }
 function startServer() { serverProcess = fork(getServerEntry(), [], { env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1' }, stdio: 'pipe' }); serverProcess.stderr?.on('data', (data) => log(data.toString())); }
 function waitForServer(url, callback, attempts = 60) { http.get(url, callback).on('error', () => attempts > 0 ? setTimeout(() => waitForServer(url, callback, attempts - 1), 250) : log('Server did not respond')); }
-function createWindow() { const iconPath = path.join(__dirname, 'electron', 'icon.ico'); win = new BrowserWindow({
+let splashWin;
+
+function createSplashWindow() {
+  splashWin = new BrowserWindow({
+    width: 1440,
+    height: 900,
+    frame: false,
+    resizable: false,
+    movable: false,
+    alwaysOnTop: true,
+    show: true,
+    backgroundColor: '#000000',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  });
+
+  const splashHtml = `<!doctype html><html><head><meta charset="UTF-8"><style>
+    html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}
+  </style></head><body></body></html>`;
+  splashWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(splashHtml));
+}
+
+function createWindow() {
+  const iconPath = path.join(__dirname, 'electron', 'icon.ico');
+
+  // The real application window uses the normal Windows frame. It stays hidden
+  // while the black borderless splash window is displayed.
+  win = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 900,
     minHeight: 650,
     show: false,
     title: 'Document Studio',
-    titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: '#111214',
-      symbolColor: '#ffffff',
-      height: 32
-    },
+    backgroundColor: '#ffffff',
     ...(fs.existsSync(iconPath) ? { icon: iconPath } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -110,12 +135,25 @@ function createWindow() { const iconPath = path.join(__dirname, 'electron', 'ico
       webSecurity: true,
       sandbox: true
     }
-  }); win.setMenuBarVisibility(false); win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) void shell.openExternal(url); return { action: 'deny' }; }); win.webContents.on('will-navigate', (event, url) => { if (!url.startsWith(`http://127.0.0.1:${PORT}`)) event.preventDefault(); }); // Keep the native minimize/maximize/close controls hidden while the app is loading.
-  // Reveal the dark title-bar controls only after the main UI is ready.
-  try { win.setTitleBarOverlay({ color: '#111214', symbolColor: '#ffffff', height: 32 }); } catch {}
+  });
+
+  win.setMenuBarVisibility(false);
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:/.test(url)) void shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  win.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith(`http://127.0.0.1:${PORT}`)) event.preventDefault();
+  });
+
   waitForServer(`http://127.0.0.1:${PORT}`, () => win.loadURL(`http://127.0.0.1:${PORT}`));
+
   win.once('ready-to-show', () => {
-    try { win.setTitleBarOverlay({ color: '#111214', symbolColor: '#ffffff', height: 32 }); } catch {}
+    // Switch cleanly from the pure-black opening screen to the normal
+    // white Windows title bar with Minimize / Maximize / Close controls.
     win.show();
-  }); }
+    if (splashWin && !splashWin.isDestroyed()) splashWin.close();
+    splashWin = null;
+  });
+}
 if (!app.requestSingleInstanceLock()) app.quit(); else { app.whenReady().then(() => { Menu.setApplicationMenu(null); installIpc(); startServer(); createWindow(); const settings = readSettings(); if (settings.initialized && settings.dataRoot && (!settings.lastBackupAt || Date.now() - settings.lastBackupAt >= 30 * 86400000)) setTimeout(() => { try { createAutoBackup(); } catch (error) { log(error.message); } }, 10000); }); app.on('window-all-closed', () => { serverProcess?.kill(); if (process.platform !== 'darwin') app.quit(); }); }
