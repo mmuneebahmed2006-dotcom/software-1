@@ -2,12 +2,13 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, FilePlus2, FileText, Folder, FolderPlus, MoreVertical, Pencil, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { dateRangeStart, DOC_LABELS, documentTotal, groupLabel, matchesDateRange, money, type SavedDocument } from "@/lib/document";
+import { dateRangeStart, DOC_LABELS, documentTotal, groupLabel, matchesDateRange, money, type DocType, type SavedDocument } from "@/lib/document";
 
 export type FolderDownloadMode = "combined" | "separate";
 
 interface Props {
   documents: SavedDocument[];
+  docType: DocType;
   activeId: string | null;
   folders: string[];
   activeFolder: string;
@@ -30,7 +31,7 @@ function useDebounced(value: string, delay = 160) {
   return debounced;
 }
 
-function SavedDocumentsSidebarComponent({ documents, activeId, folders = [], activeFolder = "General", busy = false, onSelectFolder = () => {}, onNew, onOpen, onRename, onDelete, onCreateFolder, onRenameFolder, onDeleteFolder, onDownloadFolder, onDownloadDocument }: Props) {
+function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders = [], activeFolder = "", busy = false, onSelectFolder = () => {}, onNew, onOpen, onRename, onDelete, onCreateFolder, onRenameFolder, onDeleteFolder, onDownloadFolder, onDownloadDocument }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [query, setQuery] = useState("");
   const [folderQuery, setFolderQuery] = useState("");
@@ -45,22 +46,23 @@ function SavedDocumentsSidebarComponent({ documents, activeId, folders = [], act
   const search = useDebounced(query);
   const folderSearch = useDebounced(folderQuery);
 
-  const folderNames = useMemo(() => [...new Set([...(folders ?? []), ...(documents ?? []).map((entry) => entry.folder)])].filter(Boolean).sort(), [folders, documents]);
+  const categoryDocuments = useMemo(() => (documents ?? []).filter((entry) => entry.docType === docType), [documents, docType]);
+  const folderNames = useMemo(() => [...new Set([...(folders ?? []), ...categoryDocuments.map((entry) => entry.folder)])].filter(Boolean).sort(), [folders, categoryDocuments]);
   const visibleFolders = useMemo(() => folderNames.filter((name) => name.toLowerCase().includes(folderSearch.trim().toLowerCase())), [folderNames, folderSearch]);
-  const counts = useMemo(() => documents.reduce<Record<string, number>>((result, entry) => { result[entry.folder] = (result[entry.folder] ?? 0) + 1; return result }, {}), [documents]);
+  const counts = useMemo(() => categoryDocuments.reduce<Record<string, number>>((result, entry) => { if (entry.folder) result[entry.folder] = (result[entry.folder] ?? 0) + 1; return result }, {}), [categoryDocuments]);
 
   const groups = useMemo(() => {
     const rangeFrom = range === "custom" ? (from ? new Date(`${from}T00:00:00`).getTime() : undefined) : range === "all" ? undefined : dateRangeStart(Number(range));
     const rangeTo = range === "custom" && to ? new Date(`${to}T23:59:59.999`).getTime() : undefined;
     const folderFilter = folderSearch.trim() ? visibleFolders : null;
     const term = search.toLowerCase();
-    const filtered = documents.filter((entry) =>
+    const filtered = categoryDocuments.filter((entry) =>
       `${entry.title} ${entry.state.meta.number} ${entry.state.client.name} ${entry.folder}`.toLowerCase().includes(term)
       && matchesDateRange(entry, rangeFrom, rangeTo)
-      && (folder === "all" || entry.folder === folder)
+      && (folder === "all" || (folder === "__none__" ? !entry.folder : entry.folder === folder))
       && (!folderFilter || folderFilter.includes(entry.folder)));
     return filtered.reduce<Record<string, SavedDocument[]>>((result, item) => { const label = groupLabel(item.updatedAt); (result[label] ??= []).push(item); return result }, {});
-  }, [documents, search, range, from, to, folder, folderSearch, visibleFolders]);
+  }, [categoryDocuments, search, range, from, to, folder, folderSearch, visibleFolders]);
 
   const commitDraft = () => { if (draft && draft.value.trim()) void onRename(draft.id, draft.value.trim()); setDraft(null) };
 
@@ -73,7 +75,8 @@ function SavedDocumentsSidebarComponent({ documents, activeId, folders = [], act
       {range === "custom" && <div className="history-custom"><input type="date" value={from} onChange={(event) => setFrom(event.target.value)} aria-label="History start date"/><input type="date" value={to} onChange={(event) => setTo(event.target.value)} aria-label="History end date"/></div>}
 
       <div className="folder-toolbar">
-        <button type="button" className={`folder-all ${folder === "all" ? "active" : ""}`} onClick={() => setFolder("all")}>All folders</button>
+        <button type="button" className={`folder-all ${folder === "all" ? "active" : ""}`} onClick={() => { setFolder("all"); onSelectFolder("") }}>All folders</button>
+        <button type="button" className={`folder-all ${folder === "__none__" ? "active" : ""}`} onClick={() => { setFolder("__none__"); onSelectFolder("") }}>No folder</button>
         <label className="folder-search"><Search size={13}/><input value={folderQuery} onChange={(event) => setFolderQuery(event.target.value)} placeholder="Search folders" aria-label="Search folders"/></label>
       </div>
       <div className="folder-chips">
@@ -91,14 +94,14 @@ function SavedDocumentsSidebarComponent({ documents, activeId, folders = [], act
 
       <label className="document-search"><Search size={16}/><input id="document-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, number, or folder" aria-label="Search saved documents"/></label>
       <div className="saved-list">
-        {Object.keys(groups).length === 0 && <div className="saved-empty"><FileText size={23}/><span>{documents.length ? "No documents found" : "No saved documents yet"}</span></div>}
+        {Object.keys(groups).length === 0 && <div className="saved-empty"><FileText size={23}/><span>{categoryDocuments.length ? "No documents found" : "No saved documents yet"}</span></div>}
         {Object.entries(groups).map(([label, entries]) => <section className="saved-group" key={label}><h3>{label}</h3>{entries.map((document) => <div key={document.id} className={`saved-item ${activeId === document.id ? "active" : ""}`}>
           <button type="button" className="saved-item-main" onClick={() => onOpen(document)}><FileText size={17}/><span>
             {draft?.id === document.id
               ? <input autoFocus value={draft.value} onClick={(event) => event.stopPropagation()} onChange={(event) => setDraft({ id: document.id, value: event.target.value })} onBlur={commitDraft} onKeyDown={(event) => { if (event.key === "Enter") commitDraft(); if (event.key === "Escape") setDraft(null) }} aria-label="Document title"/>
               : <strong>{document.title}</strong>}
             <small>{document.state.meta.number || DOC_LABELS[document.docType]} · {document.state.client.name || "No client"}</small>
-            <small>{document.state.meta.date || "No date"} · {document.folder}</small>
+            <small>{document.state.meta.date || "No date"} · {document.folder || "No folder"}</small>
             <small className="saved-item-total">{document.docType === "dc" ? "No pricing" : money(documentTotal(document.state, document.docType), document.state.currency)}</small>
           </span></button>
           <div className="saved-item-actions">
