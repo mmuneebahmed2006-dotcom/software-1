@@ -572,8 +572,8 @@ body.startup-active .document-paper-wrapper {
    Agar patti kinare tak chahiye to 0.97 ki jagah 1 likh dein. */
 @media print {
   .paper {
-    transform: scale(0.97) !important;
-    transform-origin: center center !important;
+    transform: none !important;
+    transform-origin: top left !important;
   }
 }
 
@@ -661,14 +661,26 @@ body.startup-active .document-paper-wrapper {
 .print-mode-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:8px}.print-mode-tabs button{border:0;background:transparent;color:#aeb2bb;padding:7px 3px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent}.print-mode-tabs button.active{color:#62a1ff;border-bottom-color:#62a1ff}
 .print-radio-list{display:grid;gap:1px}.print-scale-input,.print-range-input{width:70px;height:27px;border:1px solid #555861;border-radius:4px;background:#303239;color:#fff;padding:0 7px}.print-scale-input:disabled,.print-range-input:disabled{opacity:.35}
 .print-orientation{display:flex;gap:8px}.print-orientation button{width:38px;height:34px;border:1px solid #555861;background:#303239;color:#fff;border-radius:5px;font-size:20px;cursor:pointer}.print-orientation button.active{outline:2px solid #438df5}
-.print-preview-stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#eceff2;overflow:hidden;padding:48px 18px 62px}
+.print-preview-stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#eceff2;overflow:hidden;padding:48px 18px 62px;box-sizing:border-box}
 .print-preview-file{position:absolute;top:15px;left:0;right:0;text-align:center;font-size:13px;color:#30343a;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 18px}
 .print-preview-paper-wrap{width:100%;height:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto;padding:6px;box-sizing:border-box}
-.print-preview-paper-holder{width:min(390px,58%);aspect-ratio:210 / 297;flex:0 1 auto;transform-origin:center center;display:flex;align-items:stretch;justify-content:center;box-shadow:0 2px 14px rgb(0 0 0 / .25);background:#fff}
-.print-preview-paper{display:block;width:100%;height:100%;object-fit:fill;background:#fff}
+.print-preview-paper-holder{height:min(100%,620px);width:auto;aspect-ratio:210 / 297;flex:0 0 auto;transform-origin:center center;display:flex;align-items:stretch;justify-content:center;box-shadow:0 2px 14px rgb(0 0 0 / .25);background:#fff;overflow:hidden}
+.print-preview-paper{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
 .print-preview-empty{padding:30px;color:#70757d}
 .print-page-controls{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);height:38px;display:flex;align-items:center;gap:3px;padding:3px 8px;background:#272a31;border:1px solid #454951;border-radius:7px;color:#fff}.print-page-controls button{border:0;background:transparent;color:#d8dbe1;width:30px;height:30px;display:grid;place-items:center;cursor:pointer}.print-page-controls button:disabled{opacity:.3;cursor:default}.print-page-controls span{min-width:64px;text-align:center;font-size:12px}
 .print-preview-zoom{position:absolute;right:12px;bottom:12px;height:38px;display:flex;align-items:center;gap:7px;padding:3px 9px;background:#272a31;border:1px solid #454951;border-radius:7px;color:#fff}.print-preview-zoom button{border:0;background:transparent;color:#fff;width:26px;height:28px;display:grid;place-items:center;cursor:pointer}.print-preview-zoom strong{font-size:12px;min-width:40px;text-align:center}
 .print-preview-footer{height:62px;flex:0 0 62px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#202126;border-top:1px solid #36383e;color:#cdd0d6;font-size:12px}.print-preview-footer div{display:flex;gap:10px}
 @media(max-width:850px){.print-preview-window{width:calc(100vw - 20px);height:calc(100vh - 20px)}.print-preview-body{grid-template-columns:270px minmax(0,1fr)}.print-settings-panel{padding:12px}.print-preview-paper-holder{width:min(330px,68%)}.print-preview-stage{padding-inline:10px}}
 @media(max-width:680px){.print-preview-body{grid-template-columns:1fr}.print-settings-panel{max-height:45%;border-right:0;border-bottom:1px solid #3a3b40}.print-preview-stage{min-height:0}.print-preview-paper-holder{width:min(300px,55%)}}
+
+
+/* Native desktop print window: no extra white browser/OS title strip. */
+html, body { overflow-x: hidden; }
+.print-mode-note { margin: 7px 0 2px; padding: 7px 8px; border: 1px solid #454951; border-radius: 5px; background: #303239; color: #bfc4cc; font-size: 10px; line-height: 1.35; }
+.print-range-hint { margin: 4px 0 0 98px; color: #9da3ad; font-size: 10px; }
+@media(max-width:850px){
+  .print-preview-paper-holder { height:min(100%,540px); }
+}
+@media(max-width:680px){
+  .print-preview-paper-holder { width:min(100%,330px); height:auto; aspect-ratio:210 / 297; }
+}
