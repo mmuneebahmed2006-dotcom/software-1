@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Printer, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Printer, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCcw, Settings, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CapturedDocument } from "@/lib/pdf";
 
@@ -22,6 +22,8 @@ export type PrintSettings = {
   reversePages: boolean;
   printAsImage: boolean;
   dpi: 150 | 300 | 600;
+  printerName: string;
+  pagesPerSheet: 1 | 2 | 4 | 6 | 9 | 16;
 };
 
 type Props = {
@@ -53,7 +55,10 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     reversePages: false,
     printAsImage: false,
     dpi: 300,
+    printerName: "",
+    pagesPerSheet: 1,
   });
+  const [printers, setPrinters] = useState<Array<{ name: string; displayName: string; description: string; status: number; isDefault: boolean }>>([]);
 
   const [page, setPage] = useState(0);
   const [zoom, setZoom] = useState(100);
@@ -63,6 +68,18 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   const patch = <K extends keyof PrintSettings>(key: K, value: PrintSettings[K]) =>
     setSettings((s) => ({ ...s, [key]: value }));
+
+  const loadPrinters = async () => {
+    if (!window.desktop?.listPrinters) return;
+    try {
+      const list = await window.desktop.listPrinters();
+      setPrinters(list);
+      const preferred = list.find((printer) => printer.isDefault)?.name ?? list[0]?.name ?? "";
+      setSettings((s) => ({ ...s, printerName: s.printerName || preferred }));
+    } catch { setPrinters([]); }
+  };
+
+  useEffect(() => { if (open) void loadPrinters(); }, [open]);
 
   if (!open) return null;
 
@@ -79,10 +96,11 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <section className="print-setting-group">
               <h3>Printer</h3>
               <div className="print-printer-row">
-                <select aria-label="Printer" defaultValue="System Printer">
-                  <option>System Printer</option>
+                <select aria-label="Printer" value={settings.printerName} onChange={(e) => patch("printerName", e.target.value)}>
+                  {printers.length ? printers.map((printer) => <option key={printer.name} value={printer.name}>{printer.displayName || printer.name}{printer.isDefault ? " (Default)" : ""}</option>) : <option value="">System default printer</option>}
                 </select>
-                <button type="button" aria-label="Printer settings" title="Printer settings">⚙</button>
+                <button type="button" onClick={() => void loadPrinters()} aria-label="Refresh printers" title="Refresh printers"><RefreshCw size={14} /></button>
+                <button type="button" onClick={() => window.desktop?.printDocument?.({ silent: false, deviceName: settings.printerName || undefined })} aria-label="Printer settings" title="Open system printer settings"><Settings size={15} /></button>
               </div>
               <label className="print-check"><input type="checkbox" checked={settings.gray} onChange={(e) => patch("gray", e.target.checked)} /> Gray print</label>
             </section>
@@ -135,11 +153,19 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               <h3>Print Mode</h3>
               <div className="print-mode-tabs">
                 {(["size", "poster", "multiple", "booklet"] as const).map((mode) => (
-                  <button type="button" key={mode} className={settings.mode === mode ? "active" : ""} onClick={() => patch("mode", mode)}>
+                  <button type="button" key={mode} className={settings.mode === mode ? "active" : ""} onClick={() => {
+                    patch("mode", mode);
+                    if (mode === "size") patch("pagesPerSheet", 1);
+                    if (mode === "multiple") patch("pagesPerSheet", 4);
+                    if (mode === "booklet") { patch("pagesPerSheet", 2); patch("sides", "double"); }
+                  }}>
                     {mode[0].toUpperCase() + mode.slice(1)}
                   </button>
                 ))}
               </div>
+              {settings.mode === "multiple" && <label className="print-select-row"><span>Pages/sheet</span><select value={settings.pagesPerSheet} onChange={(e) => patch("pagesPerSheet", Number(e.target.value) as PrintSettings["pagesPerSheet"])}>{[2,4,6,9,16].map((n) => <option key={n} value={n}>{n} pages</option>)}</select></label>}
+              {settings.mode === "poster" && <div className="print-mode-note">Poster mode: enlarged printing uses the selected custom scale.</div>}
+              {settings.mode === "booklet" && <div className="print-mode-note">Booklet mode: 2 pages per sheet with double-sided printing.</div>
               <div className="print-radio-list">
                 <label><input type="radio" checked={settings.sizing === "fit"} onChange={() => patch("sizing", "fit")} /> Fit</label>
                 <label><input type="radio" checked={settings.sizing === "actual"} onChange={() => patch("sizing", "actual")} /> Actual size</label>
