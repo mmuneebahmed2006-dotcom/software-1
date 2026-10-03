@@ -106,6 +106,7 @@
     "files": [
       "main.cjs",
       "preload.cjs",
+      "backup-worker.cjs",
       "splash.html",
       "electron/icon.ico",
       "package.json"
