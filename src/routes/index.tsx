@@ -127,28 +127,56 @@ function Index() {
     }
   }, [captureCurrent, isPrinting]);
 
-  const executePrint = useCallback((settings: PrintSettings) => {
+  const executePrint = useCallback(async (settings: PrintSettings) => {
     setPrintOpen(false);
     const printRoot = document.getElementById("document-pages");
     if (printRoot) {
       printRoot.classList.toggle("print-gray", settings.gray);
       printRoot.dataset.printRange = settings.range;
       printRoot.dataset.printCustomRange = settings.customRange;
-      printRoot.dataset.printScale = String(settings.sizing === "custom" ? settings.scale : 100);
+      printRoot.dataset.printScale = String(settings.sizing === "custom" ? settings.scale : settings.sizing === "fit" ? 95 : 100);
       printRoot.dataset.printOrientation = settings.orientation;
+      printRoot.dataset.printPagesPerSheet = String(settings.pagesPerSheet);
+    }
+    if (window.desktop?.printDocument) {
+      const pageRanges = (() => {
+        if (settings.range === "current") return [{ from: 0, to: 0 }];
+        if (settings.range !== "custom") return undefined;
+        return settings.customRange.split(",").flatMap((part) => {
+          const [a, b] = part.trim().split("-").map((value) => Number(value));
+          if (!Number.isFinite(a)) return [];
+          const from = Math.max(0, a - 1);
+          const to = Math.max(from, Number.isFinite(b) ? b - 1 : from);
+          return [{ from, to }];
+        });
+      })();
+      const success = await window.desktop.printDocument({
+        silent: true,
+        deviceName: settings.printerName || undefined,
+        gray: settings.gray,
+        landscape: settings.orientation === "landscape",
+        scaleFactor: settings.sizing === "custom" ? settings.scale : settings.sizing === "fit" ? 95 : 100,
+        pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
+        copies: settings.copies,
+        pageRanges,
+        duplex: settings.mode === "booklet" ? "shortEdge" : settings.sides === "double" ? "longEdge" : "simplex",
+        paperSize: settings.paperSize,
+        dpi: settings.printAsImage ? settings.dpi : undefined,
+      });
+      if (!success) toast.error("The print job was cancelled or could not be started.");
+    } else {
+      window.setTimeout(() => window.print(), 80);
     }
     window.setTimeout(() => {
-      window.print();
-      window.setTimeout(() => {
-        if (printRoot) {
-          printRoot.classList.remove("print-gray");
-          delete printRoot.dataset.printRange;
-          delete printRoot.dataset.printCustomRange;
-          delete printRoot.dataset.printScale;
-          delete printRoot.dataset.printOrientation;
-        }
-      }, 500);
-    }, 80);
+      if (printRoot) {
+        printRoot.classList.remove("print-gray");
+        delete printRoot.dataset.printRange;
+        delete printRoot.dataset.printCustomRange;
+        delete printRoot.dataset.printScale;
+        delete printRoot.dataset.printOrientation;
+        delete printRoot.dataset.printPagesPerSheet;
+      }
+    }, 700);
   }, []);
 
   useEffect(() => {
