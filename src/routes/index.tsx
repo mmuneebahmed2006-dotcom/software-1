@@ -6,6 +6,7 @@ import { DocumentPaper } from "@/components/document-paper";
 import { DesktopManagement } from "@/components/desktop-management";
 import { CompanyDetailsDialog } from "@/components/company-details-dialog";
 import { SaveDocumentDialog } from "@/components/save-document-dialog";
+import { PrintPreview, type PrintSettings } from "@/components/print-preview";
 import { NewFolderDialog } from "@/components/new-folder-dialog";
 import { SavedDocumentsSidebar, type FolderDownloadMode } from "@/components/saved-documents-sidebar";
 import { StartupExperience } from "@/components/startup-experience";
@@ -36,6 +37,8 @@ function Index() {
   const [folderOpen, setFolderOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [printCapture, setPrintCapture] = useState<CapturedDocument | null>(null);
   const [company, setCompany] = useState<CompanyDetails>(() => companyFromState(createBlankDocumentState()));
   const [renderTarget, setRenderTarget] = useState<SavedDocument | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -109,7 +112,24 @@ function Index() {
     await saveRecord(current.title, current.folder, false);
   }, [activeFolder, activeId, docType, documents, saveRecord, state.meta.number]);
 
-  const printDocument = useCallback(() => window.print(), []);
+  const printDocument = useCallback(async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const captured = await captureCurrent();
+      setPrintCapture(captured);
+      setPrintOpen(true);
+    } catch {
+      toast.error("The print preview could not be created.");
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, captureCurrent]);
+
+  const executePrint = useCallback((settings: PrintSettings) => {
+    setPrintOpen(false);
+    window.setTimeout(() => window.print(), 80);
+  }, []);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -186,6 +206,7 @@ function Index() {
   return <div className="studio-shell">
     <style>{`@media print { @page { size: ${paper.page} portrait; margin: 0; } }`}</style>
     <StartupExperience/>
+    <PrintPreview open={printOpen} captured={printCapture} paperLabel={paper.page} fileName={`${DOC_LABELS[docType].replaceAll(" ", "_")}_${state.meta.number || "Untitled"}.pdf`} onClose={() => setPrintOpen(false)} onPrint={executePrint}/>
     <SaveDocumentDialog open={saveOpen} title={saveTitle} folder={saveFolder} folders={folders} onTitle={setSaveTitle} onFolder={setSaveFolder} onCancel={() => setSaveOpen(false)} onSave={() => { setSaveOpen(false); void saveRecord(saveTitle.trim(), saveFolder, true) }}/>
     <NewFolderDialog open={folderOpen} value={folderName} category={DOC_LABELS[docType]} onValue={setFolderName} onCancel={() => setFolderOpen(false)} onCreate={() => void createFolder()}/>
     <SavedDocumentsSidebar documents={documents} docType={docType} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onRename={renameDocument} onDelete={deleteDocument} onCreateFolder={() => setFolderOpen(true)} onRenameFolder={renameFolder} onDeleteFolder={deleteFolder} onDownloadFolder={downloadFolder} onDownloadDocument={downloadSaved}/>
