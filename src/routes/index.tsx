@@ -27,12 +27,12 @@ function Index() {
   const [paperSize, setPaperSize] = useState<PaperSizeKey>("A4");
   const { state, setState, reset, undo, redo } = useHistoryState(createBlankDocumentState);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeFolder, setActiveFolder] = useState("General");
+  const [activeFolder, setActiveFolder] = useState("");
   const { documents, setDocuments } = useSavedDocuments();
-  const [folders, setFolders] = useState<string[]>(["General"]);
+  const [folders, setFolders] = useState<string[]>([]);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveTitle, setSaveTitle] = useState("");
-  const [saveFolder, setSaveFolder] = useState("General");
+  const [saveFolder, setSaveFolder] = useState("");
   const [folderOpen, setFolderOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -44,7 +44,7 @@ function Index() {
   const paper = PAPER_SIZES[paperSize];
   const paperStyle = useMemo(() => styleFor(paperSize), [paperSize]);
 
-  const newDocument = useCallback(() => { setActiveId(null); setActiveFolder("General"); setDocType("invoice"); setPaperSize("A4"); reset(applyCompanyDetails(createBlankDocumentState(), company)) }, [company, reset]);
+  const newDocument = useCallback(() => { setActiveId(null); setActiveFolder(""); setDocType("invoice"); setPaperSize("A4"); reset(applyCompanyDetails(createBlankDocumentState(), company)) }, [company, reset]);
   const openDocument = useCallback((entry: SavedDocument) => { setActiveId(entry.id); setActiveFolder(entry.folder); setDocType(entry.docType); setPaperSize(entry.paperSize); reset(entry.state) }, [reset]);
 
   // Off-screen renderer used to export saved documents without opening them.
@@ -133,7 +133,7 @@ function Index() {
       if (window.desktop) { setFolders(await window.desktop.listFolders(docType)); setCompany(await window.desktop.getCompanyDetails()) }
       else {
         const raw = window.localStorage.getItem("8wc-company-details"); if (raw) setCompany(JSON.parse(raw) as CompanyDetails);
-        const stored = window.localStorage.getItem(`8wc-folders-${docType}`); setFolders(stored ? JSON.parse(stored) as string[] : ["General"]);
+        const stored = window.localStorage.getItem(`8wc-folders-${docType}`); setFolders(stored ? JSON.parse(stored) as string[] : []);
       }
     };
     void load();
@@ -158,7 +158,7 @@ function Index() {
   const deleteFolder = useCallback(async (folder: string) => {
     if (window.desktop?.deleteFolder) { storeFolders(await window.desktop.deleteFolder(docType, folder)); setDocuments(await window.desktop.listDocuments()) }
     else { storeFolders(folders.filter((entry) => entry !== folder)); setDocuments((list) => list.filter((entry) => !(entry.docType === docType && entry.folder === folder))) }
-    if (activeFolder === folder) setActiveFolder("General");
+    if (activeFolder === folder) setActiveFolder("");
     toast.success(`Folder “${folder}” deleted.`);
   }, [activeFolder, docType, folders, setDocuments, storeFolders]);
 
@@ -188,12 +188,12 @@ function Index() {
     <StartupExperience/>
     <SaveDocumentDialog open={saveOpen} title={saveTitle} folder={saveFolder} folders={folders} onTitle={setSaveTitle} onFolder={setSaveFolder} onCancel={() => setSaveOpen(false)} onSave={() => { setSaveOpen(false); void saveRecord(saveTitle.trim(), saveFolder, true) }}/>
     <NewFolderDialog open={folderOpen} value={folderName} category={DOC_LABELS[docType]} onValue={setFolderName} onCancel={() => setFolderOpen(false)} onCreate={() => void createFolder()}/>
-    <SavedDocumentsSidebar documents={documents} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onRename={renameDocument} onDelete={deleteDocument} onCreateFolder={() => setFolderOpen(true)} onRenameFolder={renameFolder} onDeleteFolder={deleteFolder} onDownloadFolder={downloadFolder} onDownloadDocument={downloadSaved}/>
+    <SavedDocumentsSidebar documents={documents} docType={docType} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onRename={renameDocument} onDelete={deleteDocument} onCreateFolder={() => setFolderOpen(true)} onRenameFolder={renameFolder} onDeleteFolder={deleteFolder} onDownloadFolder={downloadFolder} onDownloadDocument={downloadSaved}/>
     <div className="studio-main">
       <header className="no-print toolbar"><div className="toolbar-inner">
         <div className="studio-brand"><FileText size={19}/><span>Document Studio</span></div>
         <div className="toolbar-actions">
-          <label className="select-control"><span>Choose Document</span><select value={docType} onChange={(event) => { setDocType(event.target.value as DocType); setActiveFolder("General") }} aria-label="Choose Document">{DOC_ORDER.map((type) => <option key={type} value={type}>{DOC_LABELS[type]}</option>)}</select></label>
+          <label className="select-control"><span>Choose Document</span><select value={docType} onChange={(event) => { setDocType(event.target.value as DocType); setActiveFolder("") }} aria-label="Choose Document">{DOC_ORDER.map((type) => <option key={type} value={type}>{DOC_LABELS[type]}</option>)}</select></label>
           <label className="select-control"><span>Currency</span><select value={state.currency} onChange={(event) => setState((current) => ({ ...current, currency: event.target.value }))} aria-label="Currency">{CURRENCIES.map((currency) => <option key={currency} value={currency}>{currency.trim()}</option>)}</select></label>
           <label className="select-control"><span>Paper</span><select value={paperSize} onChange={(event) => setPaperSize(event.target.value as PaperSizeKey)} aria-label="Paper size">{PAPER_ORDER.map((size) => <option key={size}>{size}</option>)}</select></label>
           <label className="select-control"><span>Add Custom Pages</span><input type="number" min={1} max={99} value={state.minimumPages} onChange={(event) => setState((current) => ({ ...current, minimumPages: Math.min(99, Math.max(1, event.target.valueAsNumber || 1)) }))} aria-label="Minimum custom pages"/></label>
