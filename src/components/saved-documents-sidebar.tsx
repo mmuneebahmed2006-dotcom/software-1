@@ -81,8 +81,8 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
 
       <div className="folder-toolbar">
         <button type="button" className={`folder-all ${folder === "all" ? "active" : ""}`} onClick={() => { setFolder("all"); onSelectFolder("") }}>All folders</button>
+        <label className="folder-search"><Search size={13}/><input value={folderQuery} onChange={(event) => setFolderQuery(event.target.value)} placeholder="Search folders" aria-label="Search folders"/></label>
       </div>
-      <label className="folder-search"><Search size={13}/><input value={folderQuery} onChange={(event) => setFolderQuery(event.target.value)} placeholder="Search folders" aria-label="Search folders"/></label>
       <div className="folder-chips">
         {visibleFolders.map((name) => <span key={name} className={`folder-chip ${folder === name ? "active" : ""} ${activeFolder === name ? "current" : ""}`}>
           <button type="button" className="folder-chip-main" onClick={() => { setFolder(name); onSelectFolder(name) }}><Folder size={13}/> {name} <small>{counts[name] ?? 0}</small></button>
