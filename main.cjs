@@ -29,9 +29,36 @@ function documentPaths(document) { const category = CATEGORIES[document.docType]
 function saveStoredDocument(document, pdfData) { const files = documentPaths(document); fs.mkdirSync(path.dirname(files.json), { recursive: true }); const stored = { ...document, storagePath: path.relative(dataRoot(), files.json) }; fs.writeFileSync(files.json, JSON.stringify(stored, null, 2)); if (pdfData) fs.writeFileSync(files.pdf, decodeData(pdfData)); return stored; }
 function validStoredDocument(file) { try { const document = JSON.parse(fs.readFileSync(file, 'utf8')); if (!CATEGORIES[document.docType]) return null; return { ...document, storagePath: path.relative(dataRoot(), file) }; } catch { return null; } }
 function listStoredDocuments() { return walkJson(dataRoot()).flatMap((file) => { const document = validStoredDocument(file); return document ? [document] : []; }); }
-function addWorkspaceToZip(zip, root, current = root) { for (const entry of fs.readdirSync(current, { withFileTypes: true })) { if (entry.name === 'AutoBackups') continue; const source = path.join(current, entry.name); const relative = path.relative(root, source); if (entry.isDirectory()) addWorkspaceToZip(zip, root, source); else zip.addLocalFile(source, path.dirname(relative)); } }
-function createBackupFile(destination) { const root = dataRoot(); const zip = new AdmZip(); addWorkspaceToZip(zip, root); zip.addFile('backup-manifest.json', Buffer.from(JSON.stringify({ version: 1, createdAt: Date.now() }, null, 2))); zip.writeZip(destination); writeSettings({ ...readSettings(), lastBackupAt: Date.now() }); return destination; }
-function createAutoBackup() { const root = dataRoot(); const folder = path.join(root, 'AutoBackups'); fs.mkdirSync(folder, { recursive: true }); const destination = path.join(folder, `Document-Studio-${new Date().toISOString().replace(/[:.]/g, '-')}.zip`); createBackupFile(destination); const archives = fs.readdirSync(folder).filter((name) => name.endsWith('.zip')).sort().reverse(); for (const expired of archives.slice(0 + 6)) fs.unlinkSync(path.join(folder, expired)); return destination; }
+function runBackupWorker(root, destination) {
+  return new Promise((resolve, reject) => {
+    const worker = fork(path.join(__dirname, 'backup-worker.cjs'), [root, destination], { stdio: 'pipe' });
+    worker.stderr?.on('data', (data) => log(data.toString()));
+    worker.on('error', reject);
+    worker.on('exit', (code) => code === 0 ? resolve(destination) : reject(new Error(`Backup worker exited with code ${code}`)));
+  });
+}
+async function createBackupFile(destination) {
+  const root = dataRoot();
+  await runBackupWorker(root, destination);
+  writeSettings({ ...readSettings(), lastBackupAt: Date.now() });
+  return destination;
+}
+function createAutoBackup() {
+  if (global.autoBackupProcess) return null;
+  const root = dataRoot();
+  const folder = path.join(root, 'AutoBackups');
+  fs.mkdirSync(folder, { recursive: true });
+  const destination = path.join(folder, `Document-Studio-${new Date().toISOString().replace(/[:.]/g, '-')}.zip`);
+  global.autoBackupProcess = fork(path.join(__dirname, 'backup-worker.cjs'), [root, destination], { stdio: 'pipe' });
+  global.autoBackupProcess.stderr?.on('data', (data) => log(data.toString()));
+  global.autoBackupProcess.on('error', (error) => { log(error.message); global.autoBackupProcess = null; });
+  global.autoBackupProcess.on('exit', (code) => {
+    if (code === 0) writeSettings({ ...readSettings(), lastBackupAt: Date.now() });
+    else log(`Automatic backup worker exited with code ${code}`);
+    global.autoBackupProcess = null;
+  });
+  return destination;
+}
 function restoreZip(archive, root) { ensureWorkspace(root); const zip = new AdmZip(archive); for (const entry of zip.getEntries()) { const name = entry.entryName.replaceAll('\\', '/'); if (entry.isDirectory || name === 'backup-manifest.json' || name.startsWith('/') || name.includes('../')) continue; const destination = path.resolve(root, name); if (!destination.startsWith(path.resolve(root) + path.sep)) continue; fs.mkdirSync(path.dirname(destination), { recursive: true }); fs.writeFileSync(destination, entry.getData()); } return walkJson(root).length; }
 function installIpc() {
   ipcMain.handle('settings:get', () => readSettings());
@@ -52,7 +79,10 @@ function installIpc() {
   ipcMain.handle('settings:base-path', () => { try { return dataRoot(); } catch { return null; } });
   ipcMain.handle('pdf:save-to-library', (_event, docType, folder, fileName, data) => { const category = CATEGORIES[docType]; if (!category) throw new Error('Invalid category'); const directory = folder ? withinRoot(category, folder) : withinRoot(category); fs.mkdirSync(directory, { recursive: true }); const file = path.join(directory, `${safePart(String(fileName).replace(/\.pdf$/i, ''))}.pdf`); fs.writeFileSync(file, decodeData(data)); return file; });
   ipcMain.handle('pdf:export-selected', async (_event, ids, from, to) => { const result = await dialog.showSaveDialog(win, { defaultPath: 'Document-Studio-PDFs.zip', filters: [{ name: 'ZIP archive', extensions: ['zip'] }] }); if (result.canceled || !result.filePath) return 0; const selected = new Set(Array.isArray(ids) ? ids.map(String) : []); const zip = new AdmZip(); let count = 0; for (const doc of listStoredDocuments()) { if (!selected.has(doc.id) || (from && doc.updatedAt < from) || (to && doc.updatedAt > to)) continue; const pdf = documentPaths(doc).pdf; if (fs.existsSync(pdf)) { zip.addLocalFile(pdf, path.join(CATEGORIES[doc.docType], doc.folder || 'General')); count++; } } if (count) zip.writeZip(result.filePath); return count; });
-  ipcMain.handle('workspace:backup', async () => { const result = await dialog.showSaveDialog(win, { defaultPath: `Document-Studio-Backup-${new Date().toISOString().slice(0, 10)}.zip`, filters: [{ name: 'Document Studio Backup', extensions: ['zip'] }] }); return result.canceled || !result.filePath ? null : createBackupFile(result.filePath); });
+  ipcMain.handle('workspace:backup', async () => {
+    const result = await dialog.showSaveDialog(win, { defaultPath: `Document-Studio-Backup-${new Date().toISOString().slice(0, 10)}.zip`, filters: [{ name: 'Document Studio Backup', extensions: ['zip'] }] });
+    return result.canceled || !result.filePath ? null : createBackupFile(result.filePath);
+  });
   ipcMain.handle('company:get', () => readCompany());
   ipcMain.handle('company:save', (_event, details) => writeCompany(details));
   ipcMain.handle('company:update-previous', (_event, details) => listStoredDocuments().map((document) => saveStoredDocument({ ...document, state: { ...document.state, footer: { address: details.address, phone: details.phone, email: details.email }, terms: details.terms }, updatedAt: Date.now() })));
