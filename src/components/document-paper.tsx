@@ -575,7 +575,7 @@ const DocumentPage = memo(function DocumentPage({
                       value={state.taxRate}
                       onChange={(value) => set("taxRate", value)}
                       ariaLabel="Tax rate percent"
-                      className="tax-rate-input" style={{ width: "3ch", minWidth: "3ch", textAlign: "right", padding: 0 }}
+                      className="tax-rate-input" style={{ width: `${Math.max(1, String(Number.isFinite(state.taxRate) ? state.taxRate : 0).length)}ch`, minWidth: "1ch", textAlign: "center", padding: 0 }}
                     /><span>%</span><span>)</span>
                   </span>
                 </span>
