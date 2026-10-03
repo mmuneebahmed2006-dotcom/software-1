@@ -74,7 +74,63 @@ function installIpc() {
   ipcMain.handle('folders:list', (_event, categoryKey) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const root = withinRoot(category); fs.mkdirSync(root, { recursive: true }); return fs.readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
   ipcMain.handle('folders:rename', (_event, categoryKey, from, to) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const source = withinRoot(category, from); const target = withinRoot(category, to); if (fs.existsSync(source) && !fs.existsSync(target)) fs.renameSync(source, target); return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
   ipcMain.handle('folders:delete', (_event, categoryKey, name) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const target = withinRoot(category, name); if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true }); return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
+  ipcMain.handle('printers:list', async () => {
+    if (!win || win.isDestroyed()) return [];
+    const printers = await win.webContents.getPrintersAsync();
+    return printers.map((printer) => ({
+      name: printer.name,
+      displayName: printer.displayName,
+      description: printer.description || '',
+      status: printer.status ?? 0,
+      isDefault: Boolean(printer.isDefault),
+    }));
+  });
+  ipcMain.handle('print:document', async (_event, options = {}) => {
+    if (!win || win.isDestroyed()) return false;
+    const pageSize = ['A4', 'A5', 'Letter', 'Legal'].includes(options.paperSize) ? options.paperSize : 'A4';
+    const pageRanges = Array.isArray(options.pageRanges) && options.pageRanges.length ? options.pageRanges : undefined;
+    const printOptions = {
+      silent: Boolean(options.silent),
+      deviceName: typeof options.deviceName === 'string' ? options.deviceName : undefined,
+      printBackground: true,
+      color: options.gray ? false : true,
+      landscape: Boolean(options.landscape),
+      margins: { marginType: 'none' },
+      scaleFactor: Math.min(200, Math.max(25, Number(options.scaleFactor) || 100)),
+      pagesPerSheet: [1, 2, 4, 6, 9, 16].includes(Number(options.pagesPerSheet)) ? Number(options.pagesPerSheet) : 1,
+      collate: true,
+      copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+      pageRanges,
+      duplexMode: options.duplex === 'shortEdge' || options.duplex === 'longEdge' ? options.duplex : 'simplex',
+      pageSize,
+      usePrinterDefaultPageSize: false,
+    };
+    return new Promise((resolve) => {
+      win.webContents.print(printOptions, (success) => resolve(Boolean(success)));
+    });
+  });
   ipcMain.handle('pdf:save-as', async (_event, name, data, docType) => { let defaultPath = safePart(name); try { const category = CATEGORIES[docType]; if (category) defaultPath = path.join(withinRoot(category), safePart(name)); } catch {} const result = await dialog.showSaveDialog(win, { defaultPath, filters: [{ name: 'PDF', extensions: ['pdf'] }] }); if (result.canceled || !result.filePath) return false; fs.mkdirSync(path.dirname(result.filePath), { recursive: true }); fs.writeFileSync(result.filePath, decodeData(data)); return true; });
+  ipcMain.handle('pdf:export-current', async (_event, name, docType, paperSize, landscape = false, scale = 100, pageRange = '') => {
+    if (!win || win.isDestroyed()) return false;
+    let defaultPath = safePart(name);
+    try { const category = CATEGORIES[docType]; if (category) defaultPath = path.join(withinRoot(category), safePart(name)); } catch {}
+    const result = await dialog.showSaveDialog(win, { defaultPath, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
+    if (result.canceled || !result.filePath) return false;
+    const validSize = ['A4', 'A5', 'Letter', 'Legal'].includes(paperSize) ? paperSize : 'A4';
+    const data = await win.webContents.printToPDF({
+      landscape: Boolean(landscape),
+      printBackground: true,
+      scale: Math.min(2, Math.max(0.25, Number(scale) / 100 || 1)),
+      pageSize: validSize,
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+      pageRanges: typeof pageRange === 'string' ? pageRange : '',
+      preferCSSPageSize: false,
+      displayHeaderFooter: false,
+    });
+    fs.mkdirSync(path.dirname(result.filePath), { recursive: true });
+    fs.writeFileSync(result.filePath, data);
+    return true;
+  });
   ipcMain.handle('zip:save-as', async (_event, name, data) => { const result = await dialog.showSaveDialog(win, { defaultPath: safePart(name), filters: [{ name: 'ZIP archive', extensions: ['zip'] }] }); if (result.canceled || !result.filePath) return false; fs.writeFileSync(result.filePath, decodeData(data)); return true; });
   ipcMain.handle('settings:base-path', () => { try { return dataRoot(); } catch { return null; } });
   ipcMain.handle('pdf:save-to-library', (_event, docType, folder, fileName, data) => { const category = CATEGORIES[docType]; if (!category) throw new Error('Invalid category'); const directory = folder ? withinRoot(category, folder) : withinRoot(category); fs.mkdirSync(directory, { recursive: true }); const file = path.join(directory, `${safePart(String(fileName).replace(/\.pdf$/i, ''))}.pdf`); fs.writeFileSync(file, decodeData(data)); return file; });
@@ -125,6 +181,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 650,
     show: false,
+    frame: false,
     title: 'Document Studio',
     backgroundColor: '#ffffff',
     ...(fs.existsSync(iconPath) ? { icon: iconPath } : {}),
