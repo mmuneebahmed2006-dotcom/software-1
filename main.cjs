@@ -110,5 +110,12 @@ function createWindow() { const iconPath = path.join(__dirname, 'electron', 'ico
       webSecurity: true,
       sandbox: true
     }
-  }); win.setMenuBarVisibility(false); win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) void shell.openExternal(url); return { action: 'deny' }; }); win.webContents.on('will-navigate', (event, url) => { if (!url.startsWith(`http://127.0.0.1:${PORT}`)) event.preventDefault(); }); waitForServer(`http://127.0.0.1:${PORT}`, () => win.loadURL(`http://127.0.0.1:${PORT}`)); win.once('ready-to-show', () => win.show()); }
+  }); win.setMenuBarVisibility(false); win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) void shell.openExternal(url); return { action: 'deny' }; }); win.webContents.on('will-navigate', (event, url) => { if (!url.startsWith(`http://127.0.0.1:${PORT}`)) event.preventDefault(); }); // Keep the native minimize/maximize/close controls hidden while the app is loading.
+  // Reveal the dark title-bar controls only after the main UI is ready.
+  try { win.setTitleBarOverlay({ color: '#111214', symbolColor: '#ffffff', height: 32 }); } catch {}
+  waitForServer(`http://127.0.0.1:${PORT}`, () => win.loadURL(`http://127.0.0.1:${PORT}`));
+  win.once('ready-to-show', () => {
+    try { win.setTitleBarOverlay({ color: '#111214', symbolColor: '#ffffff', height: 32 }); } catch {}
+    win.show();
+  }); }
 if (!app.requestSingleInstanceLock()) app.quit(); else { app.whenReady().then(() => { Menu.setApplicationMenu(null); installIpc(); startServer(); createWindow(); const settings = readSettings(); if (settings.initialized && settings.dataRoot && (!settings.lastBackupAt || Date.now() - settings.lastBackupAt >= 30 * 86400000)) setTimeout(() => { try { createAutoBackup(); } catch (error) { log(error.message); } }, 10000); }); app.on('window-all-closed', () => { serverProcess?.kill(); if (process.platform !== 'darwin') app.quit(); }); }
