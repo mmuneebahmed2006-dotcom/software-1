@@ -620,3 +620,13 @@
   resize: none !important;
   overflow: hidden !important;
 }
+
+
+/* Tax rate keeps fixed input width so ( 1 % ) and ( 15 % ) use the same spacing. */
+.tax-editor .tax-rate-input {
+  width: 3ch !important;
+  min-width: 3ch !important;
+  box-sizing: content-box !important;
+  display: inline-block !important;
+  flex: 0 0 3ch !important;
+}
