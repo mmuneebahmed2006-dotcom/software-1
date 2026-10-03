@@ -23,4 +23,6 @@ contextBridge.exposeInMainWorld('desktop', {
   getCompanyDetails: () => ipcRenderer.invoke('company:get'),
   saveCompanyDetails: (details) => ipcRenderer.invoke('company:save', details),
   updatePreviousCompanyDetails: (details) => ipcRenderer.invoke('company:update-previous', details),
+  listPrinters: () => ipcRenderer.invoke('printers:list'),
+  printDocument: (options) => ipcRenderer.invoke('print:document', options),
 });
