@@ -37,6 +37,7 @@ function Index() {
   const [folderOpen, setFolderOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
   const [printCapture, setPrintCapture] = useState<CapturedDocument | null>(null);
   const [company, setCompany] = useState<CompanyDetails>(() => companyFromState(createBlankDocumentState()));
@@ -113,8 +114,8 @@ function Index() {
   }, [activeFolder, activeId, docType, documents, saveRecord, state.meta.number]);
 
   const printDocument = useCallback(async () => {
-    if (busy) return;
-    setBusy(true);
+    if (isPrinting) return;
+    setIsPrinting(true);
     try {
       const captured = await captureCurrent();
       setPrintCapture(captured);
@@ -122,13 +123,32 @@ function Index() {
     } catch {
       toast.error("The print preview could not be created.");
     } finally {
-      setBusy(false);
+      setIsPrinting(false);
     }
-  }, [busy, captureCurrent]);
+  }, [captureCurrent, isPrinting]);
 
   const executePrint = useCallback((settings: PrintSettings) => {
     setPrintOpen(false);
-    window.setTimeout(() => window.print(), 80);
+    const printRoot = document.getElementById("document-pages");
+    if (printRoot) {
+      printRoot.classList.toggle("print-gray", settings.gray);
+      printRoot.dataset.printRange = settings.range;
+      printRoot.dataset.printCustomRange = settings.customRange;
+      printRoot.dataset.printScale = String(settings.sizing === "custom" ? settings.scale : 100);
+      printRoot.dataset.printOrientation = settings.orientation;
+    }
+    window.setTimeout(() => {
+      window.print();
+      window.setTimeout(() => {
+        if (printRoot) {
+          printRoot.classList.remove("print-gray");
+          delete printRoot.dataset.printRange;
+          delete printRoot.dataset.printCustomRange;
+          delete printRoot.dataset.printScale;
+          delete printRoot.dataset.printOrientation;
+        }
+      }, 500);
+    }, 80);
   }, []);
 
   useEffect(() => {
@@ -223,7 +243,7 @@ function Index() {
           <CompanyDetailsDialog details={companyFromState(state)} onSave={saveCompany}/>
           <DesktopManagement documents={documents}/>
           <Button type="button" variant="secondary" disabled={busy} onClick={downloadPdf}>{busy ? <Loader2 size={16} className="animate-spin"/> : <Download size={16}/>} Download PDF</Button>
-          <Button type="button" onClick={printDocument}><Printer size={16}/> Print</Button>
+          <Button type="button" disabled={isPrinting} onClick={printDocument}>{isPrinting ? <Loader2 size={16} className="animate-spin"/> : <Printer size={16}/>} {isPrinting ? "Preparing…" : "Print"}</Button>
         </div>
       </div></header>
       <main className="print-area"><DocumentPaper docType={docType} state={state} setState={setState} paperStyle={paperStyle} paperSize={paperSize}/></main>
