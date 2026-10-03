@@ -26,12 +26,22 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): P
     if (typeof document !== "undefined" && "fonts" in document) await document.fonts.ready;
     const fontEmbedCSS = await getFontEmbedCSS(elements[0]);
     for (const element of elements) {
+      const rect = element.getBoundingClientRect();
+      const width = Math.round(element.offsetWidth || rect.width);
+      const height = Math.round(element.offsetHeight || rect.height);
       images.push(await toPng(element, {
-        pixelRatio: 3,
-        cacheBust: true,
+        width,
+        height,
+        pixelRatio: 2,
         backgroundColor: "white",
         fontEmbedCSS,
         skipFonts: false,
+        style: {
+          transform: "none",
+          transformOrigin: "top left",
+          margin: "0",
+          boxShadow: "none",
+        },
       }));
       await new Promise((resolve) => requestAnimationFrame(resolve));
     }
