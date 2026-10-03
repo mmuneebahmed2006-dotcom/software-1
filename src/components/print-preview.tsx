@@ -205,7 +205,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <div className="print-preview-file">{fileName}</div>
             <div className="print-preview-paper-wrap">
               {image ? (
-                <div className="print-preview-paper-holder" style={{ transform: `scale(${zoom / 100})` }}>
+                <div className="print-preview-paper-holder" style={{ transform: `scale(${zoom / 100})`, aspectRatio: captured ? `${captured.size[0]} / ${captured.size[1]}` : "210 / 297" }}>
                   <img
                     className="print-preview-paper"
                     src={image}
