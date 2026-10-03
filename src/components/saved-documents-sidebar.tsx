@@ -46,6 +46,11 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
   const search = useDebounced(query);
   const folderSearch = useDebounced(folderQuery);
 
+  useEffect(() => {
+    setFolder("all");
+    setFolderQuery("");
+  }, [docType]);
+
   const categoryDocuments = useMemo(() => (documents ?? []).filter((entry) => entry.docType === docType), [documents, docType]);
   const folderNames = useMemo(() => [...new Set([...(folders ?? []), ...categoryDocuments.map((entry) => entry.folder)])].filter(Boolean).sort(), [folders, categoryDocuments]);
   const visibleFolders = useMemo(() => folderNames.filter((name) => name.toLowerCase().includes(folderSearch.trim().toLowerCase())), [folderNames, folderSearch]);
