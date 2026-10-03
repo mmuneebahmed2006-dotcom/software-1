@@ -165,7 +165,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               </div>
               {settings.mode === "multiple" && <label className="print-select-row"><span>Pages/sheet</span><select value={settings.pagesPerSheet} onChange={(e) => patch("pagesPerSheet", Number(e.target.value) as PrintSettings["pagesPerSheet"])}>{[2,4,6,9,16].map((n) => <option key={n} value={n}>{n} pages</option>)}</select></label>}
               {settings.mode === "poster" && <div className="print-mode-note">Poster mode: enlarged printing uses the selected custom scale.</div>}
-              {settings.mode === "booklet" && <div className="print-mode-note">Booklet mode: 2 pages per sheet with double-sided printing.</div>
+              {settings.mode === "booklet" && <div className="print-mode-note">Booklet mode: 2 pages per sheet with double-sided printing.</div>}
               <div className="print-radio-list">
                 <label><input type="radio" checked={settings.sizing === "fit"} onChange={() => patch("sizing", "fit")} /> Fit</label>
                 <label><input type="radio" checked={settings.sizing === "actual"} onChange={() => patch("sizing", "actual")} /> Actual size</label>
