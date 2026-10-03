@@ -27,9 +27,10 @@ export interface DesktopApi {
   updatePreviousCompanyDetails(details: CompanyDetails): Promise<SavedDocument[]>;
   listPrinters(): Promise<PrinterInfo[]>;
   printDocument(options: PrintOptions): Promise<boolean>;
+  openPrinterSettings?(deviceName?: string): Promise<boolean>;
 }
 
 declare global { interface Window { desktop?: DesktopApi } }
 export {};
 export interface PrinterInfo { name: string; displayName: string; description: string; status: number; isDefault: boolean }
-export interface PrintOptions { deviceName?: string; silent?: boolean; gray?: boolean; landscape?: boolean; scaleFactor?: number; pagesPerSheet?: number; copies?: number; pageRanges?: Array<{ from: number; to: number }>; duplex?: "simplex" | "shortEdge" | "longEdge"; paperSize?: string; dpi?: number }
+export interface PrintOptions { deviceName?: string; silent?: boolean; gray?: boolean; landscape?: boolean; scaleFactor?: number; pagesPerSheet?: number; copies?: number; pageRanges?: Array<{ from: number; to: number }>; duplex?: "simplex" | "shortEdge" | "longEdge"; paperSize?: string; dpi?: number; }
