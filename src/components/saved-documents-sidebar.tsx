@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, FilePlus2, FileText, Folder, FolderPlus, MoreVertical, Pencil, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -41,6 +41,8 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
   const [to, setTo] = useState("");
   const [folder, setFolder] = useState("all");
   const [menuFolder, setMenuFolder] = useState<string | null>(null);
+  const [deleteFolder, setDeleteFolder] = useState<string | null>(null);
+  const folderMenuRef = useRef<HTMLDivElement | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<{ from: string; value: string } | null>(null);
   const [downloadFolder, setDownloadFolder] = useState<string | null>(null);
   const search = useDebounced(query);
@@ -50,6 +52,21 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
     setFolder("all");
     setFolderQuery("");
   }, [docType]);
+
+  useEffect(() => {
+    if (!menuFolder) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (!folderMenuRef.current?.contains(target)) setMenuFolder(null);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuFolder(null); };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuFolder]);
 
   const categoryDocuments = useMemo(() => (documents ?? []).filter((entry) => entry.docType === docType), [documents, docType]);
   const folderNames = useMemo(() => [...new Set([...(folders ?? []), ...categoryDocuments.map((entry) => entry.folder)])].filter(Boolean).sort(), [folders, categoryDocuments]);
@@ -87,9 +104,9 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
         {visibleFolders.map((name) => <span key={name} className={`folder-chip ${folder === name ? "active" : ""} ${activeFolder === name ? "current" : ""}`}>
           <button type="button" className="folder-chip-main" onClick={() => { setFolder(name); onSelectFolder(name) }}><Folder size={13}/> {name} <small>{counts[name] ?? 0}</small></button>
           <button type="button" className="folder-chip-menu" aria-label={`Options for ${name}`} onClick={() => setMenuFolder(menuFolder === name ? null : name)}><MoreVertical size={13}/></button>
-          {menuFolder === name && <div className="folder-menu" role="menu">
+          {menuFolder === name && <div ref={folderMenuRef} className="folder-menu" role="menu">
             <button type="button" onClick={() => { setRenamingFolder({ from: name, value: name }); setMenuFolder(null) }}><Pencil size={13}/> Rename</button>
-            <button type="button" onClick={() => { setMenuFolder(null); if (window.confirm(`Delete the folder “${name}” and remove its documents from the list?`)) void onDeleteFolder(name) }}><Trash2 size={13}/> Delete</button>
+            <button type="button" onClick={() => { setMenuFolder(null); setDeleteFolder(name) }}><Trash2 size={13}/> Delete</button>
             <button type="button" onClick={() => { setMenuFolder(null); setDownloadFolder(name) }}><Download size={13}/> Download</button>
           </div>}
         </span>)}
@@ -116,6 +133,16 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
         </div>)}</section>)}
       </div>
     </>}
+
+    <Dialog open={Boolean(deleteFolder)} onOpenChange={(open) => !open && setDeleteFolder(null)}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Delete folder</DialogTitle><DialogDescription>Delete “{deleteFolder}” and remove its documents from this list?</DialogDescription></DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setDeleteFolder(null)}>Cancel</Button>
+          <Button type="button" variant="danger" onClick={() => { const name = deleteFolder; setDeleteFolder(null); if (name) void onDeleteFolder(name) }}>Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <Dialog open={Boolean(renamingFolder)} onOpenChange={(open) => !open && setRenamingFolder(null)}>
       <DialogContent>
