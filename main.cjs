@@ -181,7 +181,6 @@ function createWindow() {
     minWidth: 900,
     minHeight: 650,
     show: false,
-    frame: false,
     title: 'Document Studio',
     backgroundColor: '#ffffff',
     ...(fs.existsSync(iconPath) ? { icon: iconPath } : {}),
