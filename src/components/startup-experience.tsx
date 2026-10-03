@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 export function StartupExperience() {
   const [phase, setPhase] = useState<"splash" | "setup" | "done">("splash");
   const [busy, setBusy] = useState(false);
+  useEffect(() => { document.documentElement.classList.add("startup-active"); document.body.classList.add("startup-active"); return () => { document.documentElement.classList.remove("startup-active"); document.body.classList.remove("startup-active"); } }, []);
   useEffect(() => { const timer = window.setTimeout(async () => { if (!window.desktop) return setPhase("done"); const settings = await window.desktop.getSettings(); setPhase(settings.initialized ? "done" : "setup") }, 3000); return () => window.clearTimeout(timer) }, []);
   const fresh = async () => { if (!window.desktop) return setPhase("done"); setBusy(true); const root = await window.desktop.chooseDataRoot(); if (root) { await window.desktop.initialize(root); setPhase("done") } setBusy(false) };
   const restore = async () => { if (!window.desktop) return; setBusy(true); const result = await window.desktop.restoreBackup(); if (result) setPhase("done"); setBusy(false) };
