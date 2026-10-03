@@ -245,7 +245,7 @@
 .total-row { display: grid; grid-template-columns: calc(140px * var(--paper-scale)) minmax(0, calc(210px * var(--paper-scale))); align-items: center; }
 .total-row > span { padding: 4px 9px; text-align: left; }
 .total-row > strong { min-width: 0; padding: 4px 8px; overflow: hidden; font-size: calc(11px * var(--paper-scale)); font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.tax-editor { display: inline-flex; align-items: center; gap: 0; white-space: nowrap; }
+.tax-editor { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
 .tax-editor input {
   box-sizing: content-box;
   min-width: 1ch;
