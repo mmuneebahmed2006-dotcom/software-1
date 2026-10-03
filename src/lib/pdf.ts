@@ -8,7 +8,18 @@ export interface CapturedDocument { images: string[]; size: [number, number] }
 export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): Promise<CapturedDocument> {
   const elements = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-page]"));
   if (!elements.length) throw new Error("No document pages");
+  const pageContainer = elements[0].closest<HTMLElement>("#document-pages");
+  const previousTransform = pageContainer?.style.transform ?? "";
+  const previousTransition = pageContainer?.style.transition ?? "";
+  const previousPaddingBottom = pageContainer?.style.paddingBottom ?? "";
   elements.forEach((element) => element.classList.add("exporting"));
+  // The editor has a visual zoom transform. html-to-image otherwise measures the
+  // transformed rectangle and can capture only part of the paper.
+  if (pageContainer) {
+    pageContainer.style.transform = "none";
+    pageContainer.style.transition = "none";
+    pageContainer.style.paddingBottom = "0";
+  }
   try {
     const images: string[] = [];
     // Keep exported typography identical to the live preview by embedding the same font CSS.
@@ -27,6 +38,11 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): P
     return { images, size: PAPER_SIZES[paperSize].pdf };
   } finally {
     elements.forEach((element) => element.classList.remove("exporting"));
+    if (pageContainer) {
+      pageContainer.style.transform = previousTransform;
+      pageContainer.style.transition = previousTransition;
+      pageContainer.style.paddingBottom = previousPaddingBottom;
+    }
   }
 }
 
