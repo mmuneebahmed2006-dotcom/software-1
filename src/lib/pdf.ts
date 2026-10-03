@@ -1,4 +1,4 @@
-import { toPng } from "html-to-image";
+import { getFontEmbedCSS, toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
 import { PAPER_SIZES, type PaperSizeKey } from "@/lib/document";
 
@@ -11,8 +11,17 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): P
   elements.forEach((element) => element.classList.add("exporting"));
   try {
     const images: string[] = [];
+    // Keep exported typography identical to the live preview by embedding the same font CSS.
+    if (typeof document !== "undefined" && "fonts" in document) await document.fonts.ready;
+    const fontEmbedCSS = await getFontEmbedCSS(elements[0]);
     for (const element of elements) {
-      images.push(await toPng(element, { pixelRatio: 3, cacheBust: false, backgroundColor: "white", skipFonts: true }));
+      images.push(await toPng(element, {
+        pixelRatio: 3,
+        cacheBust: true,
+        backgroundColor: "white",
+        fontEmbedCSS,
+        skipFonts: false,
+      }));
       await new Promise((resolve) => requestAnimationFrame(resolve));
     }
     return { images, size: PAPER_SIZES[paperSize].pdf };
