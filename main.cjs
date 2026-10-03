@@ -85,6 +85,17 @@ function installIpc() {
       isDefault: Boolean(printer.isDefault),
     }));
   });
+  ipcMain.handle('printers:settings', async (_event, deviceName) => {
+    if (process.platform !== 'win32' || !deviceName) return false;
+    try {
+      const { spawn } = require('child_process');
+      const child = spawn('rundll32.exe', ['printui.dll,PrintUIEntry', '/p', '/n', String(deviceName)], { windowsHide: true, stdio: 'ignore' });
+      return await new Promise((resolve) => {
+        child.once('error', () => resolve(false));
+        child.once('exit', (code) => resolve(code === 0));
+      });
+    } catch { return false; }
+  });
   ipcMain.handle('print:document', async (_event, options = {}) => {
     if (!win || win.isDestroyed()) return false;
     const pageSize = ['A4', 'A5', 'Letter', 'Legal'].includes(options.paperSize) ? options.paperSize : 'A4';
