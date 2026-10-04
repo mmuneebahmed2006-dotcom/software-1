@@ -73,6 +73,33 @@ function createAutoBackup() {
   return destination;
 }
 function restoreZip(archive, root) { ensureWorkspace(root); const zip = new AdmZip(archive); for (const entry of zip.getEntries()) { const name = entry.entryName.replaceAll('\\', '/'); if (entry.isDirectory || name === 'backup-manifest.json' || name.startsWith('/') || name.includes('../')) continue; const destination = path.resolve(root, name); if (!destination.startsWith(path.resolve(root) + path.sep)) continue; fs.mkdirSync(path.dirname(destination), { recursive: true }); fs.writeFileSync(destination, entry.getData()); } return walkJson(root).length; }
+async function getWindowsPrinterStatus(printerName) {
+  if (process.platform !== 'win32' || !printerName) return 'unknown';
+  return await new Promise((resolve) => {
+    const { spawn } = require('child_process');
+    const child = spawn('powershell.exe', [
+      '-NoProfile', '-NonInteractive', '-Command',
+      '$p = Get-Printer -Name $env:DOC_STUDIO_PRINTER -ErrorAction Stop; [pscustomobject]@{Status=$p.PrinterStatus;WorkOffline=$p.WorkOffline} | ConvertTo-Json -Compress'
+    ], {
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      env: { ...process.env, DOC_STUDIO_PRINTER: String(printerName) },
+    });
+    let output = '';
+    child.stdout.on('data', (data) => { output += data.toString(); });
+    child.once('error', () => resolve('unknown'));
+    child.once('close', () => {
+      try {
+        const value = JSON.parse(output.trim());
+        if (value.WorkOffline === true || /offline|error|stopped/i.test(String(value.Status ?? ''))) return resolve('offline');
+        if (/printing|processing|busy/i.test(String(value.Status ?? ''))) return resolve('printing');
+        if (/normal|idle|ready/i.test(String(value.Status ?? ''))) return resolve('ready');
+      } catch {}
+      resolve('unknown');
+    });
+  });
+}
+
 function installIpc() {
   ipcMain.handle('settings:get', () => readSettings());
   ipcMain.handle('settings:choose-root', async () => { const result = await dialog.showOpenDialog(win, { title: 'Choose Document Studio data folder', defaultPath: process.platform === 'win32' && fs.existsSync('D:\\') ? 'D:\\DocumentStudio' : app.getPath('documents'), properties: ['openDirectory', 'createDirectory'] }); return result.canceled ? null : result.filePaths[0]; });
@@ -90,12 +117,13 @@ function installIpc() {
   ipcMain.handle('printers:list', async () => {
     if (!win || win.isDestroyed()) return [];
     const printers = await win.webContents.getPrintersAsync();
-    return printers.map((printer) => ({
+    return Promise.all(printers.map(async (printer) => ({
       name: printer.name,
       displayName: printer.displayName,
       description: printer.description || '',
       options: printer.options || {},
-    }));
+      status: await getWindowsPrinterStatus(printer.name),
+    })));
   });
   ipcMain.handle('printers:settings', async (_event, deviceName) => {
     if (process.platform !== 'win32' || !deviceName) return false;
@@ -143,7 +171,10 @@ function installIpc() {
         .poster-tile>img{position:absolute;max-width:none;object-fit:fill}
       </style></head><body>${pageNodes.join('')}</body></html>`;
       try {
-        await printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+        const tempDir = fs.mkdtempSync(path.join(app.getPath('temp'), 'document-studio-print-'));
+        const tempHtml = path.join(tempDir, 'print.html');
+        fs.writeFileSync(tempHtml, html, 'utf8');
+        await printWindow.loadFile(tempHtml);
         await printWindow.webContents.executeJavaScript(`
           Promise.all(Array.from(document.images).map((img) => img.complete
             ? Promise.resolve()
@@ -169,11 +200,16 @@ function installIpc() {
         return await new Promise((resolve) => {
           printWindow.webContents.print(printOptions, (success) => {
             resolve(Boolean(success));
-            setTimeout(() => { if (!printWindow.isDestroyed()) printWindow.close(); }, 300);
+            setTimeout(() => {
+              if (!printWindow.isDestroyed()) printWindow.close();
+              try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
+            }, 500);
+
           });
         });
       } catch {
         if (!printWindow.isDestroyed()) printWindow.close();
+        try { if (typeof tempDir !== 'undefined') fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
         return false;
       }
     }
