@@ -5,7 +5,7 @@
 Var DataRootDir
 
 !macro preInit
-  StrCpy $DataRootDir "$LOCALAPPDATA\Document Studio"
+  StrCpy $DataRootDir "$DOCUMENTS\Document Studio"
 !macroend
 
 !macro customPageAfterChangeDir
