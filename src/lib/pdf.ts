@@ -41,6 +41,8 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): P
           transformOrigin: "top left",
           margin: "0",
           boxShadow: "none",
+          width: `${width}px`,
+          height: `${height}px`,
         },
       }));
       await new Promise((resolve) => requestAnimationFrame(resolve));
