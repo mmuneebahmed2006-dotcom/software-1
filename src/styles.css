@@ -189,13 +189,13 @@
 .document-content { min-height: 0; flex: 1; display: flex; flex-direction: column; padding: calc(14px * var(--paper-scale)) calc(62px * var(--paper-scale)) calc(20px * var(--paper-scale)); }
 .document-header { height: calc(88px * var(--paper-scale)); display: flex; align-items: center; justify-content: center; margin-bottom: calc(20px * var(--paper-scale)); }
 .document-logo { display: block; width: auto; max-width: calc(300px * var(--paper-scale)); height: calc(92px * var(--paper-scale)); margin: 0 auto; object-fit: contain; image-rendering: -webkit-optimize-contrast; }
-.identity-grid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 40px; }
+.identity-grid { display: grid; grid-template-columns: minmax(0, 1fr) max-content; align-items: start; justify-content: space-between; gap: 24px; width: 100%; }
 .bill-to h2 { margin: 0 0 3px; font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); font-weight: 400; line-height: 1; letter-spacing: 0; padding-left: calc(24px * var(--paper-scale)); text-transform: uppercase; }
 .client-name { font-size: calc(14pt * var(--paper-scale)); font-weight: 600; padding-left: calc(24px * var(--paper-scale)); }
 .contact-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 6px; margin-top: 3px; font-size: calc(9pt * var(--paper-scale)); font-weight: 400; }
 .contact-row .editable, .contact-row input { font-size: calc(9pt * var(--paper-scale)); }
 .contact-row svg { margin-top: 3px; }
-.document-meta { min-width: 0; padding-top: 4px; margin-left: auto; width: fit-content; max-width: 100%; }
+.document-meta { min-width: 0; padding-top: 4px; margin-left: auto; width: max-content; max-width: 100%; justify-self: end; }
 .meta-grid { display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: start; column-gap: calc(12px * var(--paper-scale)); row-gap: calc(4px * var(--paper-scale)); }
 .meta-row { display: contents; }
 .meta-row > span { min-width: 0; font-size: calc(9pt * var(--paper-scale)); font-weight: 700; line-height: 1.2; white-space: nowrap; }
