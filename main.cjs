@@ -94,8 +94,7 @@ function installIpc() {
       name: printer.name,
       displayName: printer.displayName,
       description: printer.description || '',
-      status: printer.status ?? 0,
-      isDefault: Boolean(printer.isDefault),
+      options: printer.options || {},
     }));
   });
   ipcMain.handle('printers:settings', async (_event, deviceName) => {
@@ -137,9 +136,9 @@ function installIpc() {
       const html = `<!doctype html><html><head><meta charset="utf-8"><style>
         @page{size:${pageSize}${options.landscape ? ' landscape' : ''};margin:0}
         *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
-        .page{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;break-after:page;page-break-after:always;background:#fff}
+        .page{position:relative;width:${options.landscape ? '297mm' : '210mm'};height:${options.landscape ? '210mm' : '297mm'};display:flex;align-items:center;justify-content:center;overflow:hidden;break-after:page;page-break-after:always;background:#fff}
         .page:last-child{break-after:auto;page-break-after:auto}
-        .page>img{display:block;width:100%;height:100%;object-fit:contain;filter:${gray ? 'grayscale(1)' : 'none'}}
+        .page>img{display:block;width:100%;height:100%;object-fit:fill;filter:${gray ? 'grayscale(1)' : 'none'}}
         .poster-tile{position:relative;align-items:flex-start;justify-content:flex-start}
         .poster-tile>img{position:absolute;max-width:none;object-fit:fill}
       </style></head><body>${pageNodes.join('')}</body></html>`;
@@ -213,7 +212,7 @@ function installIpc() {
     try {
       result = await dialog.showSaveDialog(win, {
         title: 'Save PDF',
-        defaultPath: process.platform === 'win32' ? initialDirectory : path.join(initialDirectory, suggestedName),
+        defaultPath: path.join(initialDirectory, suggestedName),
         buttonLabel: 'Save',
         filters: [{ name: 'PDF', extensions: ['pdf'] }],
       });
