@@ -760,3 +760,13 @@ html, body { overflow-x: hidden; }
 /* Folder three-dot menu: anchor to the trigger and never clip the three actions. */
 .folder-menu{position:fixed!important;top:auto!important;left:auto!important;right:auto!important;transform:none!important;min-width:122px!important;max-width:calc(100vw - 16px)!important;background:#fff!important;color:#202124!important;border:1px solid #d7dbe0!important;box-shadow:0 12px 28px rgb(0 0 0 / .18)!important;opacity:1!important;z-index:100000!important}
 .folder-menu button{color:#202124!important;white-space:nowrap!important;min-height:30px!important}
+
+
+/* PDF export integrity: keep full page edges and tax text visible. */
+.tax-rate-export-value{display:none!important}
+.paper.exporting .tax-rate-editor-input{display:none!important}
+.paper.exporting .tax-rate-export-value{display:inline-block!important;min-width:2ch!important;text-align:center!important;font-variant-numeric:tabular-nums!important;color:inherit!important}
+.paper.exporting .top-accent{display:block!important;visibility:visible!important;opacity:1!important;flex:0 0 10px!important;height:10px!important;min-height:10px!important;background:#141414!important;border-top:10px solid #141414!important}
+.paper.exporting .document-footer{display:grid!important;visibility:visible!important;opacity:1!important;flex:0 0 auto!important;min-height:58px!important;height:auto!important;overflow:visible!important}
+.paper.exporting{overflow:visible!important;box-sizing:border-box!important}
+.paper.exporting .document-content{overflow:visible!important;min-height:0!important}
