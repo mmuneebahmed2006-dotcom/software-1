@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Printer, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCcw, Settings, RefreshCw, SlidersHorizontal } from "lucide-react";
+import { Printer, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCcw, Settings, RefreshCw, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CapturedDocument } from "@/lib/pdf";
 
@@ -86,7 +86,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   return (
     <div className="print-preview-overlay" role="dialog" aria-modal="true" aria-label="Print preview">
-      <div className="print-preview-window">
+      <div className="print-preview-window print-preview-white print-preview-three-columns">
         <header className="print-preview-titlebar">
           <div className="print-title-left"><Printer size={17} /><span>Print</span><small>{fileName}</small></div>
           <button type="button" onClick={onClose} disabled={printing} aria-label="Close"><X size={18} /></button>
@@ -102,7 +102,13 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
                 </select>
                 <button type="button" onClick={() => window.desktop?.openPrinterSettings?.(settings.printerName || undefined)} aria-label="Printer settings" title="Printer properties"><Settings size={15} /></button>
               </div>
-              <div className="print-printer-hint">{printers.length ? (printers.find((p) => p.name === settings.printerName)?.description || "Ready to print") : "System default printer"}</div>
+              <div className="print-printer-hint">{(() => {
+                const selected = printers.find((p) => p.name === settings.printerName);
+                if (!selected) return "System default printer";
+                if (selected.status === 2) return "Printing…";
+                if (selected.status === 3 || selected.status === 4) return "Offline";
+                return selected.isDefault ? "Ready to print · Default printer" : "Ready to print";
+              })()}</div>
             </section>
 
             <section className="print-setting-group">
@@ -197,7 +203,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             </section>
           </aside>
 
-          <main className="print-preview-stage">
+          <main className="print-preview-stage print-preview-stage-light">
             <div className="print-preview-toolbar"><span>Preview</span><span>{settings.mode === "multiple" ? `${settings.pagesPerSheet} pages / sheet` : settings.mode === "poster" ? `${settings.posterTiles} × ${settings.posterTiles} poster` : settings.mode === "booklet" ? "Booklet · 2-up" : settings.orientation === "landscape" ? "Landscape" : "Portrait"}</span></div>
             <div className="print-preview-paper-wrap">
               <div className={previewClass}>
@@ -237,7 +243,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
           </main>
         </div>
 
-        <footer className="print-preview-footer">
+        <footer className="print-preview-footer print-preview-white-footer">
           <span>{paperLabel} · {total} page{total === 1 ? "" : "s"} · {settings.mode[0].toUpperCase() + settings.mode.slice(1)}</span>
           <div><Button variant="secondary" type="button" disabled={printing} onClick={onClose}>Cancel</Button><Button type="button" disabled={printing || !total} onClick={() => void handlePrint()}>{printing ? <><Loader2 size={16} className="animate-spin"/> Printing…</> : <><Printer size={16}/> Print</>}</Button></div>
         </footer>
