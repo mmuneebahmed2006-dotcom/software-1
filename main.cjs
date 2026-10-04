@@ -138,7 +138,7 @@ function installIpc() {
         *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
         .page{position:relative;width:${options.landscape ? '297mm' : '210mm'};height:${options.landscape ? '210mm' : '297mm'};display:flex;align-items:center;justify-content:center;overflow:hidden;break-after:page;page-break-after:always;background:#fff}
         .page:last-child{break-after:auto;page-break-after:auto}
-        .page>img{display:block;width:100%;height:100%;object-fit:fill;filter:${gray ? 'grayscale(1)' : 'none'}}
+        .page>img{display:block;width:${mode === 'size' ? Math.min(96, Math.max(10, Number(options.scaleFactor) || 100)) : 100}%;height:${mode === 'size' ? Math.min(96, Math.max(10, Number(options.scaleFactor) || 100)) : 100}%;object-fit:fill;filter:${gray ? 'grayscale(1)' : 'none'}}
         .poster-tile{position:relative;align-items:flex-start;justify-content:flex-start}
         .poster-tile>img{position:absolute;max-width:none;object-fit:fill}
       </style></head><body>${pageNodes.join('')}</body></html>`;
@@ -212,7 +212,7 @@ function installIpc() {
     try {
       result = await dialog.showSaveDialog(win, {
         title: 'Save PDF',
-        defaultPath: suggestedName,
+        defaultPath: path.join(initialDirectory, suggestedName),
         buttonLabel: 'Save',
         filters: [{ name: 'PDF', extensions: ['pdf'] }],
       });
@@ -235,18 +235,10 @@ function installIpc() {
 
     try {
       fs.mkdirSync(path.dirname(selectedPath), { recursive: true });
-      // Write through a temporary file in the same folder, then replace the
-      // destination. This prevents partially-written PDFs and avoids leaving
-      // the Save As dialog pointing at a file that was never created.
-      const tempPath = `${selectedPath}.document-studio-${process.pid}-${Date.now()}.tmp`;
-      try {
-        fs.writeFileSync(tempPath, bytes, { flag: 'w' });
-        fs.renameSync(tempPath, selectedPath);
-      } finally {
-        if (fs.existsSync(tempPath)) {
-          try { fs.unlinkSync(tempPath); } catch {}
-        }
-      }
+      // Write directly to the user-selected destination. Using a temporary
+      // rename on Windows can make the native Save dialog report "File not found"
+      // when the destination already exists or is on a removable/network drive.
+      fs.writeFileSync(selectedPath, bytes, { flag: 'w' });
       if (!fs.existsSync(selectedPath)) throw new Error('The PDF file was not created.');
       return true;
     } catch (error) {
