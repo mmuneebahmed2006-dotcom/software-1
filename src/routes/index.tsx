@@ -128,7 +128,7 @@ function Index() {
   }, [captureCurrent, isPrinting]);
 
   const executePrint = useCallback(async (settings: PrintSettings) => {
-    setPrintOpen(false);
+    setIsPrinting(true);
     const printRoot = document.getElementById("document-pages");
     if (printRoot) {
       printRoot.classList.toggle("print-gray", settings.gray);
@@ -162,11 +162,16 @@ function Index() {
         duplex: settings.mode === "booklet" ? "shortEdge" : settings.sides === "double" ? "longEdge" : "simplex",
         paperSize: ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string,string>)[settings.paperSize] ?? "A4",
         dpi: settings.printAsImage ? settings.dpi : undefined,
+        images: printCapture?.images ?? [],
+        mode: settings.mode,
+        posterTiles: settings.posterTiles,
       });
       if (!success) toast.error("The print job was cancelled or could not be started.");
     } else {
       window.setTimeout(() => window.print(), 80);
     }
+    setPrintOpen(false);
+    setIsPrinting(false);
     window.setTimeout(() => {
       if (printRoot) {
         printRoot.classList.remove("print-gray");
