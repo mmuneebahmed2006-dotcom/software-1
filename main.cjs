@@ -335,11 +335,14 @@ function createWindow() {
   waitForServer(`http://127.0.0.1:${PORT}`, () => win.loadURL(`http://127.0.0.1:${PORT}`));
 
   win.once('ready-to-show', () => {
-    // Switch cleanly from the pure-black opening screen to the normal
-    // white Windows title bar with Minimize / Maximize / Close controls.
-    win.show();
-    if (splashWin && !splashWin.isDestroyed()) splashWin.close();
-    splashWin = null;
+    // Keep the real application window hidden while the frameless black
+    // splash is visible. The Windows title bar appears only after startup.
+    setTimeout(() => {
+      if (!win || win.isDestroyed()) return;
+      win.show();
+      if (splashWin && !splashWin.isDestroyed()) splashWin.close();
+      splashWin = null;
+    }, 3100);
   });
 }
-if (!app.requestSingleInstanceLock()) app.quit(); else { app.whenReady().then(() => { Menu.setApplicationMenu(null); installIpc(); startServer(); createWindow(); const settings = readSettings(); if (settings.initialized && settings.dataRoot && (!settings.lastBackupAt || Date.now() - settings.lastBackupAt >= 30 * 86400000)) setTimeout(() => { try { createAutoBackup(); } catch (error) { log(error.message); } }, 10000); }); app.on('window-all-closed', () => { serverProcess?.kill(); if (process.platform !== 'darwin') app.quit(); }); }
+if (!app.requestSingleInstanceLock()) app.quit(); else { app.whenReady().then(() => { Menu.setApplicationMenu(null); installIpc(); startServer(); createSplashWindow(); createWindow(); const settings = readSettings(); if (settings.initialized && settings.dataRoot && (!settings.lastBackupAt || Date.now() - settings.lastBackupAt >= 30 * 86400000)) setTimeout(() => { try { createAutoBackup(); } catch (error) { log(error.message); } }, 10000); }); app.on('window-all-closed', () => { serverProcess?.kill(); if (process.platform !== 'darwin') app.quit(); }); }
