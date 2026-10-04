@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Printer, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCcw, Settings, RefreshCw, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Printer, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCcw, Settings, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CapturedDocument } from "@/lib/pdf";
 
@@ -51,7 +51,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     orientation: "portrait", range: "all", customRange: "1", reversePages: false,
     printAsImage: true, dpi: 300, printerName: "", pagesPerSheet: 1, posterTiles: 2,
   });
-  const [printers, setPrinters] = useState<Array<{ name: string; displayName: string; description: string; options: Record<string, string> }>>([]);
+  const [printers, setPrinters] = useState<Array<{ name: string; displayName: string; description: string; options: Record<string, string>; status?: "ready" | "offline" | "printing" | "unknown" }>>([]);
   const [page, setPage] = useState(0);
   const [printing, setPrinting] = useState(false);
   const [zoom, setZoom] = useState(90);
@@ -89,6 +89,17 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     settings.autoCenter ? "auto-center" : "",
   ].filter(Boolean).join(" "), [settings.mode, settings.orientation, settings.autoCenter]);
 
+  const previewTransform = useMemo(() => {
+    const scale = settings.mode === "size"
+      ? (settings.sizing === "custom" ? settings.scale / 100 : settings.sizing === "actual" ? 1 : 0.96)
+      : 1;
+    const zoomFactor = zoom / 90;
+    if (settings.orientation === "landscape" && settings.mode === "size") {
+      return `rotate(90deg) scale(${0.68 * scale * zoomFactor})`;
+    }
+    return `scale(${scale * zoomFactor})`;
+  }, [settings.mode, settings.sizing, settings.scale, settings.orientation, zoom]);
+
   if (!open) return null;
 
   return (
@@ -111,18 +122,21 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               </div>
               <div className="print-printer-hint">{(() => {
                 const selected = printers.find((p) => p.name === settings.printerName);
-                if (!selected) return "Ready to print · System default";
+                if (!selected) return printers.length ? "Offline" : "Offline";
+                if (selected.status === "offline") return "Offline";
+                if (selected.status === "printing") return "Printing…";
+                if (selected.status === "ready") return "Ready to print";
                 const state = selected.options?.["printer-state"] ?? "";
                 const reasons = selected.options?.["printer-state-reasons"] ?? "";
                 const accepting = selected.options?.["printer-is-accepting-jobs"] !== "false";
                 if (/offline|unavailable|stopped|error/i.test(reasons) || state === "5" || !accepting) return "Offline";
                 if (state === "4" || /processing|printing/i.test(reasons)) return "Printing…";
-                return "Ready to print";
+                return "Offline";
               })()}</div>
             </section>
 
             <section className="print-setting-group print-group-content">
-              <div className="print-section-title"><h3>Print Content</h3><SlidersHorizontal size={14} /></div>
+              <div className="print-section-title"><h3>Print Content</h3></div>
               {([["printDocument","Document"],["printComment","Comment"],["printForm","Form"]] as const).map(([key, label]) => (
                 <label className="print-check" key={key}><input type="checkbox" checked={settings[key]} onChange={(e) => patch(key, e.target.checked)} /> {label}</label>
               ))}
@@ -217,9 +231,9 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <div className="print-preview-toolbar"><span className="print-preview-filename">{fileName}</span><span>{settings.mode === "multiple" ? `${settings.pagesPerSheet} pages / sheet` : settings.mode === "poster" ? `${settings.posterTiles} × ${settings.posterTiles} poster` : settings.mode === "booklet" ? "Booklet · 2-up" : settings.orientation === "landscape" ? "Landscape" : "Portrait"}</span></div>
             <div className="print-preview-paper-wrap">
               <div className={previewClass}>
-                {settings.mode === "size" && image && <img className="print-preview-paper" src={image} alt={paperLabel + " preview"} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: settings.orientation === "landscape" ? "rotate(90deg) scale(.70)" : `scale(${settings.sizing === "custom" ? settings.scale / 100 : settings.sizing === "fit" ? .96 : 1})` }} />}
+                {settings.mode === "size" && image && <img className="print-preview-paper" src={image} alt={paperLabel + " preview"} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: previewTransform }} />}
                 {settings.mode === "poster" && image && (
-                  <div className="poster-preview-grid" style={{ gridTemplateColumns: `repeat(${settings.posterTiles}, 1fr)`, gridTemplateRows: `repeat(${settings.posterTiles}, 1fr)` }}>
+                  <div className="poster-preview-grid" style={{ transform: `scale(${zoom / 90})`, gridTemplateColumns: `repeat(${settings.posterTiles}, 1fr)`, gridTemplateRows: `repeat(${settings.posterTiles}, 1fr)` }}>
                     {Array.from({ length: settings.posterTiles * settings.posterTiles }, (_, i) => {
                       const row = Math.floor(i / settings.posterTiles), col = i % settings.posterTiles;
                       const size = settings.posterTiles * 100;
@@ -228,12 +242,12 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
                   </div>
                 )}
                 {settings.mode === "multiple" && (
-                  <div className="multiple-preview-grid" style={{ gridTemplateColumns: `repeat(${settings.pagesPerSheet >= 6 ? 3 : settings.pagesPerSheet === 2 ? 2 : 2}, 1fr)` }}>
+                  <div className="multiple-preview-grid" style={{ transform: `scale(${zoom / 90})`, gridTemplateColumns: `repeat(${settings.pagesPerSheet >= 6 ? 3 : settings.pagesPerSheet === 2 ? 2 : 2}, 1fr)` }}>
                     {images.slice(0, settings.pagesPerSheet).map((src, i) => <div className="multiple-preview-cell" key={i}><img src={src} alt={`Page ${i + 1}`} style={{ filter: settings.gray ? "grayscale(1)" : "none" }} /></div>)}
                   </div>
                 )}
                 {settings.mode === "booklet" && (
-                  <div className="booklet-preview-grid">
+                  <div className="booklet-preview-grid" style={{ transform: `scale(${zoom / 90})` }}>
                     {(images.slice(0,2)).map((src, i) => <div className="booklet-preview-cell" key={i}><img src={src} alt={`Booklet page ${i + 1}`} style={{ filter: settings.gray ? "grayscale(1)" : "none" }} /></div>)}
                   </div>
                 )}
