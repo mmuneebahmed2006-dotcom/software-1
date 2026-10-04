@@ -12,7 +12,17 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): P
   const previousTransform = pageContainer?.style.transform ?? "";
   const previousTransition = pageContainer?.style.transition ?? "";
   const previousPaddingBottom = pageContainer?.style.paddingBottom ?? "";
-  elements.forEach((element) => element.classList.add("exporting"));
+  const previousPageStyles = elements.map((element) => ({
+    height: element.style.height,
+    minHeight: element.style.minHeight,
+    overflow: element.style.overflow,
+  }));
+  elements.forEach((element) => {
+    element.classList.add("exporting");
+    element.style.height = "";
+    element.style.minHeight = "";
+    element.style.overflow = "visible";
+  });
   // The editor has a visual zoom transform. html-to-image otherwise measures the
   // transformed rectangle and can capture only part of the paper.
   if (pageContainer) {
@@ -53,7 +63,12 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): P
     }
     return { images, size: PAPER_SIZES[paperSize].pdf };
   } finally {
-    elements.forEach((element) => element.classList.remove("exporting"));
+    elements.forEach((element, index) => {
+      element.classList.remove("exporting");
+      element.style.height = previousPageStyles[index].height;
+      element.style.minHeight = previousPageStyles[index].minHeight;
+      element.style.overflow = previousPageStyles[index].overflow;
+    });
     if (pageContainer) {
       pageContainer.style.transform = previousTransform;
       pageContainer.style.transition = previousTransition;
