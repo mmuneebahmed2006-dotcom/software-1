@@ -5,14 +5,14 @@
 Var DataRootDir
 
 !macro preInit
-  StrCpy $DataRootDir "$DOCUMENTS\Document Studio"
+  StrCpy $DataRootDir "$LOCALAPPDATA\Document Studio"
 !macroend
 
 !macro customPageAfterChangeDir
-  !define MUI_PAGE_HEADER_TEXT "Choose Documents Folder"
-  !define MUI_PAGE_HEADER_SUBTEXT "Select where Document Studio should save your documents."
+  !define MUI_PAGE_HEADER_TEXT "Choose Application Data Folder"
+  !define MUI_PAGE_HEADER_SUBTEXT "Select where Document Studio should store its application data."
   !define MUI_DIRECTORYPAGE_TEXT_TOP "Invoices, quotations, delivery challans and sales tax invoices are stored in separate folders inside the location you choose below."
-  !define MUI_DIRECTORYPAGE_TEXT_DESTINATION "Document Studio data folder"
+  !define MUI_DIRECTORYPAGE_TEXT_DESTINATION "Document Studio application data folder"
   !define MUI_DIRECTORYPAGE_VARIABLE $DataRootDir
   !insertmacro MUI_PAGE_DIRECTORY
 !macroend
