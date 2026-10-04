@@ -145,7 +145,12 @@ function installIpc() {
       </style></head><body>${pageNodes.join('')}</body></html>`;
       try {
         await printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
-        await new Promise((resolve) => setTimeout(resolve, 120));
+        await printWindow.webContents.executeJavaScript(`
+          Promise.all(Array.from(document.images).map((img) => img.complete
+            ? Promise.resolve()
+            : new Promise((resolve) => { img.addEventListener('load', resolve, { once: true }); img.addEventListener('error', resolve, { once: true }); })))
+        `);
+        await new Promise((resolve) => setTimeout(resolve, 180));
         const printOptions = {
           silent: Boolean(options.silent),
           deviceName: typeof options.deviceName === 'string' ? options.deviceName : undefined,
