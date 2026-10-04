@@ -12,16 +12,46 @@ let win; let serverProcess;
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
 const writeSettings = (value) => { fs.mkdirSync(path.dirname(settingsPath()), { recursive: true }); fs.writeFileSync(settingsPath(), JSON.stringify(value, null, 2)); return value; };
 // The Windows installer asks for a documents folder on every install and drops the choice here.
-const installerRoot = () => { for (const file of [path.join(app.getPath('userData'), 'data-root.txt'), path.join(path.dirname(app.getPath('exe')), 'data-root.txt')]) { try { const value = fs.readFileSync(file, 'utf8').trim().replace(/^\ufeff/, ''); if (value) return path.resolve(value); } catch {} } return null; };
+const installerRoot = () => { for (const file of [path.join(app.getPath('userData'), 'data-root.txt'), path.join(path.dirname(app.getPath('exe')), 'data-root.txt')]) { try { const value = fs.readFileSync(file, 'utf8').trim().replace(/^\\ufeff/, ''); if (value) return path.resolve(value); } catch {} } return null; };
+const defaultWorkspaceRoot = () => path.join(app.getPath('userData'), 'workspace');
+const isLegacyDocumentsWorkspace = (candidate) => {
+  try {
+    const documents = path.resolve(app.getPath('documents'));
+    const target = path.resolve(candidate);
+    return target === path.join(documents, 'Document Studio');
+  } catch { return false; }
+};
+const migrateLegacyWorkspace = (source) => {
+  const target = defaultWorkspaceRoot();
+  if (!source || !fs.existsSync(source) || path.resolve(source) === path.resolve(target)) return target;
+  try {
+    if (!fs.existsSync(target)) fs.cpSync(source, target, { recursive: true });
+  } catch (error) {
+    log(`Workspace migration failed: ${error.message}`);
+  }
+  return target;
+};
 const readSettings = () => {
   let stored = {};
   try { stored = JSON.parse(fs.readFileSync(settingsPath(), 'utf8')); } catch {}
   const base = { initialized: false, dataRoot: null, lastBackupAt: null, ...stored };
-  if (base.dataRoot) return base;
+  if (base.dataRoot) {
+    if (isLegacyDocumentsWorkspace(base.dataRoot)) {
+      const target = migrateLegacyWorkspace(base.dataRoot);
+      try { ensureWorkspace(target); return writeSettings({ ...base, initialized: true, dataRoot: target }); } catch {}
+    }
+    return base;
+  }
   const chosen = installerRoot();
-  if (!chosen) return base;
+  if (chosen && !isLegacyDocumentsWorkspace(chosen)) {
+    try {
+      const target = path.resolve(chosen);
+      ensureWorkspace(target);
+      return writeSettings({ ...base, initialized: true, dataRoot: target });
+    } catch {}
+  }
   try {
-    const target = path.resolve(chosen);
+    const target = defaultWorkspaceRoot();
     ensureWorkspace(target);
     return writeSettings({ ...base, initialized: true, dataRoot: target });
   } catch {}
@@ -246,15 +276,17 @@ function installIpc() {
 
     let result;
     try {
+      // Give Windows only the filename as the initial value. Passing a full
+      // Documents path here can make the native Save dialog validate the
+      // default target before the user has chosen a location and show
+      // "File not found" even though the folder is writable.
       result = await dialog.showSaveDialog(win, {
         title: 'Save PDF',
-        defaultPath: path.join(initialDirectory, suggestedName),
+        defaultPath: suggestedName,
         buttonLabel: 'Save',
         filters: [{ name: 'PDF', extensions: ['pdf'] }],
       });
     } catch (error) {
-      // If the native dialog rejects its initial directory, retry once with only
-      // the suggested filename so Windows can choose its normal save location.
       log(`PDF Save dialog retry: ${error.message}`);
       result = await dialog.showSaveDialog(win, {
         title: 'Save PDF',
