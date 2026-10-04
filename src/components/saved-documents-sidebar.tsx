@@ -41,6 +41,7 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
   const [to, setTo] = useState("");
   const [folder, setFolder] = useState("all");
   const [menuFolder, setMenuFolder] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [deleteFolder, setDeleteFolder] = useState<string | null>(null);
   const folderMenuRef = useRef<HTMLDivElement | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<{ from: string; value: string } | null>(null);
@@ -59,7 +60,7 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
       const target = event.target as Node;
       if (!folderMenuRef.current?.contains(target)) setMenuFolder(null);
     };
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuFolder(null); };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") { setMenuFolder(null); setMenuPosition(null); } };
     document.addEventListener("mousedown", closeOnOutsideClick);
     document.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -103,8 +104,8 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
       <div className="folder-chips">
         {visibleFolders.map((name) => <span key={name} className={`folder-chip ${folder === name ? "active" : ""} ${activeFolder === name ? "current" : ""}`}>
           <button type="button" className="folder-chip-main" onClick={() => { setFolder(name); onSelectFolder(name) }}><Folder size={13}/> {name} <small>{counts[name] ?? 0}</small></button>
-          <button type="button" className="folder-chip-menu" aria-label={`Options for ${name}`} onClick={() => setMenuFolder(menuFolder === name ? null : name)}><MoreVertical size={13}/></button>
-          {menuFolder === name && <div ref={folderMenuRef} className="folder-menu" role="menu">
+          <button type="button" className="folder-chip-menu" aria-label={`Options for ${name}`} onClick={(event) => { if (menuFolder === name) { setMenuFolder(null); setMenuPosition(null); } else { const rect = event.currentTarget.getBoundingClientRect(); setMenuFolder(name); setMenuPosition({ top: rect.bottom + 6, left: rect.left }); } }}><MoreVertical size={13}/></button>
+          {menuFolder === name && <div ref={folderMenuRef} className="folder-menu" role="menu" style={menuPosition ?? undefined}>
             <button type="button" onClick={() => { setRenamingFolder({ from: name, value: name }); setMenuFolder(null) }}><Pencil size={13}/> Rename</button>
             <button type="button" onClick={() => { setMenuFolder(null); setDeleteFolder(name) }}><Trash2 size={13}/> Delete</button>
             <button type="button" onClick={() => { setMenuFolder(null); setDownloadFolder(name) }}><Download size={13}/> Download</button>
