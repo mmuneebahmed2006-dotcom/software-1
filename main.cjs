@@ -200,23 +200,58 @@ function installIpc() {
     });
   });
   ipcMain.handle('pdf:save-as', async (_event, name, data) => {
-    // PDF exports must never use the app's internal workspace as their default
-    // location. The workspace can be moved/protected by the installer; the
-    // user's Documents folder is an independent, normal Windows save target.
+    // PDF Save As is deliberately independent from the Document Studio data root.
+    // The user must remain free to choose Documents, D:, E:, USB storage, etc.
+    // On Windows, pass the initial directory separately from the suggested file
+    // name. This avoids native Save As resolving a non-existent default file as
+    // an invalid path on some installed Windows configurations.
     const documentsDir = app.getPath('documents');
-    fs.mkdirSync(documentsDir, { recursive: true });
-    const defaultPath = path.join(documentsDir, safePart(name));
-    const result = await dialog.showSaveDialog(win, {
-      defaultPath,
-      filters: [{ name: 'PDF', extensions: ['pdf'] }],
-    });
-    if (result.canceled || !result.filePath) return false;
+    const suggestedName = safePart(name).toLowerCase().endsWith('.pdf') ? safePart(name) : `${safePart(name)}.pdf`;
+    const initialDirectory = fs.existsSync(documentsDir) ? documentsDir : app.getPath('home');
+
+    let result;
     try {
-      fs.mkdirSync(path.dirname(result.filePath), { recursive: true });
-      fs.writeFileSync(result.filePath, decodeData(data));
+      result = await dialog.showSaveDialog(win, {
+        title: 'Save PDF',
+        defaultPath: process.platform === 'win32' ? initialDirectory : path.join(initialDirectory, suggestedName),
+        buttonLabel: 'Save',
+        filters: [{ name: 'PDF', extensions: ['pdf'] }],
+      });
+    } catch (error) {
+      // If the native dialog rejects its initial directory, retry once with only
+      // the suggested filename so Windows can choose its normal save location.
+      log(`PDF Save dialog retry: ${error.message}`);
+      result = await dialog.showSaveDialog(win, {
+        title: 'Save PDF',
+        defaultPath: suggestedName,
+        buttonLabel: 'Save',
+        filters: [{ name: 'PDF', extensions: ['pdf'] }],
+      });
+    }
+
+    if (result.canceled || !result.filePath) return false;
+
+    const selectedPath = result.filePath.toLowerCase().endsWith('.pdf') ? result.filePath : `${result.filePath}.pdf`;
+    const bytes = decodeData(data);
+
+    try {
+      fs.mkdirSync(path.dirname(selectedPath), { recursive: true });
+      // Write through a temporary file in the same folder, then replace the
+      // destination. This prevents partially-written PDFs and avoids leaving
+      // the Save As dialog pointing at a file that was never created.
+      const tempPath = `${selectedPath}.document-studio-${process.pid}-${Date.now()}.tmp`;
+      try {
+        fs.writeFileSync(tempPath, bytes, { flag: 'w' });
+        fs.renameSync(tempPath, selectedPath);
+      } finally {
+        if (fs.existsSync(tempPath)) {
+          try { fs.unlinkSync(tempPath); } catch {}
+        }
+      }
+      if (!fs.existsSync(selectedPath)) throw new Error('The PDF file was not created.');
       return true;
     } catch (error) {
-      log(`PDF save failed: ${error.message}`);
+      log(`PDF save failed: ${error.message} | target=${selectedPath}`);
       await dialog.showMessageBox(win, {
         type: 'error',
         title: 'PDF Save Error',
