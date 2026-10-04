@@ -94,7 +94,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
   return (
     <div className="print-preview-overlay" role="dialog" aria-modal="true" aria-label="Print preview">
       <div className="print-preview-window print-preview-white print-preview-three-columns">
-        <header className="print-preview-titlebar">
+        <header className="print-preview-titlebar print-preview-light-titlebar">
           <div className="print-title-left"><Printer size={17} /><span>Print</span><small>{fileName}</small></div>
           <button type="button" onClick={onClose} disabled={printing} aria-label="Close"><X size={18} /></button>
         </header>
@@ -214,7 +214,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
           </aside>
 
           <main className="print-preview-stage print-preview-stage-light">
-            <div className="print-preview-toolbar"><span>Preview</span><span>{settings.mode === "multiple" ? `${settings.pagesPerSheet} pages / sheet` : settings.mode === "poster" ? `${settings.posterTiles} × ${settings.posterTiles} poster` : settings.mode === "booklet" ? "Booklet · 2-up" : settings.orientation === "landscape" ? "Landscape" : "Portrait"}</span></div>
+            <div className="print-preview-toolbar"><span className="print-preview-filename">{fileName}</span><span>{settings.mode === "multiple" ? `${settings.pagesPerSheet} pages / sheet` : settings.mode === "poster" ? `${settings.posterTiles} × ${settings.posterTiles} poster` : settings.mode === "booklet" ? "Booklet · 2-up" : settings.orientation === "landscape" ? "Landscape" : "Portrait"}</span></div>
             <div className="print-preview-paper-wrap">
               <div className={previewClass}>
                 {settings.mode === "size" && image && <img className="print-preview-paper" src={image} alt={paperLabel + " preview"} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: settings.orientation === "landscape" ? "rotate(90deg) scale(.70)" : `scale(${settings.sizing === "custom" ? settings.scale / 100 : settings.sizing === "fit" ? .96 : 1})` }} />}
