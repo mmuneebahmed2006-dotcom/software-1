@@ -212,7 +212,7 @@ function installIpc() {
     try {
       result = await dialog.showSaveDialog(win, {
         title: 'Save PDF',
-        defaultPath: path.join(initialDirectory, suggestedName),
+        defaultPath: suggestedName,
         buttonLabel: 'Save',
         filters: [{ name: 'PDF', extensions: ['pdf'] }],
       });
