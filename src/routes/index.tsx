@@ -166,7 +166,11 @@ function Index() {
         mode: settings.mode,
         posterTiles: settings.posterTiles,
       });
-      if (!success) toast.error("The print job was cancelled or could not be started.");
+      if (!success) {
+        toast.error("Print job could not be started. Check the selected printer status.");
+        setIsPrinting(false);
+        return;
+      }
     } else {
       window.setTimeout(() => window.print(), 80);
     }
