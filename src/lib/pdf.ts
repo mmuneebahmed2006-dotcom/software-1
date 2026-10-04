@@ -32,7 +32,7 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): P
       images.push(await toPng(element, {
         width,
         height,
-        pixelRatio: 2,
+        pixelRatio: 4,
         backgroundColor: "white",
         fontEmbedCSS,
         skipFonts: false,
@@ -67,7 +67,7 @@ export function buildPdf(captured: CapturedDocument[]): Blob {
   for (const entry of captured) {
     for (const image of entry.images) {
       if (page > 0) pdf.addPage(entry.size, "portrait");
-      pdf.addImage(image, "PNG", 0, 0, entry.size[0], entry.size[1], undefined, "FAST");
+      pdf.addImage(image, "PNG", 0, 0, entry.size[0], entry.size[1], undefined, "NONE");
       page++;
     }
   }
