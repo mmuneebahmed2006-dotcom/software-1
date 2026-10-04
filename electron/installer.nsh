@@ -1,17 +1,17 @@
 ; Document Studio installer customisation.
-; Asks for a documents save location on every install and creates the
-; four document-type folders inside it, then records the path for the app.
+; Keeps application workspace data outside the user Documents folder so the
+; installed app never interferes with normal file saves in Documents.
 
 Var DataRootDir
 
 !macro preInit
-  StrCpy $DataRootDir "$DOCUMENTS\Document Studio"
+  StrCpy $DataRootDir "$APPDATA\Document Generator\workspace"
 !macroend
 
 !macro customPageAfterChangeDir
-  !define MUI_PAGE_HEADER_TEXT "Choose Application Data Folder"
-  !define MUI_PAGE_HEADER_SUBTEXT "Select where Document Studio should store its application data."
-  !define MUI_DIRECTORYPAGE_TEXT_TOP "Invoices, quotations, delivery challans and sales tax invoices are stored in separate folders inside the location you choose below."
+  !define MUI_PAGE_HEADER_TEXT "Document Studio Application Data"
+  !define MUI_PAGE_HEADER_SUBTEXT "Application data is stored separately from your personal Documents folder."
+  !define MUI_DIRECTORYPAGE_TEXT_TOP "Document Studio will keep its internal documents, backups and settings in its own application-data folder."
   !define MUI_DIRECTORYPAGE_TEXT_DESTINATION "Document Studio application data folder"
   !define MUI_DIRECTORYPAGE_VARIABLE $DataRootDir
   !insertmacro MUI_PAGE_DIRECTORY
