@@ -17,30 +17,11 @@ const readSettings = () => {
   let stored = {};
   try { stored = JSON.parse(fs.readFileSync(settingsPath(), 'utf8')); } catch {}
   const base = { initialized: false, dataRoot: null, lastBackupAt: null, ...stored };
-  if (base.dataRoot) {
-    const documentsDir = path.resolve(app.getPath('documents'));
-    const currentRoot = path.resolve(base.dataRoot);
-    const oldRoot = path.resolve(path.join(documentsDir, 'Document Studio'));
-    if (currentRoot === oldRoot || currentRoot.startsWith(oldRoot + path.sep)) {
-      const migratedRoot = path.join(app.getPath('userData'), 'Document Studio');
-      try {
-        if (fs.existsSync(currentRoot)) fs.cpSync(currentRoot, migratedRoot, { recursive: true, force: true });
-        ensureWorkspace(migratedRoot);
-        return writeSettings({ ...base, initialized: true, dataRoot: migratedRoot });
-      } catch (error) { log(`Workspace migration failed: ${error.message}`); }
-    }
-    return base;
-  }
+  if (base.dataRoot) return base;
   const chosen = installerRoot();
   if (!chosen) return base;
   try {
-    const documentsDir = path.resolve(app.getPath('documents'));
-    const chosenRoot = path.resolve(chosen);
-    const oldRoot = path.resolve(path.join(documentsDir, 'Document Studio'));
-    const target = chosenRoot === oldRoot || chosenRoot.startsWith(oldRoot + path.sep)
-      ? path.join(app.getPath('userData'), 'Document Studio')
-      : chosenRoot;
-    if (target !== chosenRoot && fs.existsSync(chosenRoot)) fs.cpSync(chosenRoot, target, { recursive: true, force: true });
+    const target = path.resolve(chosen);
     ensureWorkspace(target);
     return writeSettings({ ...base, initialized: true, dataRoot: target });
   } catch {}
