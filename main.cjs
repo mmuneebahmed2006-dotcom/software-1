@@ -13,7 +13,39 @@ const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
 const writeSettings = (value) => { fs.mkdirSync(path.dirname(settingsPath()), { recursive: true }); fs.writeFileSync(settingsPath(), JSON.stringify(value, null, 2)); return value; };
 // The Windows installer asks for a documents folder on every install and drops the choice here.
 const installerRoot = () => { for (const file of [path.join(app.getPath('userData'), 'data-root.txt'), path.join(path.dirname(app.getPath('exe')), 'data-root.txt')]) { try { const value = fs.readFileSync(file, 'utf8').trim().replace(/^\ufeff/, ''); if (value) return path.resolve(value); } catch {} } return null; };
-const readSettings = () => { let stored = {}; try { stored = JSON.parse(fs.readFileSync(settingsPath(), 'utf8')); } catch {} const base = { initialized: false, dataRoot: null, lastBackupAt: null, ...stored }; if (base.dataRoot) return base; const chosen = installerRoot(); if (!chosen) return base; try { ensureWorkspace(chosen); } catch {} return writeSettings({ ...base, initialized: true, dataRoot: chosen }); };
+const readSettings = () => {
+  let stored = {};
+  try { stored = JSON.parse(fs.readFileSync(settingsPath(), 'utf8')); } catch {}
+  const base = { initialized: false, dataRoot: null, lastBackupAt: null, ...stored };
+  if (base.dataRoot) {
+    const documentsDir = path.resolve(app.getPath('documents'));
+    const currentRoot = path.resolve(base.dataRoot);
+    const oldRoot = path.resolve(path.join(documentsDir, 'Document Studio'));
+    if (currentRoot === oldRoot || currentRoot.startsWith(oldRoot + path.sep)) {
+      const migratedRoot = path.join(app.getPath('userData'), 'Document Studio');
+      try {
+        if (fs.existsSync(currentRoot)) fs.cpSync(currentRoot, migratedRoot, { recursive: true, force: true });
+        ensureWorkspace(migratedRoot);
+        return writeSettings({ ...base, initialized: true, dataRoot: migratedRoot });
+      } catch (error) { log(`Workspace migration failed: ${error.message}`); }
+    }
+    return base;
+  }
+  const chosen = installerRoot();
+  if (!chosen) return base;
+  try {
+    const documentsDir = path.resolve(app.getPath('documents'));
+    const chosenRoot = path.resolve(chosen);
+    const oldRoot = path.resolve(path.join(documentsDir, 'Document Studio'));
+    const target = chosenRoot === oldRoot || chosenRoot.startsWith(oldRoot + path.sep)
+      ? path.join(app.getPath('userData'), 'Document Studio')
+      : chosenRoot;
+    if (target !== chosenRoot && fs.existsSync(chosenRoot)) fs.cpSync(chosenRoot, target, { recursive: true, force: true });
+    ensureWorkspace(target);
+    return writeSettings({ ...base, initialized: true, dataRoot: target });
+  } catch {}
+  return base;
+};
 const safePart = (value) => String(value ?? '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '-').trim().slice(0, 100) || 'Untitled';
 const dataRoot = () => { const root = readSettings().dataRoot; if (!root) throw new Error('Workspace is not initialized'); return path.resolve(root); };
 const withinRoot = (...parts) => { const root = dataRoot(); const target = path.resolve(root, ...parts.map(safePart)); if (target !== root && !target.startsWith(root + path.sep)) throw new Error('Invalid workspace path'); return target; };
@@ -181,7 +213,33 @@ function installIpc() {
       win.webContents.print(printOptions, (success) => resolve(Boolean(success)));
     });
   });
-  ipcMain.handle('pdf:save-as', async (_event, name, data, docType) => { let defaultPath = safePart(name); try { const category = CATEGORIES[docType]; if (category) defaultPath = path.join(withinRoot(category), safePart(name)); } catch {} const result = await dialog.showSaveDialog(win, { defaultPath, filters: [{ name: 'PDF', extensions: ['pdf'] }] }); if (result.canceled || !result.filePath) return false; fs.mkdirSync(path.dirname(result.filePath), { recursive: true }); fs.writeFileSync(result.filePath, decodeData(data)); return true; });
+  ipcMain.handle('pdf:save-as', async (_event, name, data) => {
+    // PDF exports must never use the app's internal workspace as their default
+    // location. The workspace can be moved/protected by the installer; the
+    // user's Documents folder is an independent, normal Windows save target.
+    const documentsDir = app.getPath('documents');
+    fs.mkdirSync(documentsDir, { recursive: true });
+    const defaultPath = path.join(documentsDir, safePart(name));
+    const result = await dialog.showSaveDialog(win, {
+      defaultPath,
+      filters: [{ name: 'PDF', extensions: ['pdf'] }],
+    });
+    if (result.canceled || !result.filePath) return false;
+    try {
+      fs.mkdirSync(path.dirname(result.filePath), { recursive: true });
+      fs.writeFileSync(result.filePath, decodeData(data));
+      return true;
+    } catch (error) {
+      log(`PDF save failed: ${error.message}`);
+      await dialog.showMessageBox(win, {
+        type: 'error',
+        title: 'PDF Save Error',
+        message: 'The PDF could not be saved to this location.',
+        detail: String(error.message || 'Unknown file-system error'),
+      });
+      return false;
+    }
+  });
   ipcMain.handle('pdf:export-current', async (_event, name, docType, paperSize, landscape = false, scale = 100, pageRange = '') => {
     if (!win || win.isDestroyed()) return false;
     let defaultPath = safePart(name);
