@@ -770,3 +770,16 @@ html, body { overflow-x: hidden; }
 .paper.exporting .document-footer{display:grid!important;visibility:visible!important;opacity:1!important;flex:0 0 auto!important;min-height:58px!important;height:auto!important;overflow:visible!important}
 .paper.exporting{overflow:visible!important;box-sizing:border-box!important}
 .paper.exporting .document-content{overflow:visible!important;min-height:0!important}
+
+/* FINAL PRINT PREVIEW: white Wondershare-like three-column body layout. */
+.print-preview-white.print-preview-three-columns{background:#fff!important;color:#202124!important;border:1px solid #d8dbe0!important}
+.print-preview-white.print-preview-three-columns .print-preview-body{display:grid!important;grid-template-columns:245px 245px minmax(0,1fr)!important;min-height:0!important;flex:1 1 auto!important;overflow:hidden!important;background:#fff!important}
+.print-preview-white.print-preview-three-columns .print-settings-panel{display:contents!important}
+.print-preview-white.print-preview-three-columns .print-setting-group{background:#fff!important;color:#202124!important;border-right:1px solid #e0e3e7!important;border-bottom:1px solid #e0e3e7!important;overflow:visible!important}
+.print-preview-white.print-preview-three-columns .print-setting-group h3,.print-preview-white.print-preview-three-columns .print-check,.print-preview-white.print-preview-three-columns .print-radio-list label,.print-preview-white.print-preview-three-columns .print-select-row{color:#202124!important}
+.print-preview-white.print-preview-three-columns .print-printer-row select,.print-preview-white.print-preview-three-columns .print-printer-row button,.print-preview-white.print-preview-three-columns .print-select-row select,.print-preview-white.print-preview-three-columns .print-number-input,.print-preview-white.print-preview-three-columns .print-scale-input,.print-preview-white.print-preview-three-columns .print-custom-range input{background:#fff!important;color:#202124!important;border-color:#c8ccd2!important}
+.print-preview-white.print-preview-three-columns .print-preview-stage{grid-column:3!important;grid-row:1 / span 4!important;background:#fff!important;padding:34px 22px 54px!important}
+.print-preview-white.print-preview-three-columns .print-preview-paper-wrap{width:100%!important;height:100%!important;min-height:0!important;padding:0!important;overflow:hidden!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.print-preview-white.print-preview-three-columns .print-output-preview{width:100%!important;height:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;background:#fff!important;overflow:hidden!important}
+.print-preview-white.print-preview-three-columns .print-preview-paper{display:block!important;width:auto!important;height:auto!important;max-width:94%!important;max-height:94%!important;object-fit:contain!important;background:#fff!important;box-shadow:0 2px 14px rgb(0 0 0 / .22)!important;image-rendering:auto!important}
+.print-preview-white.print-preview-three-columns .print-preview-footer{background:#fff!important;color:#202124!important;border-top:1px solid #dfe2e6!important}
