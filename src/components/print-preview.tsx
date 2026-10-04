@@ -33,7 +33,7 @@ type Props = {
   paperLabel: string;
   fileName: string;
   onClose: () => void;
-  onPrint: (settings: PrintSettings) => void;
+  onPrint: (settings: PrintSettings) => void | Promise<void>;
 };
 
 const PAPER_OPTIONS = [
@@ -53,8 +53,10 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
   });
   const [printers, setPrinters] = useState<Array<{ name: string; displayName: string; description: string; status: number; isDefault: boolean }>>([]);
   const [page, setPage] = useState(0);
+  const [printing, setPrinting] = useState(false);
   const [zoom, setZoom] = useState(90);
   const images = captured?.images ?? [];
+  const handlePrint = async () => { setPrinting(true); try { await onPrint(settings); } finally { setPrinting(false); } };
   const total = images.length;
   const image = images[page] ?? images[0];
 
@@ -87,7 +89,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
       <div className="print-preview-window">
         <header className="print-preview-titlebar">
           <div className="print-title-left"><Printer size={17} /><span>Print</span><small>{fileName}</small></div>
-          <button type="button" onClick={onClose} aria-label="Close"><X size={18} /></button>
+          <button type="button" onClick={onClose} disabled={printing} aria-label="Close"><X size={18} /></button>
         </header>
 
         <div className="print-preview-body">
@@ -237,7 +239,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
         <footer className="print-preview-footer">
           <span>{paperLabel} · {total} page{total === 1 ? "" : "s"} · {settings.mode[0].toUpperCase() + settings.mode.slice(1)}</span>
-          <div><Button variant="secondary" type="button" onClick={onClose}>Cancel</Button><Button type="button" onClick={() => onPrint(settings)}><Printer size={16}/> Print</Button></div>
+          <div><Button variant="secondary" type="button" disabled={printing} onClick={onClose}>Cancel</Button><Button type="button" disabled={printing || !total} onClick={() => void handlePrint()}>{printing ? <><Loader2 size={16} className="animate-spin"/> Printing…</> : <><Printer size={16}/> Print</>}</Button></div>
         </footer>
       </div>
     </div>
