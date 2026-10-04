@@ -51,7 +51,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     orientation: "portrait", range: "all", customRange: "1", reversePages: false,
     printAsImage: true, dpi: 300, printerName: "", pagesPerSheet: 1, posterTiles: 2,
   });
-  const [printers, setPrinters] = useState<Array<{ name: string; displayName: string; description: string; status: number; isDefault: boolean }>>([]);
+  const [printers, setPrinters] = useState<Array<{ name: string; displayName: string; description: string; options: Record<string, string> }>>([]);
   const [page, setPage] = useState(0);
   const [printing, setPrinting] = useState(false);
   const [zoom, setZoom] = useState(90);
@@ -68,7 +68,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     try {
       const list = await window.desktop.listPrinters();
       setPrinters(list);
-      const preferred = list.find((printer) => printer.isDefault)?.name ?? list[0]?.name ?? "";
+      const preferred = list[0]?.name ?? "";
       setSettings((s) => ({ ...s, printerName: s.printerName || preferred }));
     } catch { setPrinters([]); }
   };
@@ -104,10 +104,13 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               </div>
               <div className="print-printer-hint">{(() => {
                 const selected = printers.find((p) => p.name === settings.printerName);
-                if (!selected) return "System default printer";
-                if (selected.status === 2) return "Printing…";
-                if (selected.status === 3 || selected.status === 4) return "Offline";
-                return selected.isDefault ? "Ready to print · Default printer" : "Ready to print";
+                if (!selected) return "Ready to print · System default";
+                const state = selected.options?.["printer-state"] ?? "";
+                const reasons = selected.options?.["printer-state-reasons"] ?? "";
+                const accepting = selected.options?.["printer-is-accepting-jobs"] !== "false";
+                if (/offline|unavailable|stopped|error/i.test(reasons) || state === "5" || !accepting) return "Offline";
+                if (state === "4" || /processing|printing/i.test(reasons)) return "Printing…";
+                return "Ready to print";
               })()}</div>
             </section>
 
