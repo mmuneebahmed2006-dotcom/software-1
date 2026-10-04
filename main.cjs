@@ -169,100 +169,194 @@ function installIpc() {
   ipcMain.handle('print:document', async (_event, options = {}) => {
     if (!win || win.isDestroyed()) return false;
     const pageSize = ['A4', 'A5', 'Letter', 'Legal'].includes(options.paperSize) ? options.paperSize : 'A4';
-    const pageRanges = Array.isArray(options.pageRanges) && options.pageRanges.length ? options.pageRanges : undefined;
-    const images = Array.isArray(options.images) ? options.images.filter((src) => typeof src === 'string' && src.startsWith('data:image/')) : [];
+    const images = Array.isArray(options.images)
+      ? options.images.filter((src) => typeof src === 'string' && src.startsWith('data:image/'))
+      : [];
+    if (!images.length) return false;
 
-    // Print the exact captured document pages rather than the live editor DOM.
-    // This prevents the editor zoom/layout from changing the physical print.
-    if (images.length) {
-      const printWindow = new BrowserWindow({
-        show: false,
-        width: options.landscape ? 1200 : 900,
-        height: options.landscape ? 900 : 1200,
-        webPreferences: { sandbox: true },
-      });
-      const gray = Boolean(options.gray);
-      const mode = ['size', 'poster', 'multiple', 'booklet'].includes(options.mode) ? options.mode : 'size';
-      const posterTiles = Math.min(4, Math.max(2, Number(options.posterTiles) || 2));
-      const pageNodes = mode === 'poster'
-        ? images.flatMap((src) => Array.from({ length: posterTiles * posterTiles }, (_, i) => {
-            const row = Math.floor(i / posterTiles);
-            const col = i % posterTiles;
-            return `<section class="page poster-tile"><img src="${src}" style="width:${posterTiles * 100}%;height:${posterTiles * 100}%;left:-${col * 100}%;top:-${row * 100}%"></section>`;
-          }))
-        : images.map((src) => `<section class="page"><img src="${src}"></section>`);
-      const html = `<!doctype html><html><head><meta charset="utf-8"><style>
-        @page{size:${pageSize}${options.landscape ? ' landscape' : ''};margin:0}
-        *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
-        .page{position:relative;width:${options.landscape ? '297mm' : '210mm'};height:${options.landscape ? '210mm' : '297mm'};display:flex;align-items:center;justify-content:center;overflow:hidden;break-after:page;page-break-after:always;background:#fff}
-        .page:last-child{break-after:auto;page-break-after:auto}
-        .page>img{display:block;width:${mode === 'size' ? Math.min(96, Math.max(10, Number(options.scaleFactor) || 100)) : 100}%;height:${mode === 'size' ? Math.min(96, Math.max(10, Number(options.scaleFactor) || 100)) : 100}%;object-fit:fill;filter:${gray ? 'grayscale(1)' : 'none'}}
-        .poster-tile{position:relative;align-items:flex-start;justify-content:flex-start}
-        .poster-tile>img{position:absolute;max-width:none;object-fit:fill}
-      </style></head><body>${pageNodes.join('')}</body></html>`;
-      try {
-        const tempDir = fs.mkdtempSync(path.join(app.getPath('temp'), 'document-studio-print-'));
-        const tempHtml = path.join(tempDir, 'print.html');
-        fs.writeFileSync(tempHtml, html, 'utf8');
-        await printWindow.loadFile(tempHtml);
-        await printWindow.webContents.executeJavaScript(`
-          Promise.all(Array.from(document.images).map((img) => img.complete
-            ? Promise.resolve()
-            : new Promise((resolve) => { img.addEventListener('load', resolve, { once: true }); img.addEventListener('error', resolve, { once: true }); })))
-        `);
-        await new Promise((resolve) => setTimeout(resolve, 180));
-        const printOptions = {
-          silent: Boolean(options.silent),
-          deviceName: typeof options.deviceName === 'string' ? options.deviceName : undefined,
-          printBackground: true,
-          color: gray ? false : true,
-          landscape: Boolean(options.landscape),
-          margins: { marginType: 'none' },
-          scaleFactor: Math.min(200, Math.max(25, Number(options.scaleFactor) || 100)),
-          pagesPerSheet: mode === 'size' || mode === 'poster' ? 1 : mode === 'booklet' ? 2 : ([1, 2, 4, 6, 9, 16].includes(Number(options.pagesPerSheet)) ? Number(options.pagesPerSheet) : 1),
-          collate: true,
-          copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-          pageRanges: mode === 'poster' ? undefined : pageRanges,
-          duplexMode: mode === 'booklet' ? 'shortEdge' : options.duplex === 'shortEdge' || options.duplex === 'longEdge' ? options.duplex : 'simplex',
-          pageSize,
-          usePrinterDefaultPageSize: false,
-        };
-        return await new Promise((resolve) => {
-          printWindow.webContents.print(printOptions, (success) => {
-            resolve(Boolean(success));
-            setTimeout(() => {
-              if (!printWindow.isDestroyed()) printWindow.close();
-              try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
-            }, 500);
+    // All special print modes are imposed here instead of delegating the layout
+    // to the printer driver. That makes Poster, Multiple and Booklet deterministic
+    // on real Windows printers and PDF printers alike.
+    const mode = ['size', 'poster', 'multiple', 'booklet'].includes(options.mode) ? options.mode : 'size';
+    const gray = Boolean(options.gray);
+    const requestedScale = Math.min(400, Math.max(10, Number(options.scaleFactor) || 100));
+    const posterTiles = Math.min(4, Math.max(2, Number(options.posterTiles) || 2));
+    const multipleCount = [2, 4, 6, 9, 16].includes(Number(options.pagesPerSheet)) ? Number(options.pagesPerSheet) : 4;
 
-          });
-        });
-      } catch {
-        if (!printWindow.isDestroyed()) printWindow.close();
-        try { if (typeof tempDir !== 'undefined') fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
-        return false;
+    const selectedImages = (() => {
+      const ranges = Array.isArray(options.pageRanges) ? options.pageRanges : null;
+      if (!ranges?.length) return images;
+      const indexes = [];
+      for (const range of ranges) {
+        const from = Math.max(0, Number(range.from) || 0);
+        const to = Math.min(images.length - 1, Math.max(from, Number(range.to) || from));
+        for (let index = from; index <= to; index += 1) indexes.push(index);
       }
-    }
+      return [...new Set(indexes)].sort((a, b) => a - b).map((index) => images[index]).filter(Boolean);
+    })();
+    if (!selectedImages.length) return false;
 
-    const printOptions = {
-      silent: Boolean(options.silent),
-      deviceName: typeof options.deviceName === 'string' ? options.deviceName : undefined,
-      printBackground: true,
-      color: options.gray ? false : true,
-      landscape: Boolean(options.landscape),
-      margins: { marginType: 'none' },
-      scaleFactor: Math.min(200, Math.max(25, Number(options.scaleFactor) || 100)),
-      pagesPerSheet: [1, 2, 4, 6, 9, 16].includes(Number(options.pagesPerSheet)) ? Number(options.pagesPerSheet) : 1,
-      collate: true,
-      copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-      pageRanges,
-      duplexMode: options.duplex === 'shortEdge' || options.duplex === 'longEdge' ? options.duplex : 'simplex',
-      pageSize,
-      usePrinterDefaultPageSize: false,
-    };
-    return new Promise((resolve) => {
-      win.webContents.print(printOptions, (success) => resolve(Boolean(success)));
+    const pageMarkup = (src, className = '', extra = '') =>
+      src
+        ? '<img class="' + className + '" src="' + src.replace(/"/g, '&quot;') + '" ' + extra + '>'
+        : '<div class="' + className + ' blank-page"></div>';
+
+    const printWindow = new BrowserWindow({
+      show: false,
+      width: 1200,
+      height: 1000,
+      webPreferences: { sandbox: true },
     });
+
+    let tempDir = '';
+    try {
+      const isBooklet = mode === 'booklet';
+      const physicalLandscape = isBooklet ? true : Boolean(options.landscape);
+      const paperWidth = physicalLandscape ? '297mm' : '210mm';
+      const paperHeight = physicalLandscape ? '210mm' : '297mm';
+
+      const gridSpec = (count) => {
+        if (count === 2) return { columns: 2, rows: 1 };
+        if (count === 4) return { columns: 2, rows: 2 };
+        if (count === 6) return { columns: 3, rows: 2 };
+        if (count === 9) return { columns: 3, rows: 3 };
+        return { columns: 4, rows: 4 };
+      };
+
+      const normalImageStyle = (() => {
+        if (mode !== 'size') return '';
+        const sizing = options.sizing === 'actual' ? 100 : requestedScale;
+        const fit = options.sizing === 'fit';
+        return [
+          'width:' + (fit ? 96 : sizing) + '%',
+          'height:' + (fit ? 96 : sizing) + '%',
+          'object-fit:contain',
+          'object-position:center',
+          'filter:' + (gray ? 'grayscale(1)' : 'none'),
+        ].join(';');
+      })();
+
+      let sheets = [];
+      if (mode === 'size') {
+        sheets = selectedImages.map((src) =>
+          '<section class="sheet size-sheet">' +
+          pageMarkup(src, 'document-image', 'style="' + normalImageStyle + '"') +
+          '</section>'
+        );
+      } else if (mode === 'multiple') {
+        const { columns, rows } = gridSpec(multipleCount);
+        const cells = Math.ceil(selectedImages.length / multipleCount);
+        for (let sheet = 0; sheet < cells; sheet += 1) {
+          const chunk = selectedImages.slice(sheet * multipleCount, sheet * multipleCount + multipleCount);
+          const items = Array.from({ length: multipleCount }, (_, i) =>
+            '<div class="multiple-cell">' +
+            (chunk[i] ? pageMarkup(chunk[i], 'multiple-image') : '') +
+            '</div>'
+          ).join('');
+          sheets.push('<section class="sheet multiple-sheet" style="--cols:' + columns + ';--rows:' + rows + '">' + items + '</section>');
+        }
+      } else if (mode === 'poster') {
+        const tileCount = posterTiles;
+        for (const src of selectedImages) {
+          for (let row = 0; row < tileCount; row += 1) {
+            for (let col = 0; col < tileCount; col += 1) {
+              const offsetX = -(col * 100);
+              const offsetY = -(row * 100);
+              sheets.push(
+                '<section class="sheet poster-sheet">' +
+                pageMarkup(src, 'poster-image', 'style="width:' + (tileCount * 100) + '%;height:' + (tileCount * 100) + '%;left:' + offsetX + '%;top:' + offsetY + '%;filter:' + (gray ? 'grayscale(1)' : 'none') + '"') +
+                '</section>'
+              );
+            }
+          }
+        }
+      } else {
+        // True booklet imposition: pad to a multiple of four, then arrange
+        // [last, first] on the front and [second, penultimate] on the back.
+        // The printer only has to perform short-edge duplex; page ordering is
+        // already correct in the generated physical sheets.
+        const padded = [...selectedImages];
+        while (padded.length % 4) padded.push(null);
+        for (let startIndex = 0; startIndex < padded.length; startIndex += 4) {
+          const a = padded[startIndex];
+          const b = padded[startIndex + 1];
+          const c = padded[startIndex + 2];
+          const d = padded[startIndex + 3];
+          const front = [d, a];
+          const back = [b, c];
+          for (const side of [front, back]) {
+            sheets.push(
+              '<section class="sheet booklet-sheet">' +
+              side.map((src) => '<div class="booklet-cell">' + (src ? pageMarkup(src, 'booklet-image') : '') + '</div>').join('') +
+              '</section>'
+            );
+          }
+        }
+      }
+
+      const html = '<!doctype html><html><head><meta charset="utf-8"><style>' +
+        '@page{size:' + pageSize + (physicalLandscape ? ' landscape' : '') + ';margin:0}' +
+        '*{box-sizing:border-box}' +
+        'html,body{margin:0;padding:0;background:#fff;width:100%;height:100%}' +
+        'body{font-size:0}' +
+        '.sheet{position:relative;width:' + paperWidth + ';height:' + paperHeight + ';margin:0;padding:0;overflow:hidden;background:#fff;break-after:page;page-break-after:always}' +
+        '.sheet:last-child{break-after:auto;page-break-after:auto}' +
+        '.document-image{display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:none;max-height:none}' +
+        '.blank-page{width:100%;height:100%;background:#fff}' +
+        '.multiple-sheet{display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);gap:0}' +
+        '.multiple-cell{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff}' +
+        '.multiple-image{display:block;width:100%;height:100%;object-fit:contain;filter:' + (gray ? 'grayscale(1)' : 'none') + '}' +
+        '.poster-sheet{position:relative}' +
+        '.poster-image{position:absolute;display:block;max-width:none;max-height:none;object-fit:fill}' +
+        '.booklet-sheet{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr}' +
+        '.booklet-cell{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff}' +
+        '.booklet-image{display:block;width:100%;height:100%;object-fit:contain;filter:' + (gray ? 'grayscale(1)' : 'none') + '}' +
+        '</style></head><body>' + sheets.join('') + '</body></html>';
+
+      tempDir = fs.mkdtempSync(path.join(app.getPath('temp'), 'document-studio-print-'));
+      const tempHtml = path.join(tempDir, 'print.html');
+      fs.writeFileSync(tempHtml, html, 'utf8');
+      await printWindow.loadFile(tempHtml);
+      await printWindow.webContents.executeJavaScript(
+        'Promise.all(Array.from(document.images).map((img) => img.complete ? Promise.resolve() : new Promise((resolve) => { img.addEventListener("load", resolve, {once:true}); img.addEventListener("error", resolve, {once:true}); })))'
+      );
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      const printOptions = {
+        silent: Boolean(options.silent),
+        deviceName: typeof options.deviceName === 'string' ? options.deviceName : undefined,
+        printBackground: true,
+        color: !gray,
+        landscape: physicalLandscape,
+        margins: { marginType: 'none' },
+        // CSS performs all scaling/imposition. Do not apply a second driver scale.
+        scaleFactor: 100,
+        // Multiple and booklet are already imposed into physical sheets.
+        pagesPerSheet: 1,
+        collate: true,
+        copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+        duplexMode: isBooklet ? 'shortEdge' : options.duplex === 'shortEdge' || options.duplex === 'longEdge' ? options.duplex : 'simplex',
+        pageSize,
+        usePrinterDefaultPageSize: false,
+        dpi: Number(options.dpi) > 0 ? { horizontal: Number(options.dpi), vertical: Number(options.dpi) } : undefined,
+      };
+
+      return await new Promise((resolve) => {
+        printWindow.webContents.print(printOptions, (success, failureReason) => {
+          if (!success) log('Print failed: ' + String(failureReason || 'unknown') + ' | mode=' + mode);
+          resolve(Boolean(success));
+          setTimeout(() => {
+            if (!printWindow.isDestroyed()) printWindow.close();
+            if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
+          }, 600);
+        });
+      });
+    } catch (error) {
+      log('Print preparation failed: ' + error.message);
+      if (!printWindow.isDestroyed()) printWindow.close();
+      if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
+      return false;
+    }
   });
   ipcMain.handle('pdf:save-as', async (_event, name, data) => {
     // PDF Save As is deliberately independent from the Document Studio data root.
