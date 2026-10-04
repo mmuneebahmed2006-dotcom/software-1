@@ -712,3 +712,51 @@ html, body { overflow-x: hidden; }
 .print-range-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:8px}
 .print-custom-range{display:flex;align-items:center;gap:6px;margin:5px 0 4px 0;padding-left:26px}.print-custom-range input{width:80px;height:27px;box-sizing:border-box;border:1px solid #555861;border-radius:4px;background:#303239;color:#fff;padding:0 7px}.print-custom-range input:disabled{opacity:.35}
 .print-preview-stage{padding-top:48px!important}
+
+
+/* ===== PRINT DIALOG: LIGHT, THREE-COLUMN REFERENCE LAYOUT ===== */
+.print-preview-white{background:#fff!important;color:#202124!important;border-color:#d8dbe0!important}
+.print-preview-white-title{background:#fff!important;color:#202124!important;border-bottom:1px solid #dfe2e6!important}
+.print-preview-white-title button{color:#202124!important}
+.print-preview-three-columns{grid-template-columns:245px 245px minmax(0,1fr)!important;background:#fff!important}
+.print-preview-three-columns .print-settings-panel{display:contents!important}
+.print-preview-three-columns .print-setting-group{box-sizing:border-box!important;margin:0!important;padding:16px 15px!important;background:#fff!important;color:#202124!important;border-right:1px solid #e0e3e7!important;border-bottom:1px solid #e0e3e7!important}
+.print-preview-three-columns .print-setting-group h3{color:#202124!important;font-size:12px!important}
+.print-preview-three-columns .print-setting-group:nth-child(1){grid-column:1;grid-row:1}
+.print-preview-three-columns .print-setting-group:nth-child(2){grid-column:2;grid-row:1}
+.print-preview-three-columns .print-setting-group:nth-child(3){grid-column:1;grid-row:2}
+.print-preview-three-columns .print-setting-group:nth-child(4){grid-column:2;grid-row:2 / span 2}
+.print-preview-three-columns .print-setting-group:nth-child(5){grid-column:1;grid-row:3}
+.print-preview-three-columns .print-setting-group:nth-child(6){grid-column:1;grid-row:4}
+.print-preview-three-columns .print-setting-group:nth-child(7){grid-column:2;grid-row:4}
+.print-preview-three-columns .print-preview-stage{grid-column:3;grid-row:1 / span 4;background:#f5f6f8!important}
+.print-light-row select,.print-light-row input,.print-light-button,.print-light-input,.print-light-custom input{background:#fff!important;color:#202124!important;border-color:#c8ccd2!important}
+.print-light-row button{background:#fff!important;color:#202124!important;border-color:#c8ccd2!important}
+.print-light-muted,.print-light-toolbar{color:#69707a!important}
+.print-light-check,.print-light-check label,.print-light-tabs button{color:#30343a!important}
+.print-light-tabs button.active{color:#1677ff!important;border-bottom-color:#1677ff!important}
+.print-light-note{margin:8px 0;padding:8px;border:1px solid #dfe2e6;border-radius:6px;background:#f7f8fa;color:#60666f;font-size:10px;line-height:1.35}
+.print-light-orientation button{background:#fff!important;color:#30343a!important;border-color:#c8ccd2!important}
+.print-light-orientation button.active{outline:2px solid #1677ff!important;background:#eef5ff!important}
+.print-light-controls,.print-light-zoom{background:#fff!important;color:#30343a!important;border-color:#d1d5da!important;box-shadow:0 2px 8px rgb(0 0 0 / .08)}
+.print-light-controls button,.print-light-zoom button{color:#30343a!important}
+.print-preview-white-footer{background:#fff!important;color:#626872!important;border-top:1px solid #dfe2e6!important}
+.print-output-preview{background:transparent!important}
+.print-output-preview.mode-size .print-preview-paper{transform:none!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important}
+.print-output-preview.orientation-landscape{width:min(900px,94%)!important;height:min(520px,84%)!important}
+.print-preview-page-frame{display:flex;align-items:center;justify-content:center;width:100%;height:100%;transition:transform .12s ease}
+.print-output-preview.mode-poster{background:#e4e7eb!important}
+.print-output-preview.mode-multiple,.print-output-preview.mode-booklet{background:transparent!important}
+.print-preview-three-columns .print-setting-group:nth-child(4){overflow:auto;max-height:100%}
+@media(max-width:950px){
+  .print-preview-three-columns{grid-template-columns:210px 210px minmax(0,1fr)!important}
+}
+@media(max-width:760px){
+  .print-preview-three-columns{grid-template-columns:1fr!important;overflow:auto!important}
+  .print-preview-three-columns .print-settings-panel{display:block!important}
+  .print-preview-three-columns .print-setting-group,.print-preview-three-columns .print-preview-stage{grid-column:auto!important;grid-row:auto!important}
+}
+
+/* Folder three-dot menu: anchor to the trigger and never clip the three actions. */
+.folder-menu{position:fixed!important;top:auto!important;left:auto!important;right:auto!important;transform:none!important;min-width:122px!important;max-width:calc(100vw - 16px)!important;background:#fff!important;color:#202124!important;border:1px solid #d7dbe0!important;box-shadow:0 12px 28px rgb(0 0 0 / .18)!important;opacity:1!important;z-index:100000!important}
+.folder-menu button{color:#202124!important;white-space:nowrap!important;min-height:30px!important}
