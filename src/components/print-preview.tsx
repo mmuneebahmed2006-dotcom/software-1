@@ -70,10 +70,17 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
       setPrinters(list);
       const preferred = list[0]?.name ?? "";
       setSettings((s) => ({ ...s, printerName: s.printerName || preferred }));
-    } catch { setPrinters([]); }
+    } catch {
+      setPrinters([]);
+    }
   };
 
-  useEffect(() => { if (open) void loadPrinters(); }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    void loadPrinters();
+    const timer = window.setInterval(() => void loadPrinters(), 3000);
+    return () => window.clearInterval(timer);
+  }, [open]);
 
   const previewClass = useMemo(() => [
     "print-output-preview",
@@ -94,11 +101,11 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
         <div className="print-preview-body">
           <aside className="print-settings-panel">
-            <section className="print-setting-group print-printer-group">
+            <section className="print-setting-group print-group-printer">
               <div className="print-section-title"><h3>Printer</h3><button type="button" className="print-icon-button" onClick={() => void loadPrinters()} title="Refresh printers"><RefreshCw size={14} /></button></div>
               <div className="print-printer-row">
                 <select aria-label="Printer" value={settings.printerName} onChange={(e) => patch("printerName", e.target.value)}>
-                  {printers.length ? printers.map((printer) => <option key={printer.name} value={printer.name}>{printer.displayName || printer.name}{printer.isDefault ? " (Default)" : ""}</option>) : <option value="">System default printer</option>}
+                  {printers.length ? printers.map((printer) => <option key={printer.name} value={printer.name}>{printer.displayName || printer.name}</option>) : <option value="">System default printer</option>}
                 </select>
                 <button type="button" onClick={() => window.desktop?.openPrinterSettings?.(settings.printerName || undefined)} aria-label="Printer settings" title="Printer properties"><Settings size={15} /></button>
               </div>
@@ -114,7 +121,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               })()}</div>
             </section>
 
-            <section className="print-setting-group">
+            <section className="print-setting-group print-group-content">
               <div className="print-section-title"><h3>Print Content</h3><SlidersHorizontal size={14} /></div>
               {([["printDocument","Document"],["printComment","Comment"],["printForm","Form"]] as const).map(([key, label]) => (
                 <label className="print-check" key={key}><input type="checkbox" checked={settings[key]} onChange={(e) => patch(key, e.target.checked)} /> {label}</label>
@@ -122,14 +129,14 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               <label className="print-check"><input type="checkbox" checked={settings.gray} onChange={(e) => patch("gray", e.target.checked)} /> Print in grayscale</label>
             </section>
 
-            <section className="print-setting-group">
+            <section className="print-setting-group print-group-settings">
               <h3>Print Settings</h3>
               <label className="print-select-row"><span>Copies</span><input className="print-number-input" type="number" min={1} max={999} value={settings.copies} onChange={(e) => patch("copies", Math.max(1, Number(e.target.value) || 1))} /></label>
               <label className="print-select-row"><span>Paper</span><select value={settings.paperSize} onChange={(e) => patch("paperSize", e.target.value)}>{PAPER_OPTIONS.map(([label]) => <option key={label}>{label}</option>)}</select></label>
               <label className="print-select-row"><span>Print sides</span><select value={settings.sides} onChange={(e) => patch("sides", e.target.value as PrintSettings["sides"])}><option value="single">Single side</option><option value="double">Double side</option></select></label>
             </section>
 
-            <section className="print-setting-group print-mode-group">
+            <section className="print-setting-group print-mode-group print-group-mode">
               <h3>Page sizing &amp; handling</h3>
               <div className="print-mode-tabs" role="tablist">
                 {([["size","Size"],["poster","Poster"],["multiple","Multiple"],["booklet","Booklet"]] as const).map(([mode,label]) => (
@@ -178,7 +185,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               )}
             </section>
 
-            <section className="print-setting-group">
+            <section className="print-setting-group print-group-orientation">
               <h3>Orientation</h3>
               <div className="print-orientation">
                 <button type="button" className={settings.orientation === "portrait" ? "active" : ""} onClick={() => patch("orientation","portrait")}><span className="orientation-icon portrait-icon" /> Portrait</button>
@@ -188,7 +195,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               <label className="print-check"><input type="checkbox" checked={settings.autoCenter} onChange={(e) => patch("autoCenter", e.target.checked)} /> Auto center</label>
             </section>
 
-            <section className="print-setting-group">
+            <section className="print-setting-group print-group-range">
               <h3>Page range</h3>
               <div className="print-range-grid">
                 {([["current","Current page"],["view","Current view"],["all","All pages"],["custom","Custom"]] as const).map(([range,label]) => (
@@ -199,7 +206,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               <label className="print-check"><input type="checkbox" checked={settings.reversePages} onChange={(e) => patch("reversePages",e.target.checked)} /> Reverse pages</label>
             </section>
 
-            <section className="print-setting-group">
+            <section className="print-setting-group print-group-quality">
               <h3>Output quality</h3>
               <label className="print-check"><input type="checkbox" checked={settings.printAsImage} onChange={(e) => patch("printAsImage", e.target.checked)} /> Print as image</label>
               <label className="print-select-row"><span>DPI</span><select value={settings.dpi} disabled={!settings.printAsImage} onChange={(e) => patch("dpi", Number(e.target.value) as PrintSettings["dpi"])}><option value={150}>150 dpi</option><option value={300}>300 dpi</option><option value={600}>600 dpi</option></select></label>
@@ -233,6 +240,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               </div>
             </div>
 
+            <div className="print-preview-status" aria-live="polite">{printing ? "Printing…" : "Ready to print"}</div>
             <div className="print-page-controls">
               <button disabled={page === 0} onClick={() => setPage(0)} aria-label="First page"><ChevronsLeft size={16} /></button>
               <button disabled={page === 0} onClick={() => setPage((p) => Math.max(0,p-1))} aria-label="Previous page"><ChevronLeft size={16} /></button>
