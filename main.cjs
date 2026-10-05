@@ -185,8 +185,11 @@ function installIpc() {
     const mode = ['size', 'poster', 'multiple', 'booklet'].includes(options.mode) ? options.mode : 'size';
     const gray = Boolean(options.gray);
     const requestedScale = Math.min(400, Math.max(10, Number(options.scaleFactor) || 100));
-    const posterTiles = Math.min(4, Math.max(2, Number(options.posterTiles) || 2));
+    const posterScale = Math.min(400, Math.max(100, Number(options.posterScale) || Number(options.posterTiles) * 100 || 100));
+    const posterTiles = Math.min(4, Math.max(1, Math.ceil(posterScale / 100)));
+    const posterOverlap = Math.min(10, Math.max(0, Number(options.posterOverlap) || 0));
     const multipleCount = [2, 4, 6, 9, 16].includes(Number(options.pagesPerSheet)) ? Number(options.pagesPerSheet) : 4;
+    const multipleOrder = ["horizontal", "horizontal-reversed", "vertical", "vertical-reversed"].includes(options.multiplePageOrder) ? options.multiplePageOrder : "horizontal";
 
     const selectedImages = (() => {
       const ranges = Array.isArray(options.pageRanges) ? options.pageRanges : null;
@@ -200,6 +203,30 @@ function installIpc() {
       return [...new Set(indexes)].sort((a, b) => a - b).map((index) => images[index]).filter(Boolean);
     })();
     if (!selectedImages.length) return false;
+
+    const orderedMultipleImages = (() => {
+      if (multipleOrder === "horizontal") return selectedImages;
+      const { columns, rows } = gridSpec(multipleCount);
+      const ordered = [];
+      const cells = Math.ceil(selectedImages.length / multipleCount);
+      for (let sheet = 0; sheet < cells; sheet += 1) {
+        const chunk = selectedImages.slice(sheet * multipleCount, sheet * multipleCount + multipleCount);
+        const indices = [];
+        for (let row = 0; row < rows; row += 1) {
+          for (let col = 0; col < columns; col += 1) {
+            let r = row;
+            let c = col;
+            if (multipleOrder === "horizontal-reversed") c = columns - 1 - col;
+            if (multipleOrder === "vertical") [r, c] = [col % rows, Math.floor(col / rows)];
+            if (multipleOrder === "vertical-reversed") [r, c] = [rows - 1 - (col % rows), Math.floor(col / rows)];
+            const index = r * columns + c;
+            if (index < chunk.length) indices.push(index);
+          }
+        }
+        for (const index of indices) ordered.push(chunk[index]);
+      }
+      return ordered;
+    })();
 
     const pageMarkup = (src, className = '', extra = '') =>
       src
@@ -252,7 +279,7 @@ function installIpc() {
         const { columns, rows } = gridSpec(multipleCount);
         const cells = Math.ceil(selectedImages.length / multipleCount);
         for (let sheet = 0; sheet < cells; sheet += 1) {
-          const chunk = selectedImages.slice(sheet * multipleCount, sheet * multipleCount + multipleCount);
+          const chunk = orderedMultipleImages.slice(sheet * multipleCount, sheet * multipleCount + multipleCount);
           const items = Array.from({ length: multipleCount }, (_, i) =>
             '<div class="multiple-cell">' +
             (chunk[i] ? pageMarkup(chunk[i], 'multiple-image') : '') +
@@ -265,11 +292,15 @@ function installIpc() {
         for (const src of selectedImages) {
           for (let row = 0; row < tileCount; row += 1) {
             for (let col = 0; col < tileCount; col += 1) {
-              const offsetX = -(col * 100);
-              const offsetY = -(row * 100);
+              const overlapPercent = posterOverlap > 0 ? Math.min(12, posterOverlap / 21 * 100) : 0;
+              const offsetX = -(col * (100 - overlapPercent));
+              const offsetY = -(row * (100 - overlapPercent));
+              const extra = 'style="width:' + (tileCount * 100) + '%;height:' + (tileCount * 100) + '%;left:' + offsetX + '%;top:' + offsetY + '%;filter:' + (gray ? 'grayscale(1)' : 'none') + '"';
               sheets.push(
                 '<section class="sheet poster-sheet">' +
-                pageMarkup(src, 'poster-image', 'style="width:' + (tileCount * 100) + '%;height:' + (tileCount * 100) + '%;left:' + offsetX + '%;top:' + offsetY + '%;filter:' + (gray ? 'grayscale(1)' : 'none') + '"') +
+                pageMarkup(src, 'poster-image', extra) +
+                (options.posterCutMarks ? '<span class="poster-cut-mark poster-cut-top"></span><span class="poster-cut-mark poster-cut-left"></span>' : '') +
+                (options.posterLabels ? '<span class="poster-label">Page ' + (row * tileCount + col + 1) + '</span>' : '') +
                 '</section>'
               );
             }
@@ -313,6 +344,10 @@ function installIpc() {
         '.multiple-image{display:block;width:100%;height:100%;object-fit:contain;filter:' + (gray ? 'grayscale(1)' : 'none') + '}' +
         '.poster-sheet{position:relative}' +
         '.poster-image{position:absolute;display:block;max-width:none;max-height:none;object-fit:fill}' +
+        '.poster-cut-mark{position:absolute;background:#000;z-index:5}' +
+        '.poster-cut-top{left:50%;top:0;width:1px;height:8mm}' +
+        '.poster-cut-left{left:0;top:50%;width:8mm;height:1px}' +
+        '.poster-label{position:absolute;left:4mm;bottom:3mm;font:9px Arial;color:#000;background:#fff;padding:1px 3px;z-index:6}' +
         '.booklet-sheet{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr}' +
         '.booklet-cell{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff}' +
         '.booklet-image{display:block;width:100%;height:100%;object-fit:contain;filter:' + (gray ? 'grayscale(1)' : 'none') + '}' +
