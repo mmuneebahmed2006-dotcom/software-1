@@ -390,7 +390,7 @@ function installIpc() {
       // Electron requires the printer's system device name here, not the
       // friendly/display name shown in the preview. Resolve the user's selected
       // printer against the actual system printer list before every print.
-      const availablePrinters = await printWindow.webContents.getPrintersAsync();
+      const availablePrinters = await win.webContents.getPrintersAsync();
       const requestedPrinter = typeof options.deviceName === 'string' ? options.deviceName.trim() : '';
       const requestedLower = requestedPrinter.toLowerCase();
       const selectedPrinter = requestedPrinter
@@ -411,7 +411,7 @@ function installIpc() {
       const printOptions = {
         // Direct printing is intentional: the selected Windows printer receives
         // the job without opening a second print dialog.
-        silent: true,
+        silent: options.silent !== false,
         deviceName,
         printBackground: true,
         color: !gray,
@@ -426,13 +426,12 @@ function installIpc() {
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         duplexMode: isBooklet ? 'shortEdge' : options.duplex === 'shortEdge' || options.duplex === 'longEdge' ? options.duplex : 'simplex',
         pageSize,
-        usePrinterDefaultPageSize: false,
         dpi: Number(options.dpi) > 0 ? { horizontal: Number(options.dpi), vertical: Number(options.dpi) } : undefined,
       };
 
       return await new Promise((resolve) => {
         printWindow.webContents.print(printOptions, (success, failureReason) => {
-          if (!success) log('Print failed: ' + String(failureReason || 'unknown') + ' | mode=' + mode + ' | printer=' + deviceName);
+          if (!success) log('Print failed: ' + String(failureReason || 'unknown') + ' | mode=' + mode + ' | printer=' + deviceName + ' | pageSize=' + pageSize + ' | landscape=' + physicalLandscape + ' | copies=' + (Number(options.copies) || 1));
           resolve(Boolean(success));
           setTimeout(() => {
             if (!printWindow.isDestroyed()) printWindow.close();
