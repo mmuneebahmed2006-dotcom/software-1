@@ -286,23 +286,23 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
           </aside>
 
           <main className="print-preview-stage print-preview-stage-light">
-            <div className="print-preview-toolbar"><span className="print-preview-filename">{fileName}</span><span>{settings.mode === "multiple" ? \`\${settings.pagesPerSheet} pages / sheet\` : settings.mode === "poster" ? \`Poster \${settings.posterScale}%\` : settings.mode === "booklet" ? "Booklet · 2-up" : settings.orientation === "landscape" ? "Landscape" : "Portrait"}</span></div>
+            <div className="print-preview-toolbar"><span className="print-preview-filename">{fileName}</span><span>{settings.mode === "multiple" ? `${settings.pagesPerSheet} pages / sheet` : settings.mode === "poster" ? `Poster ${settings.posterScale}%` : settings.mode === "booklet" ? "Booklet · 2-up" : settings.orientation === "landscape" ? "Landscape" : "Portrait"}</span></div>
             <div className="print-preview-paper-wrap">
               <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio) }}>
-                {settings.mode === "size" && image && <img className="print-preview-paper" src={image} alt={paperLabel + " preview"} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: \`scale(\${settings.sizing === "custom" ? settings.scale / 100 : settings.sizing === "actual" ? 1 : 0.94}) rotate(\${settings.orientation === "landscape" && settings.autoRotate ? 90 : 0}deg)\`, objectFit: "contain" }} />}
+                {settings.mode === "size" && image && <img className="print-preview-paper" src={image} alt={paperLabel + " preview"} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: `scale(${settings.sizing === "custom" ? settings.scale / 100 : settings.sizing === "actual" ? 1 : 0.94}) rotate(${settings.orientation === "landscape" && settings.autoRotate ? 90 : 0}deg)`, objectFit: "contain" }} />}
                 {settings.mode === "poster" && image && (
-                  <div className="poster-preview-grid" style={{ width: \`\${Math.max(100, settings.posterScale)}%\`, height: \`\${Math.max(100, settings.posterScale)}%\`, gridTemplateColumns: \`repeat(\${Math.max(1, Math.ceil(settings.posterScale / 100))}, 1fr)\`, gridTemplateRows: \`repeat(\${Math.max(1, Math.ceil(settings.posterScale / 100))}, 1fr)\`, transform: settings.autoCenter ? "translate(0,0)" : "translate(-5%,-5%)" }}>
-                    {Array.from({ length: Math.max(1, Math.ceil(settings.posterScale / 100)) ** 2 }, (_, i) => <div className="poster-tile" key={i}><img src={image} alt="" style={{ filter: settings.gray ? "grayscale(1)" : "none", width: \`\${Math.max(100, settings.posterScale)}%\`, height: \`\${Math.max(100, settings.posterScale)}%\`, objectFit: "fill", transform: \`translate(\${-((i % Math.max(1, Math.ceil(settings.posterScale / 100))) * 100)}%,\${-(Math.floor(i / Math.max(1, Math.ceil(settings.posterScale / 100))) * 100)}%)\` }} /></div>)}
+                  <div className="poster-preview-grid" style={{ width: `${Math.max(100, settings.posterScale)}%`, height: `${Math.max(100, settings.posterScale)}%`, gridTemplateColumns: `repeat(${Math.max(1, Math.ceil(settings.posterScale / 100))}, 1fr)`, gridTemplateRows: `repeat(${Math.max(1, Math.ceil(settings.posterScale / 100))}, 1fr)`, transform: settings.autoCenter ? "translate(0,0)" : "translate(-5%,-5%)" }}>
+                    {Array.from({ length: Math.max(1, Math.ceil(settings.posterScale / 100)) ** 2 }, (_, i) => <div className="poster-tile" key={i}><img src={image} alt="" style={{ filter: settings.gray ? "grayscale(1)" : "none", width: `${Math.max(100, settings.posterScale)}%`, height: `${Math.max(100, settings.posterScale)}%`, objectFit: "fill", transform: `translate(${-((i % Math.max(1, Math.ceil(settings.posterScale / 100))) * 100)}%,${-(Math.floor(i / Math.max(1, Math.ceil(settings.posterScale / 100))) * 100)}%)` }} /></div>)}
                   </div>
                 )}
                 {settings.mode === "multiple" && (
-                  <div className="multiple-preview-grid" style={{ gridTemplateColumns: \`repeat(\${gridSpec(settings.pagesPerSheet).columns}, 1fr)\`, gridTemplateRows: \`repeat(\${gridSpec(settings.pagesPerSheet).rows}, 1fr)\` }}>
-                    {selectedMultiple.map((index) => <div className="multiple-preview-cell" key={index}>{images[index] && <img src={images[index]} alt={\`Page \${index + 1}\`} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: settings.autoRotate ? "rotate(0deg)" : "none" }} />}</div>)}
+                  <div className="multiple-preview-grid" style={{ gridTemplateColumns: `repeat(${gridSpec(settings.pagesPerSheet).columns}, 1fr)`, gridTemplateRows: `repeat(${gridSpec(settings.pagesPerSheet).rows}, 1fr)` }}>
+                    {selectedMultiple.map((index) => <div className="multiple-preview-cell" key={index}>{images[index] && <img src={images[index]} alt={`Page ${index + 1}`} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: settings.autoRotate ? "rotate(0deg)" : "none" }} />}</div>)}
                   </div>
                 )}
                 {settings.mode === "booklet" && (
                   <div className="booklet-preview-grid">
-                    {bookletImages.slice(0, 2).map((src, i) => <div className="booklet-preview-cell" key={i}><img src={src} alt={\`Booklet page \${i + 1}\`} style={{ filter: settings.gray ? "grayscale(1)" : "none" }} /></div>)}
+                    {bookletImages.slice(0, 2).map((src, i) => <div className="booklet-preview-cell" key={i}><img src={src} alt={`Booklet page ${i + 1}`} style={{ filter: settings.gray ? "grayscale(1)" : "none" }} /></div>)}
                   </div>
                 )}
               </div>
