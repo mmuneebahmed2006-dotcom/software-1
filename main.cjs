@@ -262,13 +262,18 @@ function installIpc() {
         return { columns: 4, rows: 4 };
       };
 
+      // Keep the complete captured document inside the printer's printable
+      // area. The PDF/capture itself remains edge-to-edge; only physical
+      // printer output gets a small safety inset so the top accent and bottom
+      // footer bar are not clipped by non-borderless printer margins.
       const normalImageStyle = (() => {
         if (mode !== 'size') return '';
-        const sizing = options.sizing === 'actual' ? 100 : requestedScale;
+        const requested = options.sizing === 'actual' ? 100 : requestedScale;
         const fit = options.sizing === 'fit';
+        const safeScale = requested <= 100 ? 94 : requested * 0.94;
         return [
-          'width:' + (fit ? 96 : sizing) + '%',
-          'height:' + (fit ? 96 : sizing) + '%',
+          'width:' + (fit ? 94 : safeScale) + '%',
+          'height:' + (fit ? 94 : safeScale) + '%',
           'object-fit:contain',
           'object-position:center',
           'filter:' + (gray ? 'grayscale(1)' : 'none'),
