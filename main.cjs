@@ -156,6 +156,7 @@ function installIpc() {
       displayName: printer.displayName,
       description: printer.description || '',
       options: printer.options || {},
+      isDefault: Boolean(printer.isDefault),
       status: await getWindowsPrinterStatus(printer.name),
     })));
   });
