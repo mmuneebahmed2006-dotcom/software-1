@@ -32,5 +32,5 @@ export interface DesktopApi {
 
 declare global { interface Window { desktop?: DesktopApi } }
 export {};
-export interface PrinterInfo { name: string; displayName: string; description: string; options: Record<string, string>; status?: "ready" | "offline" | "printing" | "unknown" }
+export interface PrinterInfo { name: string; displayName: string; description: string; options: Record<string, string>; status?: "ready" | "offline" | "printing" | "unknown"; isDefault?: boolean }
 export interface PrintOptions { images?: string[]; mode?: "size"|"poster"|"multiple"|"booklet"; posterTiles?: 2|3|4; deviceName?: string; silent?: boolean; gray?: boolean; landscape?: boolean; scaleFactor?: number; pagesPerSheet?: number; copies?: number; pageRanges?: Array<{ from: number; to: number }>; duplex?: "simplex" | "shortEdge" | "longEdge"; paperSize?: string; dpi?: number; }
