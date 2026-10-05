@@ -204,6 +204,14 @@ function installIpc() {
     })();
     if (!selectedImages.length) return false;
 
+    const gridSpec = (count) => {
+      if (count === 2) return { columns: 2, rows: 1 };
+      if (count === 4) return { columns: 2, rows: 2 };
+      if (count === 6) return { columns: 3, rows: 2 };
+      if (count === 9) return { columns: 3, rows: 3 };
+      return { columns: 4, rows: 4 };
+    };
+
     const orderedMultipleImages = (() => {
       if (multipleOrder === "horizontal") return selectedImages;
       const { columns, rows } = gridSpec(multipleCount);
@@ -254,14 +262,6 @@ function installIpc() {
       const paperWidth = (physicalLandscape ? paperH : paperW) + 'mm';
       const paperHeight = (physicalLandscape ? paperW : paperH) + 'mm';
 
-      const gridSpec = (count) => {
-        if (count === 2) return { columns: 2, rows: 1 };
-        if (count === 4) return { columns: 2, rows: 2 };
-        if (count === 6) return { columns: 3, rows: 2 };
-        if (count === 9) return { columns: 3, rows: 3 };
-        return { columns: 4, rows: 4 };
-      };
-
       // Keep the complete captured document inside the printer's printable
       // area. The PDF/capture itself remains edge-to-edge; only physical
       // printer output gets a small safety inset so the top accent and bottom
@@ -270,12 +270,16 @@ function installIpc() {
         if (mode !== 'size') return '';
         const requested = options.sizing === 'actual' ? 100 : requestedScale;
         const fit = options.sizing === 'fit';
-        const safeScale = requested <= 100 ? 94 : requested * 0.94;
+        // Keep a generous printable-area safety margin so edge-to-edge
+        // document bars are not clipped by Windows printer hardware margins.
+        const safeScale = fit ? 92 : Math.min(96, requested * 0.92);
+        const rotate = options.autoRotate && physicalLandscape ? 'rotate(90deg)' : 'none';
         return [
-          'width:' + (fit ? 94 : safeScale) + '%',
-          'height:' + (fit ? 94 : safeScale) + '%',
+          'width:' + safeScale + '%',
+          'height:' + safeScale + '%',
           'object-fit:contain',
           'object-position:center',
+          'transform:translate(-50%,-50%) ' + rotate,
           'filter:' + (gray ? 'grayscale(1)' : 'none'),
         ].join(';');
       })();
@@ -391,6 +395,8 @@ function installIpc() {
         printBackground: true,
         color: !gray,
         landscape: physicalLandscape,
+        // Renderer controls whether the captured page rotates/centers inside the
+        // physical sheet; never let the printer driver rotate it a second time.
         margins: { marginType: 'none' },
         // CSS performs all scaling/imposition. Do not apply a second driver scale.
         scaleFactor: 100,
