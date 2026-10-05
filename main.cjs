@@ -244,8 +244,15 @@ function installIpc() {
     try {
       const isBooklet = mode === 'booklet';
       const physicalLandscape = isBooklet ? true : Boolean(options.landscape);
-      const paperWidth = physicalLandscape ? '297mm' : '210mm';
-      const paperHeight = physicalLandscape ? '210mm' : '297mm';
+      const PAPER_MM = {
+        A4: [210, 297],
+        A5: [148, 210],
+        Letter: [215.9, 279.4],
+        Legal: [215.9, 355.6],
+      };
+      const [paperW, paperH] = PAPER_MM[pageSize] || PAPER_MM.A4;
+      const paperWidth = (physicalLandscape ? paperH : paperW) + 'mm';
+      const paperHeight = (physicalLandscape ? paperW : paperH) + 'mm';
 
       const gridSpec = (count) => {
         if (count === 2) return { columns: 2, rows: 1 };
