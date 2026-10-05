@@ -109,7 +109,7 @@ async function getWindowsPrinterStatus(printerName) {
     const { spawn } = require('child_process');
     const child = spawn('powershell.exe', [
       '-NoProfile', '-NonInteractive', '-Command',
-      '$p = Get-Printer -Name $env:DOC_STUDIO_PRINTER -ErrorAction Stop; [pscustomobject]@{Status=$p.PrinterStatus;WorkOffline=$p.WorkOffline} | ConvertTo-Json -Compress'
+      '$p = Get-Printer -Name $env:DOC_STUDIO_PRINTER -ErrorAction Stop; [pscustomobject]@{Status=$p.PrinterStatus;WorkOffline=$p.WorkOffline;AcceptingJobs=$p.PrinterState} | ConvertTo-Json -Compress'
     ], {
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'ignore'],
@@ -121,9 +121,13 @@ async function getWindowsPrinterStatus(printerName) {
     child.once('close', () => {
       try {
         const value = JSON.parse(output.trim());
-        if (value.WorkOffline === true || /offline|error|stopped/i.test(String(value.Status ?? ''))) return resolve('offline');
-        if (/printing|processing|busy/i.test(String(value.Status ?? ''))) return resolve('printing');
-        if (/normal|idle|ready/i.test(String(value.Status ?? ''))) return resolve('ready');
+        const status = String(value.Status ?? '');
+        if (value.WorkOffline === true || /offline|error|stopped|paused|blocked|not available/i.test(status)) return resolve('offline');
+        if (/printing|processing|busy|initializing|waiting/i.test(status)) return resolve('printing');
+        // Windows reports Idle/Normal as ready; some drivers expose only a
+        // numeric state. If the printer is installed and not explicitly offline,
+        // treat Unknown/Other/Warmup as available rather than falsely showing Offline.
+        if (/normal|idle|ready|unknown|other|warmup|powersave/i.test(status) || value.AcceptingJobs !== false) return resolve('ready');
       } catch {}
       resolve('unknown');
     });
