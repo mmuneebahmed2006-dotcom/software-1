@@ -171,6 +171,8 @@ function Index() {
         paperSize: ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string,string>)[settings.paperSize] ?? "A4",
         dpi: settings.printAsImage ? settings.dpi : undefined,
         images: printCapture?.images ?? [],
+        autoRotate: settings.autoRotate,
+        autoCenter: settings.autoCenter,
         mode: settings.mode,
         posterTiles: Math.min(4, Math.max(2, Math.ceil(settings.posterScale / 100))) as 2 | 3 | 4,
         posterScale: settings.posterScale,
@@ -201,6 +203,8 @@ function Index() {
           paperSize: ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string,string>)[settings.paperSize] ?? "A4",
           dpi: settings.printAsImage ? settings.dpi : undefined,
           images: printCapture?.images ?? [],
+          autoRotate: settings.autoRotate,
+          autoCenter: settings.autoCenter,
           mode: settings.mode,
           posterTiles: settings.posterTiles,
         });
@@ -223,7 +227,7 @@ function Index() {
         delete printRoot.dataset.printPagesPerSheet;
       }
     }, 700);
-  }, []);
+  }, [printCapture]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
