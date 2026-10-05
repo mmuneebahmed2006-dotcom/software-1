@@ -268,11 +268,9 @@ function installIpc() {
       // footer bar are not clipped by non-borderless printer margins.
       const normalImageStyle = (() => {
         if (mode !== 'size') return '';
-        const requested = options.sizing === 'actual' ? 100 : requestedScale;
         const fit = options.sizing === 'fit';
-        // Keep a generous printable-area safety margin so edge-to-edge
-        // document bars are not clipped by Windows printer hardware margins.
-        const safeScale = fit ? 92 : Math.min(96, requested * 0.92);
+        const actual = options.sizing === 'actual';
+        const safeScale = fit ? 92 : actual ? 96 : Math.min(400, Math.max(10, requestedScale));
         const rotate = options.autoRotate && physicalLandscape ? 'rotate(90deg)' : 'none';
         return [
           'width:' + safeScale + '%',
