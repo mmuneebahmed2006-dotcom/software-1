@@ -150,7 +150,11 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
   const printerState = useMemo(() => {
     const selected = printers.find((p) => p.name === settings.printerName);
     if (!selected) return "Offline";
-    return selected.status === "offline" || selected.status === "unknown" ? "Offline" : "Ready to print";
+    if (selected.status === "offline") return "Offline";
+    if (selected.status === "printing") return "Printing…";
+    // If Windows exposes the installed printer but its driver does not expose
+    // a readable status, the printer is still connected/available.
+    return "Ready to print";
   }, [printers, settings.printerName]);
 
   const handlePaperChange = async (value: string) => {
