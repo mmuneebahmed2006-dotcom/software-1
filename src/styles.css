@@ -768,8 +768,8 @@ html, body { overflow-x: hidden; }
 .paper.exporting .tax-rate-export-value{display:inline-block!important;min-width:2ch!important;text-align:center!important;font-variant-numeric:tabular-nums!important;color:inherit!important}
 .paper.exporting .top-accent{display:block!important;visibility:visible!important;opacity:1!important;flex:0 0 10px!important;height:10px!important;min-height:10px!important;background:#141414!important;border-top:10px solid #141414!important}
 .paper.exporting .document-footer{display:grid!important;visibility:visible!important;opacity:1!important;flex:0 0 auto!important;min-height:58px!important;height:auto!important;overflow:visible!important}
-.paper.exporting{overflow:visible!important;box-sizing:border-box!important}
-.paper.exporting .document-content{overflow:visible!important;min-height:0!important}
+.paper.exporting{overflow:hidden!important;box-sizing:border-box!important}
+.paper.exporting .document-content{overflow:hidden!important;min-height:0!important;height:auto!important;flex:1 1 auto!important}
 
 /* FINAL PRINT PREVIEW: white Wondershare-like three-column body layout. */
 .print-preview-white.print-preview-three-columns{background:#fff!important;color:#202124!important;border:1px solid #d8dbe0!important}
