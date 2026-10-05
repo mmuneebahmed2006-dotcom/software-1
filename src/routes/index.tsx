@@ -323,7 +323,7 @@ function Index() {
           <CompanyDetailsDialog details={companyFromState(state)} onSave={saveCompany}/>
           <DesktopManagement documents={documents}/>
           <Button type="button" variant="secondary" disabled={busy} onClick={downloadPdf}>{busy ? <Loader2 size={16} className="animate-spin"/> : <Download size={16}/>} Download PDF</Button>
-          <Button type="button" disabled={isPrinting} onClick={printDocument}>{isPrinting ? <Loader2 size={16} className="animate-spin"/> : <Printer size={16}/>} {isPrinting ? "Preparing…" : "Print"}</Button>
+          <Button type="button" disabled={isPrinting} onClick={printDocument}><Printer size={16}/> Print</Button>
         </div>
       </div></header>
       <main className="print-area"><DocumentPaper docType={docType} state={state} setState={setState} paperStyle={paperStyle} paperSize={paperSize}/></main>
