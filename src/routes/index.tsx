@@ -140,6 +140,14 @@ function Index() {
     if (window.desktop?.printDocument) {
       const pageRanges = (() => {
         if (settings.range === "current") return [{ from: 0, to: 0 }];
+        if (settings.range === "odd" || settings.range === "even") {
+          const wantOdd = settings.range === "odd";
+          const ranges: Array<{ from: number; to: number }> = [];
+          for (let index = 0; index < (printCapture?.images.length ?? 0); index += 1) {
+            if (((index + 1) % 2 === 1) === wantOdd) ranges.push({ from: index, to: index });
+          }
+          return ranges;
+        }
         if (settings.range !== "custom") return undefined;
         return settings.customRange.split(",").flatMap((part) => {
           const [a, b] = part.trim().split("-").map((value) => Number(value));
@@ -283,7 +291,7 @@ function Index() {
   return <div className="studio-shell">
     <style>{`@media print { @page { size: ${paper.page} portrait; margin: 0; } }`}</style>
     <StartupExperience/>
-    <PrintPreview open={printOpen} captured={printCapture} paperLabel={paper.page} fileName={`${DOC_LABELS[docType].replaceAll(" ", "_")}_${state.meta.number || "Untitled"}.pdf`} onClose={() => setPrintOpen(false)} onPrint={executePrint}/>
+    <PrintPreview open={printOpen} captured={printCapture} paperLabel={paper.page} fileName={`${DOC_LABELS[docType].replaceAll(" ", "_")}_${state.meta.number || "Untitled"}.pdf`} onClose={() => setPrintOpen(false)} onPaperSizeChange={(label) => { const next = ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string, PaperSizeKey>)[label]; if (next) setPaperSize(next); }} onPrint={executePrint}/>
     <SaveDocumentDialog open={saveOpen} title={saveTitle} folder={saveFolder} folders={folders} onTitle={setSaveTitle} onFolder={setSaveFolder} onCancel={() => setSaveOpen(false)} onSave={() => { setSaveOpen(false); void saveRecord(saveTitle.trim(), saveFolder, true) }}/>
     <NewFolderDialog open={folderOpen} value={folderName} category={DOC_LABELS[docType]} onValue={setFolderName} onCancel={() => setFolderOpen(false)} onCreate={() => void createFolder()}/>
     <SavedDocumentsSidebar documents={documents} docType={docType} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onRename={renameDocument} onDelete={deleteDocument} onCreateFolder={() => setFolderOpen(true)} onRenameFolder={renameFolder} onDeleteFolder={deleteFolder} onDownloadFolder={downloadFolder} onDownloadDocument={downloadSaved}/>
