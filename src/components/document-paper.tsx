@@ -354,7 +354,7 @@ const DocumentPage = memo(function DocumentPage({
       data-pdf-page
     >
       <div className="top-accent" />
-      <div className="document-content" style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", height: "100%", paddingBottom: "10px" }}>
+      <div className="document-content" style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", flex: "1 1 auto", minHeight: 0, height: "auto", paddingBottom: "10px" }}>
         
         <div>
           {(
@@ -618,7 +618,7 @@ const DocumentPage = memo(function DocumentPage({
 
       {/* Footer */}
       {isFirstPage && (
-        <footer className="document-footer">
+        <footer className="document-footer" style={{ flexShrink: 0 }}>
           <div className="footer-field" style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", height: "100%" }}>
             <MapPin size={18} style={{ flexShrink: 0 }} />
             <textarea
