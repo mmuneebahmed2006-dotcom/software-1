@@ -387,18 +387,40 @@ function installIpc() {
       );
       await new Promise((resolve) => setTimeout(resolve, 250));
 
+      // Electron requires the printer's system device name here, not the
+      // friendly/display name shown in the preview. Resolve the user's selected
+      // printer against the actual system printer list before every print.
+      const availablePrinters = await printWindow.webContents.getPrintersAsync();
+      const requestedPrinter = typeof options.deviceName === 'string' ? options.deviceName.trim() : '';
+      const requestedLower = requestedPrinter.toLowerCase();
+      const selectedPrinter = requestedPrinter
+        ? availablePrinters.find((printer) =>
+            String(printer.name || '').toLowerCase() === requestedLower ||
+            String(printer.displayName || '').toLowerCase() === requestedLower
+          )
+        : availablePrinters.find((printer) => printer.isDefault) || availablePrinters[0];
+
+      if (!selectedPrinter) {
+        log('Print failed: selected printer is not available | requested=' + requestedPrinter);
+        if (!printWindow.isDestroyed()) printWindow.close();
+        if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
+        return false;
+      }
+
+      const deviceName = selectedPrinter.name;
       const printOptions = {
-        silent: Boolean(options.silent),
-        deviceName: typeof options.deviceName === 'string' ? options.deviceName : undefined,
+        // Direct printing is intentional: the selected Windows printer receives
+        // the job without opening a second print dialog.
+        silent: true,
+        deviceName,
         printBackground: true,
         color: !gray,
         landscape: physicalLandscape,
-        // Renderer controls whether the captured page rotates/centers inside the
-        // physical sheet; never let the printer driver rotate it a second time.
-        margins: { marginType: 'none' },
-        // CSS performs all scaling/imposition. Do not apply a second driver scale.
+        // Use the printer's printable area so the top accent and bottom footer
+        // remain inside the physical page instead of being clipped by hardware
+        // margins. The document itself already has a small safety inset.
+        margins: { marginType: 'printableArea' },
         scaleFactor: 100,
-        // Multiple and booklet are already imposed into physical sheets.
         pagesPerSheet: 1,
         collate: true,
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
@@ -410,7 +432,7 @@ function installIpc() {
 
       return await new Promise((resolve) => {
         printWindow.webContents.print(printOptions, (success, failureReason) => {
-          if (!success) log('Print failed: ' + String(failureReason || 'unknown') + ' | mode=' + mode);
+          if (!success) log('Print failed: ' + String(failureReason || 'unknown') + ' | mode=' + mode + ' | printer=' + deviceName);
           resolve(Boolean(success));
           setTimeout(() => {
             if (!printWindow.isDestroyed()) printWindow.close();
