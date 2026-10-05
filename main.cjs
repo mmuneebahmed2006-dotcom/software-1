@@ -270,7 +270,7 @@ function installIpc() {
         if (mode !== 'size') return '';
         const fit = options.sizing === 'fit';
         const actual = options.sizing === 'actual';
-        const safeScale = fit ? 92 : actual ? 96 : Math.min(400, Math.max(10, requestedScale));
+        const safeScale = fit ? 90 : actual ? 90 : Math.min(400, Math.max(10, requestedScale));
         const rotate = options.autoRotate && physicalLandscape ? 'rotate(90deg)' : 'none';
         return [
           'width:' + safeScale + '%',
@@ -419,7 +419,7 @@ function installIpc() {
         // Use the printer's printable area so the top accent and bottom footer
         // remain inside the physical page instead of being clipped by hardware
         // margins. The document itself already has a small safety inset.
-        margins: { marginType: 'printableArea' },
+        margins: { marginType: 'none' },
         scaleFactor: 100,
         pagesPerSheet: 1,
         collate: true,
