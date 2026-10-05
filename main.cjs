@@ -426,7 +426,6 @@ function installIpc() {
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         duplexMode: isBooklet ? 'shortEdge' : options.duplex === 'shortEdge' || options.duplex === 'longEdge' ? options.duplex : 'simplex',
         pageSize,
-        dpi: Number(options.dpi) > 0 ? { horizontal: Number(options.dpi), vertical: Number(options.dpi) } : undefined,
       };
 
       return await new Promise((resolve) => {
