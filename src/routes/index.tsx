@@ -172,7 +172,16 @@ function Index() {
         dpi: settings.printAsImage ? settings.dpi : undefined,
         images: printCapture?.images ?? [],
         mode: settings.mode,
-        posterTiles: settings.posterTiles,
+        posterTiles: Math.min(4, Math.max(2, Math.ceil(settings.posterScale / 100))) as 2 | 3 | 4,
+        posterScale: settings.posterScale,
+        posterOverlap: settings.posterOverlap,
+        posterCutMarks: settings.posterCutMarks,
+        posterLabels: settings.posterLabels,
+        multiplePageOrder: settings.multiplePageOrder,
+        bookletSubset: settings.bookletSubset,
+        bookletFrom: settings.bookletFrom,
+        bookletTo: settings.bookletTo,
+        bookletBinding: settings.bookletBinding,
       });
       if (!success) {
         // Some Windows printer drivers reject Electron's silent print path.
