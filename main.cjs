@@ -313,14 +313,25 @@ function installIpc() {
         // already correct in the generated physical sheets.
         const padded = [...selectedImages];
         while (padded.length % 4) padded.push(null);
-        for (let startIndex = 0; startIndex < padded.length; startIndex += 4) {
+        const totalSheets = Math.max(1, Math.ceil(padded.length / 4));
+        const fromSheet = Math.min(totalSheets, Math.max(1, Number(options.bookletFrom) || 1));
+        const toSheet = Math.min(totalSheets, Math.max(fromSheet, Number(options.bookletTo) || totalSheets));
+        const subset = ["both", "front", "back"].includes(options.bookletSubset) ? options.bookletSubset : "both";
+        const binding = options.bookletBinding === "right" ? "right" : "left";
+        for (let sheetIndex = fromSheet - 1; sheetIndex < toSheet; sheetIndex += 1) {
+          const startIndex = sheetIndex * 4;
           const a = padded[startIndex];
           const b = padded[startIndex + 1];
           const c = padded[startIndex + 2];
           const d = padded[startIndex + 3];
-          const front = [d, a];
-          const back = [b, c];
-          for (const side of [front, back]) {
+          let front = [d, a];
+          let back = [b, c];
+          if (binding === "right") {
+            front = [a, d];
+            back = [c, b];
+          }
+          const sides = subset === "front" ? [front] : subset === "back" ? [back] : [front, back];
+          for (const side of sides) {
             sheets.push(
               '<section class="sheet booklet-sheet">' +
               side.map((src) => '<div class="booklet-cell">' + (src ? pageMarkup(src, 'booklet-image') : '') + '</div>').join('') +
