@@ -206,7 +206,7 @@ function Index() {
           autoRotate: settings.autoRotate,
           autoCenter: settings.autoCenter,
           mode: settings.mode,
-          posterTiles: settings.posterTiles,
+          posterTiles: Math.min(4, Math.max(2, Math.ceil(settings.posterScale / 100))) as 2 | 3 | 4,
         });
         if (!fallbackSuccess) {
           toast.error("Print could not be started. Check the selected printer status.");
