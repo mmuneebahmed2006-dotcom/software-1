@@ -107,10 +107,10 @@ async function getSystemPrinters() {
   if (process.platform !== 'win32') return [];
   return await new Promise((resolve) => {
     const { spawn } = require('child_process');
-    const child = spawn('powershell.exe', [
-      '-NoProfile', '-NonInteractive', '-Command',
-      'Get-Printer | Select-Object Name,PrinterStatus,WorkOffline | ConvertTo-Json -Compress'
-    ], { windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
+    const command = 'Get-Printer | Select-Object Name,PrinterStatus,WorkOffline | ConvertTo-Json -Compress';
+    const child = spawn('powershell.exe', ['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-Command',command], {
+      windowsHide: true, stdio: ['ignore','pipe','pipe']
+    });
     let output = '';
     child.stdout.on('data', (data) => { output += data.toString(); });
     child.once('error', () => resolve([]));
@@ -118,25 +118,24 @@ async function getSystemPrinters() {
       try {
         const parsed = JSON.parse(output.trim() || '[]');
         const rows = Array.isArray(parsed) ? parsed : [parsed];
-        resolve(rows.filter((row) => row && row.Name).map((row) => ({
-          name: String(row.Name),
-          displayName: String(row.Name),
-          description: '',
-          options: {},
-          isDefault: false,
-          status: row.WorkOffline === true || /offline|error|stopped|paused|blocked|not available/i.test(String(row.PrinterStatus ?? ''))
-            ? 'offline'
-            : /printing|processing|busy|initializing|waiting/i.test(String(row.PrinterStatus ?? ''))
-              ? 'printing'
-              : 'ready',
-        })));
+        resolve(rows.filter((row) => row && row.Name).map((row) => {
+          const status = String(row.PrinterStatus ?? '');
+          const offline = row.WorkOffline === true || /offline|error|stopped|paused|blocked|not available/i.test(status);
+          return {
+            name: String(row.Name),
+            displayName: String(row.Name),
+            description: '',
+            options: {},
+            isDefault: false,
+            status: offline ? 'offline' : 'ready',
+          };
+        }));
       } catch {
         resolve([]);
       }
     });
   });
 }
-
 async function getWindowsPrinterStatus(printerName) {
   if (process.platform !== 'win32' || !printerName) return 'unknown';
   return await new Promise((resolve) => {
@@ -195,8 +194,8 @@ function installIpc() {
         status: await getWindowsPrinterStatus(printer.name),
       })));
       const systemPrinters = await getSystemPrinters();
-      const merged = [...electronPrinters];
-      for (const printer of systemPrinters) {
+      const merged = [...systemPrinters];
+      for (const printer of electronPrinters) {
         if (!merged.some((item) => String(item.name).toLowerCase() === String(printer.name).toLowerCase())) {
           merged.push(printer);
         }
@@ -460,29 +459,30 @@ function installIpc() {
       }
 
       const deviceName = selectedPrinter.name;
+      const physicalPageSize = {
+        width: Math.round((physicalLandscape ? paperH : paperW) * 1000),
+        height: Math.round((physicalLandscape ? paperW : paperH) * 1000),
+      };
       const printOptions = {
-        // Direct printing is intentional: the selected Windows printer receives
-        // the job without opening a second print dialog.
-        silent: options.silent !== false,
+        silent: true,
         deviceName,
         printBackground: true,
         color: !gray,
-        landscape: physicalLandscape,
-        // Use the printer's printable area so the top accent and bottom footer
-        // remain inside the physical page instead of being clipped by hardware
-        // margins. The document itself already has a small safety inset.
+        // The generated print document already has the correct physical
+        // landscape/portrait dimensions. Do not rotate it again in Chromium.
+        landscape: false,
         margins: { marginType: 'none' },
         scaleFactor: 100,
         pagesPerSheet: 1,
         collate: true,
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         duplexMode: isBooklet ? 'shortEdge' : options.duplex === 'shortEdge' || options.duplex === 'longEdge' ? options.duplex : 'simplex',
-        pageSize,
+        pageSize: physicalPageSize,
       };
 
       return await new Promise((resolve) => {
         printWindow.webContents.print(printOptions, (success, failureReason) => {
-          if (!success) log('Print failed: ' + String(failureReason || 'unknown') + ' | mode=' + mode + ' | printer=' + deviceName + ' | pageSize=' + pageSize + ' | landscape=' + physicalLandscape + ' | copies=' + (Number(options.copies) || 1));
+          if (!success) log('Print failed: ' + String(failureReason || 'unknown') + ' | mode=' + mode + ' | printer=' + deviceName + ' | pageSize=' + JSON.stringify(physicalPageSize));
           resolve(Boolean(success));
           setTimeout(() => {
             if (!printWindow.isDestroyed()) printWindow.close();
