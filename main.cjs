@@ -194,10 +194,17 @@ function installIpc() {
         isDefault: Boolean(printer.isDefault),
         status: await getWindowsPrinterStatus(printer.name),
       })));
-      if (electronPrinters.length) return electronPrinters;
       const systemPrinters = await getSystemPrinters();
-      log('Electron printer list empty; Windows fallback found ' + systemPrinters.length + ' printer(s).');
-      return systemPrinters;
+      const merged = [...electronPrinters];
+      for (const printer of systemPrinters) {
+        if (!merged.some((item) => String(item.name).toLowerCase() === String(printer.name).toLowerCase())) {
+          merged.push(printer);
+        }
+      }
+      if (!electronPrinters.length) {
+        log('Electron printer list empty; Windows fallback found ' + systemPrinters.length + ' printer(s).');
+      }
+      return merged;
     } catch (error) {
       log('Printer enumeration failed: ' + error.message);
       return await getSystemPrinters();
@@ -315,13 +322,9 @@ function installIpc() {
         const actual = options.sizing === 'actual';
         const safeScale = fit ? 90 : actual ? 90 : Math.min(400, Math.max(10, requestedScale));
         const rotate = options.autoRotate && physicalLandscape ? 'rotate(90deg)' : 'none';
-        const imageWidth = physicalLandscape && options.autoRotate ? 'auto' : safeScale + '%';
-        const imageHeight = physicalLandscape && options.autoRotate
-          ? (safeScale * (paperW / paperH)) + '%'
-          : safeScale + '%';
         return [
-          'width:' + imageWidth,
-          'height:' + imageHeight,
+          'width:' + safeScale + '%',
+          'height:' + safeScale + '%',
           'object-fit:contain',
           'object-position:center',
           'transform:translate(-50%,-50%) ' + rotate,
