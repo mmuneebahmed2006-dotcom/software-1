@@ -103,6 +103,40 @@ function createAutoBackup() {
   return destination;
 }
 function restoreZip(archive, root) { ensureWorkspace(root); const zip = new AdmZip(archive); for (const entry of zip.getEntries()) { const name = entry.entryName.replaceAll('\\', '/'); if (entry.isDirectory || name === 'backup-manifest.json' || name.startsWith('/') || name.includes('../')) continue; const destination = path.resolve(root, name); if (!destination.startsWith(path.resolve(root) + path.sep)) continue; fs.mkdirSync(path.dirname(destination), { recursive: true }); fs.writeFileSync(destination, entry.getData()); } return walkJson(root).length; }
+async function getSystemPrinters() {
+  if (process.platform !== 'win32') return [];
+  return await new Promise((resolve) => {
+    const { spawn } = require('child_process');
+    const child = spawn('powershell.exe', [
+      '-NoProfile', '-NonInteractive', '-Command',
+      'Get-Printer | Select-Object Name,PrinterStatus,WorkOffline | ConvertTo-Json -Compress'
+    ], { windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
+    let output = '';
+    child.stdout.on('data', (data) => { output += data.toString(); });
+    child.once('error', () => resolve([]));
+    child.once('close', () => {
+      try {
+        const parsed = JSON.parse(output.trim() || '[]');
+        const rows = Array.isArray(parsed) ? parsed : [parsed];
+        resolve(rows.filter((row) => row && row.Name).map((row) => ({
+          name: String(row.Name),
+          displayName: String(row.Name),
+          description: '',
+          options: {},
+          isDefault: false,
+          status: row.WorkOffline === true || /offline|error|stopped|paused|blocked|not available/i.test(String(row.PrinterStatus ?? ''))
+            ? 'offline'
+            : /printing|processing|busy|initializing|waiting/i.test(String(row.PrinterStatus ?? ''))
+              ? 'printing'
+              : 'ready',
+        })));
+      } catch {
+        resolve([]);
+      }
+    });
+  });
+}
+
 async function getWindowsPrinterStatus(printerName) {
   if (process.platform !== 'win32' || !printerName) return 'unknown';
   return await new Promise((resolve) => {
@@ -150,15 +184,24 @@ function installIpc() {
   ipcMain.handle('folders:delete', (_event, categoryKey, name) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const target = withinRoot(category, name); if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true }); return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
   ipcMain.handle('printers:list', async () => {
     if (!win || win.isDestroyed()) return [];
-    const printers = await win.webContents.getPrintersAsync();
-    return Promise.all(printers.map(async (printer) => ({
-      name: printer.name,
-      displayName: printer.displayName,
-      description: printer.description || '',
-      options: printer.options || {},
-      isDefault: Boolean(printer.isDefault),
-      status: await getWindowsPrinterStatus(printer.name),
-    })));
+    try {
+      const printers = await win.webContents.getPrintersAsync();
+      const electronPrinters = await Promise.all(printers.map(async (printer) => ({
+        name: printer.name,
+        displayName: printer.displayName,
+        description: printer.description || '',
+        options: printer.options || {},
+        isDefault: Boolean(printer.isDefault),
+        status: await getWindowsPrinterStatus(printer.name),
+      })));
+      if (electronPrinters.length) return electronPrinters;
+      const systemPrinters = await getSystemPrinters();
+      log('Electron printer list empty; Windows fallback found ' + systemPrinters.length + ' printer(s).');
+      return systemPrinters;
+    } catch (error) {
+      log('Printer enumeration failed: ' + error.message);
+      return await getSystemPrinters();
+    }
   });
   ipcMain.handle('printers:settings', async (_event, deviceName) => {
     if (process.platform !== 'win32' || !deviceName) return false;
@@ -272,9 +315,13 @@ function installIpc() {
         const actual = options.sizing === 'actual';
         const safeScale = fit ? 90 : actual ? 90 : Math.min(400, Math.max(10, requestedScale));
         const rotate = options.autoRotate && physicalLandscape ? 'rotate(90deg)' : 'none';
+        const imageWidth = physicalLandscape && options.autoRotate ? 'auto' : safeScale + '%';
+        const imageHeight = physicalLandscape && options.autoRotate
+          ? (safeScale * (paperW / paperH)) + '%'
+          : safeScale + '%';
         return [
-          'width:' + safeScale + '%',
-          'height:' + safeScale + '%',
+          'width:' + imageWidth,
+          'height:' + imageHeight,
           'object-fit:contain',
           'object-position:center',
           'transform:translate(-50%,-50%) ' + rotate,
@@ -390,7 +437,9 @@ function installIpc() {
       // Electron requires the printer's system device name here, not the
       // friendly/display name shown in the preview. Resolve the user's selected
       // printer against the actual system printer list before every print.
-      const availablePrinters = await win.webContents.getPrintersAsync();
+      let availablePrinters = [];
+      try { availablePrinters = await win.webContents.getPrintersAsync(); } catch (error) { log('Electron printer lookup failed: ' + error.message); }
+      if (!availablePrinters.length) availablePrinters = await getSystemPrinters();
       const requestedPrinter = typeof options.deviceName === 'string' ? options.deviceName.trim() : '';
       const requestedLower = requestedPrinter.toLowerCase();
       const selectedPrinter = requestedPrinter
