@@ -459,17 +459,16 @@ function installIpc() {
       }
 
       const deviceName = selectedPrinter.name;
-      const physicalPageSize = {
-        width: Math.round((physicalLandscape ? paperH : paperW) * 1000),
-        height: Math.round((physicalLandscape ? paperW : paperH) * 1000),
-      };
+      // Do not force a custom Chromium pageSize here. Many Windows printer
+      // drivers reject silent jobs when Electron is given a synthetic page size,
+      // even though the same printer can print A4 normally. The generated HTML
+      // already declares A4/landscape in @page, and the printer driver should
+      // supply the physical paper size.
       const printOptions = {
         silent: true,
         deviceName,
         printBackground: true,
         color: !gray,
-        // The generated print document already has the correct physical
-        // landscape/portrait dimensions. Do not rotate it again in Chromium.
         landscape: false,
         margins: { marginType: 'none' },
         scaleFactor: 100,
@@ -477,12 +476,12 @@ function installIpc() {
         collate: true,
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         duplexMode: isBooklet ? 'shortEdge' : options.duplex === 'shortEdge' || options.duplex === 'longEdge' ? options.duplex : 'simplex',
-        pageSize: physicalPageSize,
+        usePrinterDefaultPageSize: true,
       };
 
       return await new Promise((resolve) => {
         printWindow.webContents.print(printOptions, (success, failureReason) => {
-          if (!success) log('Print failed: ' + String(failureReason || 'unknown') + ' | mode=' + mode + ' | printer=' + deviceName + ' | pageSize=' + JSON.stringify(physicalPageSize));
+          if (!success) log('Print failed: ' + String(failureReason || 'unknown') + ' | mode=' + mode + ' | printer=' + deviceName);
           resolve(Boolean(success));
           setTimeout(() => {
             if (!printWindow.isDestroyed()) printWindow.close();
