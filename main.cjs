@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell, powerMonitor } = require('electron');
 const path = require('path');
 const { fork } = require('child_process');
 const http = require('http');
@@ -654,4 +654,20 @@ function createWindow() {
     }, 3100);
   });
 }
-if (!app.requestSingleInstanceLock()) app.quit(); else { app.whenReady().then(() => { Menu.setApplicationMenu(null); installIpc(); startServer(); createSplashWindow(); createWindow(); const settings = readSettings(); if (settings.initialized && settings.dataRoot && (!settings.lastBackupAt || Date.now() - settings.lastBackupAt >= 30 * 86400000)) setTimeout(() => { try { createAutoBackup(); } catch (error) { log(error.message); } }, 10000); }); app.on('window-all-closed', () => { serverProcess?.kill(); if (process.platform !== 'darwin') app.quit(); }); }
+function scheduleAutomaticBackup() {
+  const run = () => {
+    if (!win || win.isDestroyed()) return;
+    try {
+      if (powerMonitor.getSystemIdleTime() < 30) {
+        setTimeout(run, 60 * 1000);
+        return;
+      }
+      createAutoBackup();
+    } catch (error) {
+      log(error.message);
+    }
+  };
+  setTimeout(run, 5 * 60 * 1000);
+}
+
+if (!app.requestSingleInstanceLock()) app.quit(); else { app.whenReady().then(() => { Menu.setApplicationMenu(null); installIpc(); startServer(); createSplashWindow(); createWindow(); const settings = readSettings(); if (settings.initialized && settings.dataRoot && (!settings.lastBackupAt || Date.now() - settings.lastBackupAt >= 30 * 86400000)) scheduleAutomaticBackup(); }); app.on('window-all-closed', () => { serverProcess?.kill(); if (process.platform !== 'darwin') app.quit(); }); }
