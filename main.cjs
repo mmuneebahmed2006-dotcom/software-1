@@ -253,13 +253,17 @@ function installIpc() {
         const actual = options.sizing === 'actual';
         // Fit uses a small safety inset. Actual is exactly 100%, and Custom
         // uses the exact percentage entered by the user.
-        const safeScale = fit ? 92 : actual ? 100 : Math.min(400, Math.max(10, requestedScale));
+        // Fit = the largest page that stays inside the printable sheet.
+        // Actual = exactly 100% of the captured page.
+        // Custom = exactly the percentage entered by the user.
+        const safeScale = fit ? 96 : actual ? 100 : Math.min(400, Math.max(10, requestedScale));
         const rotate = options.autoRotate && physicalLandscape ? 'rotate(90deg)' : 'none';
         return [
           'width:' + safeScale + '%',
           'height:' + safeScale + '%',
           'object-fit:contain',
           'object-position:center',
+          'transform-origin:center center',
           'transform:translate(-50%,-50%) ' + rotate,
           'filter:' + (gray ? 'grayscale(1)' : 'none'),
         ].join(';');
@@ -421,7 +425,7 @@ function installIpc() {
             if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
           }, 600);
         });
-      }););
+      });
     } catch (error) {
       log('Print preparation failed: ' + error.message);
       if (!printWindow.isDestroyed()) printWindow.close();
