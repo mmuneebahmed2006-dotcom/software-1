@@ -128,9 +128,10 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   useEffect(() => {
     if (!open) return;
+    // Load printers once when the print window opens. Do not poll Windows
+    // every few seconds: printer enumeration can be expensive on some drivers
+    // and was making the whole app feel slow.
     void loadPrinters();
-    const timer = window.setInterval(() => void loadPrinters(), 3000);
-    return () => window.clearInterval(timer);
   }, [open]);
 
   useEffect(() => {
