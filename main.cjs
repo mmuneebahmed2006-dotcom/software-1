@@ -103,8 +103,11 @@ function createAutoBackup() {
   return destination;
 }
 function restoreZip(archive, root) { ensureWorkspace(root); const zip = new AdmZip(archive); for (const entry of zip.getEntries()) { const name = entry.entryName.replaceAll('\\', '/'); if (entry.isDirectory || name === 'backup-manifest.json' || name.startsWith('/') || name.includes('../')) continue; const destination = path.resolve(root, name); if (!destination.startsWith(path.resolve(root) + path.sep)) continue; fs.mkdirSync(path.dirname(destination), { recursive: true }); fs.writeFileSync(destination, entry.getData()); } return walkJson(root).length; }
-async function getSystemPrinters() {
+let windowsPrinterCache = { at: 0, printers: [] };
+
+async function getSystemPrinters(force = false) {
   if (process.platform !== 'win32') return [];
+  if (!force && Date.now() - windowsPrinterCache.at < 10000) return windowsPrinterCache.printers;
   return await new Promise((resolve) => {
     const { spawn } = require('child_process');
     const command = 'Get-Printer | Select-Object Name,PrinterStatus,WorkOffline | ConvertTo-Json -Compress';
@@ -118,7 +121,7 @@ async function getSystemPrinters() {
       try {
         const parsed = JSON.parse(output.trim() || '[]');
         const rows = Array.isArray(parsed) ? parsed : [parsed];
-        resolve(rows.filter((row) => row && row.Name).map((row) => {
+        const printers = rows.filter((row) => row && row.Name).map((row) => {
           const status = String(row.PrinterStatus ?? '');
           const offline = row.WorkOffline === true || /offline|error|stopped|paused|blocked|not available/i.test(status);
           return {
@@ -130,6 +133,8 @@ async function getSystemPrinters() {
             status: offline ? 'offline' : 'ready',
           };
         }));
+        windowsPrinterCache = { at: Date.now(), printers };
+        resolve(printers);
       } catch {
         resolve([]);
       }
@@ -481,12 +486,35 @@ function installIpc() {
 
       return await new Promise((resolve) => {
         printWindow.webContents.print(printOptions, (success, failureReason) => {
-          if (!success) log('Print failed: ' + String(failureReason || 'unknown') + ' | mode=' + mode + ' | printer=' + deviceName);
-          resolve(Boolean(success));
-          setTimeout(() => {
-            if (!printWindow.isDestroyed()) printWindow.close();
-            if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
-          }, 600);
+          if (success) {
+            resolve(true);
+            setTimeout(() => {
+              if (!printWindow.isDestroyed()) printWindow.close();
+              if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
+            }, 600);
+            return;
+          }
+
+          log('Primary print failed: ' + String(failureReason || 'unknown') + ' | printer=' + deviceName + ' | retrying minimal Windows job');
+
+          const retryOptions = {
+            silent: true,
+            deviceName,
+            printBackground: true,
+            color: !gray,
+            copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+          };
+
+          printWindow.webContents.print(retryOptions, (retrySuccess, retryReason) => {
+            if (!retrySuccess) {
+              log('Retry print failed: ' + String(retryReason || 'unknown') + ' | printer=' + deviceName);
+            }
+            resolve(Boolean(retrySuccess));
+            setTimeout(() => {
+              if (!printWindow.isDestroyed()) printWindow.close();
+              if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
+            }, 600);
+          });
         });
       });
     } catch (error) {
