@@ -186,32 +186,26 @@ function installIpc() {
   ipcMain.handle('folders:list', (_event, categoryKey) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const root = withinRoot(category); fs.mkdirSync(root, { recursive: true }); return fs.readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
   ipcMain.handle('folders:rename', (_event, categoryKey, from, to) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const source = withinRoot(category, from); const target = withinRoot(category, to); if (fs.existsSync(source) && !fs.existsSync(target)) fs.renameSync(source, target); return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
   ipcMain.handle('folders:delete', (_event, categoryKey, name) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const target = withinRoot(category, name); if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true }); return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
+  let printerListCache = { at: 0, printers: [] };
   ipcMain.handle('printers:list', async () => {
     if (!win || win.isDestroyed()) return [];
+    const now = Date.now();
+    if (now - printerListCache.at < 15000) return printerListCache.printers;
     try {
       const printers = await win.webContents.getPrintersAsync();
-      const electronPrinters = await Promise.all(printers.map(async (printer) => ({
-        name: printer.name,
-        displayName: printer.displayName,
+      const normalized = printers.map((printer) => ({
+        name: String(printer.name || ''),
+        displayName: String(printer.displayName || printer.name || ''),
         description: printer.description || '',
         options: printer.options || {},
         isDefault: Boolean(printer.isDefault),
-        status: await getWindowsPrinterStatus(printer.name),
-      })));
-      const systemPrinters = await getSystemPrinters();
-      const merged = [...systemPrinters];
-      for (const printer of electronPrinters) {
-        if (!merged.some((item) => String(item.name).toLowerCase() === String(printer.name).toLowerCase())) {
-          merged.push(printer);
-        }
-      }
-      if (!electronPrinters.length) {
-        log('Electron printer list empty; Windows fallback found ' + systemPrinters.length + ' printer(s).');
-      }
-      return merged;
+        status: 'ready',
+      })).filter((printer) => printer.name);
+      printerListCache = { at: now, printers: normalized };
+      return normalized;
     } catch (error) {
       log('Printer enumeration failed: ' + error.message);
-      return await getSystemPrinters();
+      return printerListCache.printers;
     }
   });
   ipcMain.handle('printers:settings', async (_event, deviceName) => {
@@ -324,7 +318,9 @@ function installIpc() {
         if (mode !== 'size') return '';
         const fit = options.sizing === 'fit';
         const actual = options.sizing === 'actual';
-        const safeScale = fit ? 90 : actual ? 90 : Math.min(400, Math.max(10, requestedScale));
+        // Fit uses a small safety inset. Actual is exactly 100%, and Custom
+        // uses the exact percentage entered by the user.
+        const safeScale = fit ? 92 : actual ? 100 : Math.min(400, Math.max(10, requestedScale));
         const rotate = options.autoRotate && physicalLandscape ? 'rotate(90deg)' : 'none';
         return [
           'width:' + safeScale + '%',
@@ -464,24 +460,25 @@ function installIpc() {
       }
 
       const deviceName = selectedPrinter.name;
-      // Do not force a custom Chromium pageSize here. Many Windows printer
-      // drivers reject silent jobs when Electron is given a synthetic page size,
-      // even though the same printer can print A4 normally. The generated HTML
-      // already declares A4/landscape in @page, and the printer driver should
-      // supply the physical paper size.
+      // Use only documented Electron print options. The selected printer
+      // receives its real system device name; pageSize is explicit and is not
+      // combined with usePrinterDefaultPageSize.
       const printOptions = {
-        silent: true,
+        silent: Boolean(options.silent),
         deviceName,
         printBackground: true,
         color: !gray,
-        landscape: false,
+        landscape: physicalLandscape,
         margins: { marginType: 'none' },
         scaleFactor: 100,
         pagesPerSheet: 1,
         collate: true,
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-        duplexMode: isBooklet ? 'shortEdge' : options.duplex === 'shortEdge' || options.duplex === 'longEdge' ? options.duplex : 'simplex',
-        usePrinterDefaultPageSize: true,
+        pageRanges: Array.isArray(options.pageRanges) && options.pageRanges.length ? options.pageRanges : undefined,
+        duplexMode: (isBooklet || options.duplex === 'shortEdge') ? 'shortEdge' : options.duplex === 'longEdge' ? 'longEdge' : 'simplex',
+        pageSize,
+        usePrinterDefaultPageSize: false,
+        dpi: Number(options.dpi) > 0 ? { horizontal: Number(options.dpi), vertical: Number(options.dpi) } : undefined,
       };
 
       return await new Promise((resolve) => {
@@ -498,11 +495,15 @@ function installIpc() {
           log('Primary print failed: ' + String(failureReason || 'unknown') + ' | printer=' + deviceName + ' | retrying minimal Windows job');
 
           const retryOptions = {
-            silent: true,
+            silent: false,
             deviceName,
             printBackground: true,
             color: !gray,
+            landscape: physicalLandscape,
+            margins: { marginType: 'none' },
             copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+            pageSize,
+            usePrinterDefaultPageSize: false,
           };
 
           printWindow.webContents.print(retryOptions, (retrySuccess, retryReason) => {
