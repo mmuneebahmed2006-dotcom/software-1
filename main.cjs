@@ -132,7 +132,7 @@ async function getSystemPrinters(force = false) {
             isDefault: false,
             status: offline ? 'offline' : 'ready',
           };
-        }));
+        });
         windowsPrinterCache = { at: Date.now(), printers };
         resolve(printers);
       } catch {
