@@ -469,16 +469,13 @@ function installIpc() {
         printBackground: true,
         color: !gray,
         landscape: physicalLandscape,
-        margins: { marginType: 'none' },
-        scaleFactor: 100,
-        pagesPerSheet: 1,
-        collate: true,
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         pageRanges: Array.isArray(options.pageRanges) && options.pageRanges.length ? options.pageRanges : undefined,
-        duplexMode: (isBooklet || options.duplex === 'shortEdge') ? 'shortEdge' : options.duplex === 'longEdge' ? 'longEdge' : 'simplex',
-        pageSize,
-        usePrinterDefaultPageSize: false,
-        dpi: Number(options.dpi) > 0 ? { horizontal: Number(options.dpi), vertical: Number(options.dpi) } : undefined,
+        // Let the selected Windows driver provide its real printable media.
+        // The generated page already declares A4/A5/Letter/Legal and
+        // portrait/landscape in @page, so do not send a second synthetic
+        // media-size/margin configuration to the driver.
+        usePrinterDefaultPageSize: true,
       };
 
       return await new Promise((resolve) => {
@@ -495,15 +492,14 @@ function installIpc() {
           log('Primary print failed: ' + String(failureReason || 'unknown') + ' | printer=' + deviceName + ' | retrying minimal Windows job');
 
           const retryOptions = {
+            // Native Windows dialog fallback: do not force page size/margins.
             silent: false,
             deviceName,
             printBackground: true,
             color: !gray,
             landscape: physicalLandscape,
-            margins: { marginType: 'none' },
             copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-            pageSize,
-            usePrinterDefaultPageSize: false,
+            usePrinterDefaultPageSize: true,
           };
 
           printWindow.webContents.print(retryOptions, (retrySuccess, retryReason) => {
