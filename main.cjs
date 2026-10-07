@@ -103,75 +103,6 @@ function createAutoBackup() {
   return destination;
 }
 function restoreZip(archive, root) { ensureWorkspace(root); const zip = new AdmZip(archive); for (const entry of zip.getEntries()) { const name = entry.entryName.replaceAll('\\', '/'); if (entry.isDirectory || name === 'backup-manifest.json' || name.startsWith('/') || name.includes('../')) continue; const destination = path.resolve(root, name); if (!destination.startsWith(path.resolve(root) + path.sep)) continue; fs.mkdirSync(path.dirname(destination), { recursive: true }); fs.writeFileSync(destination, entry.getData()); } return walkJson(root).length; }
-let windowsPrinterCache = { at: 0, printers: [] };
-
-async function getSystemPrinters(force = false) {
-  if (process.platform !== 'win32') return [];
-  if (!force && Date.now() - windowsPrinterCache.at < 10000) return windowsPrinterCache.printers;
-  return await new Promise((resolve) => {
-    const { spawn } = require('child_process');
-    const command = 'Get-Printer | Select-Object Name,PrinterStatus,WorkOffline | ConvertTo-Json -Compress';
-    const child = spawn('powershell.exe', ['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-Command',command], {
-      windowsHide: true, stdio: ['ignore','pipe','pipe']
-    });
-    let output = '';
-    child.stdout.on('data', (data) => { output += data.toString(); });
-    child.once('error', () => resolve([]));
-    child.once('close', () => {
-      try {
-        const parsed = JSON.parse(output.trim() || '[]');
-        const rows = Array.isArray(parsed) ? parsed : [parsed];
-        const printers = rows.filter((row) => row && row.Name).map((row) => {
-          const status = String(row.PrinterStatus ?? '');
-          const offline = row.WorkOffline === true || /offline|error|stopped|paused|blocked|not available/i.test(status);
-          return {
-            name: String(row.Name),
-            displayName: String(row.Name),
-            description: '',
-            options: {},
-            isDefault: false,
-            status: offline ? 'offline' : 'ready',
-          };
-        });
-        windowsPrinterCache = { at: Date.now(), printers };
-        resolve(printers);
-      } catch {
-        resolve([]);
-      }
-    });
-  });
-}
-async function getWindowsPrinterStatus(printerName) {
-  if (process.platform !== 'win32' || !printerName) return 'unknown';
-  return await new Promise((resolve) => {
-    const { spawn } = require('child_process');
-    const child = spawn('powershell.exe', [
-      '-NoProfile', '-NonInteractive', '-Command',
-      '$p = Get-Printer -Name $env:DOC_STUDIO_PRINTER -ErrorAction Stop; [pscustomobject]@{Status=$p.PrinterStatus;WorkOffline=$p.WorkOffline;AcceptingJobs=$p.PrinterState} | ConvertTo-Json -Compress'
-    ], {
-      windowsHide: true,
-      stdio: ['ignore', 'pipe', 'ignore'],
-      env: { ...process.env, DOC_STUDIO_PRINTER: String(printerName) },
-    });
-    let output = '';
-    child.stdout.on('data', (data) => { output += data.toString(); });
-    child.once('error', () => resolve('unknown'));
-    child.once('close', () => {
-      try {
-        const value = JSON.parse(output.trim());
-        const status = String(value.Status ?? '');
-        if (value.WorkOffline === true || /offline|error|stopped|paused|blocked|not available/i.test(status)) return resolve('offline');
-        if (/printing|processing|busy|initializing|waiting/i.test(status)) return resolve('printing');
-        // Windows reports Idle/Normal as ready; some drivers expose only a
-        // numeric state. If the printer is installed and not explicitly offline,
-        // treat Unknown/Other/Warmup as available rather than falsely showing Offline.
-        if (/normal|idle|ready|unknown|other|warmup|powersave/i.test(status) || value.AcceptingJobs !== false) return resolve('ready');
-      } catch {}
-      resolve('unknown');
-    });
-  });
-}
-
 function installIpc() {
   ipcMain.handle('settings:get', () => readSettings());
   ipcMain.handle('settings:choose-root', async () => { const result = await dialog.showOpenDialog(win, { title: 'Choose Document Studio data folder', defaultPath: process.platform === 'win32' && fs.existsSync('D:\\') ? 'D:\\DocumentStudio' : app.getPath('documents'), properties: ['openDirectory', 'createDirectory'] }); return result.canceled ? null : result.filePaths[0]; });
@@ -188,23 +119,25 @@ function installIpc() {
   ipcMain.handle('folders:delete', (_event, categoryKey, name) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const target = withinRoot(category, name); if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true }); return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
   let printerListCache = { at: 0, printers: [] };
   ipcMain.handle('printers:list', async () => {
-    if (!win || win.isDestroyed()) return [];
+    if (!win || win.isDestroyed()) return printerListCache.printers;
     const now = Date.now();
     if (now - printerListCache.at < 15000) return printerListCache.printers;
     try {
       const printers = await win.webContents.getPrintersAsync();
-      const normalized = printers.map((printer) => ({
-        name: String(printer.name || ''),
-        displayName: String(printer.displayName || printer.name || ''),
-        description: printer.description || '',
-        options: printer.options || {},
-        isDefault: Boolean(printer.isDefault),
-        status: 'ready',
-      })).filter((printer) => printer.name);
-      printerListCache = { at: now, printers: normalized };
-      return normalized;
+      printerListCache = {
+        at: now,
+        printers: printers.map((printer) => ({
+          name: String(printer.name || ''),
+          displayName: String(printer.displayName || printer.name || ''),
+          description: printer.description || '',
+          options: printer.options || {},
+          isDefault: Boolean(printer.isDefault),
+          status: 'ready',
+        })).filter((printer) => printer.name),
+      };
+      return printerListCache.printers;
     } catch (error) {
-      log('Printer enumeration failed: ' + error.message);
+      log('Native printer enumeration failed: ' + error.message);
       return printerListCache.printers;
     }
   });
@@ -437,13 +370,14 @@ function installIpc() {
       );
       await new Promise((resolve) => setTimeout(resolve, 250));
 
-      // Electron requires the printer's system device name here, not the
-      // friendly/display name shown in the preview. Resolve the user's selected
-      // printer against the actual system printer list before every print.
-      let availablePrinters = [];
-      try { availablePrinters = await win.webContents.getPrintersAsync(); } catch (error) { log('Electron printer lookup failed: ' + error.message); }
-      if (!availablePrinters.length) availablePrinters = await getSystemPrinters();
+      // Use the selected system printer name when doing a silent print.
+      // Electron requires the OS device name, not the friendly display label.
       const requestedPrinter = typeof options.deviceName === 'string' ? options.deviceName.trim() : '';
+      let availablePrinters = [];
+      try { availablePrinters = await win.webContents.getPrintersAsync(); } catch (error) {
+        log('Electron printer lookup failed: ' + error.message);
+      }
+
       const requestedLower = requestedPrinter.toLowerCase();
       const selectedPrinter = requestedPrinter
         ? availablePrinters.find((printer) =>
@@ -452,68 +386,42 @@ function installIpc() {
           )
         : availablePrinters.find((printer) => printer.isDefault) || availablePrinters[0];
 
-      if (!selectedPrinter) {
-        log('Print failed: selected printer is not available | requested=' + requestedPrinter);
+      if (options.silent && !selectedPrinter) {
+        log('Silent print aborted: selected printer is not available | requested=' + requestedPrinter);
         if (!printWindow.isDestroyed()) printWindow.close();
         if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
         return false;
       }
 
-      const deviceName = selectedPrinter.name;
-      // Use only documented Electron print options. The selected printer
-      // receives its real system device name; pageSize is explicit and is not
-      // combined with usePrinterDefaultPageSize.
+      const deviceName = selectedPrinter?.name || '';
+      // Basic silent job: only options that are stable across Windows printer
+      // drivers. The document HTML/CSS controls paper geometry.
       const printOptions = {
         silent: Boolean(options.silent),
-        deviceName,
+        ...(deviceName ? { deviceName } : {}),
         printBackground: true,
         color: !gray,
         landscape: physicalLandscape,
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         pageRanges: Array.isArray(options.pageRanges) && options.pageRanges.length ? options.pageRanges : undefined,
-        // Let the selected Windows driver provide its real printable media.
-        // The generated page already declares A4/A5/Letter/Legal and
-        // portrait/landscape in @page, so do not send a second synthetic
-        // media-size/margin configuration to the driver.
         usePrinterDefaultPageSize: true,
       };
 
       return await new Promise((resolve) => {
         printWindow.webContents.print(printOptions, (success, failureReason) => {
-          if (success) {
-            resolve(true);
-            setTimeout(() => {
-              if (!printWindow.isDestroyed()) printWindow.close();
-              if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
-            }, 600);
-            return;
+          if (!success) {
+            log('Print failed: ' + String(failureReason || 'unknown') +
+              ' | printer=' + (deviceName || '(native dialog)') +
+              ' | landscape=' + physicalLandscape +
+              ' | scale=' + requestedScale);
           }
-
-          log('Primary print failed: ' + String(failureReason || 'unknown') + ' | printer=' + deviceName + ' | retrying minimal Windows job');
-
-          const retryOptions = {
-            // Native Windows dialog fallback: do not force page size/margins.
-            silent: false,
-            deviceName,
-            printBackground: true,
-            color: !gray,
-            landscape: physicalLandscape,
-            copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-            usePrinterDefaultPageSize: true,
-          };
-
-          printWindow.webContents.print(retryOptions, (retrySuccess, retryReason) => {
-            if (!retrySuccess) {
-              log('Retry print failed: ' + String(retryReason || 'unknown') + ' | printer=' + deviceName);
-            }
-            resolve(Boolean(retrySuccess));
-            setTimeout(() => {
-              if (!printWindow.isDestroyed()) printWindow.close();
-              if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
-            }, 600);
-          });
+          resolve(Boolean(success));
+          setTimeout(() => {
+            if (!printWindow.isDestroyed()) printWindow.close();
+            if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
+          }, 600);
         });
-      });
+      }););
     } catch (error) {
       log('Print preparation failed: ' + error.message);
       if (!printWindow.isDestroyed()) printWindow.close();
