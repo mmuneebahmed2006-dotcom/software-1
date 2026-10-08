@@ -129,14 +129,28 @@ function Index() {
 
   const executePrint = useCallback(async (settings: PrintSettings) => {
     const printRoot = document.getElementById("document-pages");
+    
+    // Calculate the scale factor based on sizing selection
+    let scaleFactor = 100;
+    if (settings.sizing === "fit") {
+      scaleFactor = 95;
+    } else if (settings.sizing === "actual") {
+      scaleFactor = 100;
+    } else if (settings.sizing === "custom") {
+      scaleFactor = Math.max(10, Math.min(200, settings.scale || 100));
+    }
+
+    // Apply print settings to the document root
     if (printRoot) {
       printRoot.classList.toggle("print-gray", settings.gray);
+      printRoot.style.setProperty("--print-scale", `${scaleFactor / 100}`);
+      printRoot.style.setProperty("--print-orientation", settings.orientation === "landscape" ? "landscape" : "portrait");
       printRoot.dataset.printRange = settings.range;
       printRoot.dataset.printCustomRange = settings.customRange;
-      printRoot.dataset.printScale = String(settings.sizing === "custom" ? settings.scale : settings.sizing === "fit" ? 95 : 100);
       printRoot.dataset.printOrientation = settings.orientation;
       printRoot.dataset.printPagesPerSheet = String(settings.pagesPerSheet);
     }
+
     if (window.desktop?.printDocument) {
       const pageRanges = (() => {
         if (settings.range === "current") return [{ from: 0, to: 0 }];
@@ -157,45 +171,15 @@ function Index() {
           return [{ from, to }];
         });
       })();
-      const success = await window.desktop.printDocument({
-        silent: true,
-        deviceName: settings.printerName || undefined,
-        gray: settings.gray,
-        landscape: settings.orientation === "landscape",
-        sizing: settings.sizing,
-        scaleFactor: settings.sizing === "custom" ? settings.scale : settings.sizing === "fit" ? 95 : 100,
-        pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
-        copies: settings.copies,
-        pageRanges,
-        duplex: settings.mode === "booklet" ? "shortEdge" : settings.sides === "double" ? "longEdge" : "simplex",
-        paperSize: ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string,string>)[settings.paperSize] ?? "A4",
-        dpi: settings.printAsImage ? settings.dpi : undefined,
-        images: printCapture?.images ?? [],
-        autoRotate: settings.autoRotate,
-        autoCenter: settings.autoCenter,
-        mode: settings.mode,
-        posterTiles: Math.min(4, Math.max(2, Math.ceil(settings.posterScale / 100))) as 2 | 3 | 4,
-        posterScale: settings.posterScale,
-        posterOverlap: settings.posterOverlap,
-        posterCutMarks: settings.posterCutMarks,
-        posterLabels: settings.posterLabels,
-        multiplePageOrder: settings.multiplePageOrder,
-        bookletSubset: settings.bookletSubset,
-        bookletFrom: settings.bookletFrom,
-        bookletTo: settings.bookletTo,
-        bookletBinding: settings.bookletBinding,
-      });
-      if (!success) {
-        // Some Windows printer drivers reject Electron's silent print path.
-        // Retry once with the normal system print dialog instead of leaving
-        // the custom preview stuck in a loading state.
-        const fallbackSuccess = await window.desktop.printDocument({
-          silent: false,
+
+      try {
+        const success = await window.desktop.printDocument({
+          silent: true,
           deviceName: settings.printerName || undefined,
           gray: settings.gray,
           landscape: settings.orientation === "landscape",
           sizing: settings.sizing,
-          scaleFactor: settings.sizing === "custom" ? settings.scale : settings.sizing === "fit" ? 95 : 100,
+          scaleFactor: scaleFactor,
           pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
           copies: settings.copies,
           pageRanges,
@@ -207,42 +191,80 @@ function Index() {
           autoCenter: settings.autoCenter,
           mode: settings.mode,
           posterTiles: Math.min(4, Math.max(2, Math.ceil(settings.posterScale / 100))) as 2 | 3 | 4,
+          posterScale: settings.posterScale,
+          posterOverlap: settings.posterOverlap,
+          posterCutMarks: settings.posterCutMarks,
+          posterLabels: settings.posterLabels,
+          multiplePageOrder: settings.multiplePageOrder,
+          bookletSubset: settings.bookletSubset,
+          bookletFrom: settings.bookletFrom,
+          bookletTo: settings.bookletTo,
+          bookletBinding: settings.bookletBinding,
         });
-        if (!fallbackSuccess) {
-          toast.error("Print could not be started. Check the selected printer status.");
-          return;
+
+        if (!success) {
+          // Fallback to system print dialog
+          const fallbackSuccess = await window.desktop.printDocument({
+            silent: false,
+            deviceName: settings.printerName || undefined,
+            gray: settings.gray,
+            landscape: settings.orientation === "landscape",
+            sizing: settings.sizing,
+            scaleFactor: scaleFactor,
+            pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
+            copies: settings.copies,
+            pageRanges,
+            duplex: settings.mode === "booklet" ? "shortEdge" : settings.sides === "double" ? "longEdge" : "simplex",
+            paperSize: ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string,string>)[settings.paperSize] ?? "A4",
+            dpi: settings.printAsImage ? settings.dpi : undefined,
+            images: printCapture?.images ?? [],
+            autoRotate: settings.autoRotate,
+            autoCenter: settings.autoCenter,
+            mode: settings.mode,
+            posterTiles: Math.min(4, Math.max(2, Math.ceil(settings.posterScale / 100))) as 2 | 3 | 4,
+          });
+
+          if (!fallbackSuccess) {
+            toast.error("Print could not be started. Check the selected printer status.");
+            return;
+          }
         }
+        toast.success("Print job sent to printer successfully!");
+      } catch (error) {
+        console.error("Desktop print error:", error);
+        toast.error("Print could not be started. Please check your printer.");
       }
     } else {
-      // Browser printing: ensure dialog appears by using a cleaner approach
+      // Browser printing
       try {
-        // Wait for all rendering to complete
-        await new Promise((resolve) => setTimeout(resolve, 150));
+        await new Promise((resolve) => setTimeout(resolve, 200));
         
-        // Trigger the browser print dialog
         if (window.print) {
           window.print();
+          toast.success("Print dialog opened!");
         } else {
           toast.error("Print is not supported in your browser.");
-          return;
         }
       } catch (error) {
-        console.error("Print error:", error);
+        console.error("Browser print error:", error);
         toast.error("Print could not be started. Please try again.");
-        return;
       }
     }
+
     setPrintOpen(false);
+    
+    // Clean up print styles after print completes
     window.setTimeout(() => {
       if (printRoot) {
         printRoot.classList.remove("print-gray");
+        printRoot.style.removeProperty("--print-scale");
+        printRoot.style.removeProperty("--print-orientation");
         delete printRoot.dataset.printRange;
         delete printRoot.dataset.printCustomRange;
-        delete printRoot.dataset.printScale;
         delete printRoot.dataset.printOrientation;
         delete printRoot.dataset.printPagesPerSheet;
       }
-    }, 700);
+    }, 800);
   }, [printCapture]);
 
   useEffect(() => {
@@ -318,7 +340,7 @@ function Index() {
   }, [setDocuments, setState]);
 
   return <div className="studio-shell">
-    <style>{`@media print { @page { size: ${paper.page} portrait; margin: 0; } }`}</style>
+    <style>{`@media print { @page { size: ${paper.page} ${settings?.orientation === 'landscape' ? 'landscape' : 'portrait'}; margin: 0; } }`}</style>
     <StartupExperience/>
     <PrintPreview open={printOpen} captured={printCapture} paperLabel={paper.page} fileName={`${DOC_LABELS[docType].replaceAll(" ", "_")}_${state.meta.number || "Untitled"}.pdf`} onClose={() => setPrintOpen(false)} onPaperSizeChange={async (label) => {
               const next = ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string, PaperSizeKey>)[label];
