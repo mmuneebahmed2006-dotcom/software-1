@@ -166,7 +166,7 @@ function Index() {
     } as Record<string, string>)[settings.paperSize] ?? "A4";
 
     try {
-      const success = await window.desktop.printDocument({
+      const printResult = await window.desktop.printDocument({
         silent: true,
         deviceName: settings.printerName || undefined,
         gray: settings.gray,
@@ -197,8 +197,8 @@ function Index() {
         bookletBinding: settings.bookletBinding,
       });
 
-      if (!success) {
-        toast.error("Windows could not submit the print job. No print dialog was opened.");
+      if (!printResult?.success) {
+        toast.error(`Print failed: ${printResult?.failureReason || "Windows rejected the print job."}`);
         return;
       }
 
