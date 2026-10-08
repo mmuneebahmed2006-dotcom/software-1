@@ -129,10 +129,7 @@ function Index() {
     // The print preview owns all print settings. Submit one silent Electron
     // print job directly to the selected Windows printer; never call
     // window.print(), because that opens the browser/native print dialog.
-    if (!window.desktop?.printDocument || !printCapture?.images?.length) {
-      toast.error("Printing is not available in the desktop app.");
-      return;
-    }
+    if (!printCapture?.images?.length) { toast.error("Nothing to print."); return; }
 
     const pageRanges = (() => {
       if (settings.range === "current") return [{ from: 0, to: 0 }];
@@ -165,8 +162,35 @@ function Index() {
       "Legal 8.5 × 14 in": "Legal",
     } as Record<string, string>)[settings.paperSize] ?? "A4";
 
+    if (!window.desktop?.printDocument) {
+      // Browser preview: print the captured pages through a hidden frame so the
+      // chosen sizing and orientation still apply.
+      const ranges = pageRanges;
+      const pages = ranges?.length ? printCapture.images.filter((_, i) => ranges.some((r) => i >= r.from && i <= r.to)) : printCapture.images;
+      const dims: Record<string, [number, number]> = { A4: [210, 297], A5: [148, 210], Letter: [215.9, 279.4], Legal: [215.9, 355.6] };
+      const [pw, ph] = dims[paperSize] ?? dims.A4;
+      const landscape = settings.orientation === "landscape";
+      const [w, h] = landscape ? [ph, pw] : [pw, ph];
+      const [sw, sh] = printCapture.size;
+      const k = settings.sizing === "custom" ? scale / 100 : 1;
+      const img = (src: string) => settings.sizing === "fit" ? `<img class="fit" src="${src}">` : `<img style="width:${sw * k}mm;height:${sh * k}mm;flex:none" src="${src}">`;
+      const html = `<!doctype html><html><head><style>@page{size:${w}mm ${h}mm;margin:0}html,body{margin:0}.s{width:${w}mm;height:${h}mm;overflow:hidden;display:flex;align-items:${settings.autoCenter ? "center" : "flex-start"};justify-content:${settings.autoCenter ? "center" : "flex-start"};break-after:page}.s:last-child{break-after:auto}img.fit{max-width:100%;max-height:100%;object-fit:contain}${settings.gray ? "img{filter:grayscale(1)}" : ""}</style></head><body>${pages.map((src) => `<section class="s">${img(src)}</section>`).join("")}</body></html>`;
+      const frame = document.createElement("iframe");
+      frame.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0";
+      document.body.append(frame);
+      const doc = frame.contentDocument!;
+      doc.open(); doc.write(html); doc.close();
+      await Promise.all(Array.from(doc.images).map((im) => im.complete ? null : new Promise((r) => { im.onload = im.onerror = r; })));
+      frame.contentWindow!.focus();
+      frame.contentWindow!.print();
+      window.setTimeout(() => frame.remove(), 2000);
+      setPrintOpen(false);
+      return;
+    }
+
     try {
       const printResult = await window.desktop.printDocument({
+        sourceSize: printCapture.size,
         silent: true,
         deviceName: settings.printerName || undefined,
         gray: settings.gray,
@@ -197,6 +221,7 @@ function Index() {
         bookletBinding: settings.bookletBinding,
       });
 
+      if (printResult?.cancelled) return;
       if (!printResult?.success) {
         toast.error(`Print failed: ${printResult?.failureReason || "Windows rejected the print job."}`);
         return;

@@ -1,3 +1,4 @@
+import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Printer, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Settings, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -145,9 +146,22 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
   const paperRatio = PAPER_RATIOS[settings.paperSize] ?? PAPER_RATIOS["A4 21 × 29.7 cm"];
   const sheetRatio = settings.orientation === "landscape" ? 1 / paperRatio : paperRatio;
 
+  const previewImageStyle = useMemo<React.CSSProperties>(() => {
+    const mm: Record<string, [number, number]> = { "A4 21 × 29.7 cm": [210, 297], "A5 14.8 × 21 cm": [148, 210], "Letter 8.5 × 11 in": [215.9, 279.4], "Legal 8.5 × 14 in": [215.9, 355.6] };
+    const [pw, ph] = mm[settings.paperSize] ?? mm["A4 21 × 29.7 cm"];
+    const sheetW = settings.orientation === "landscape" ? ph : pw;
+    const sheetH = settings.orientation === "landscape" ? pw : ph;
+    const [srcW, srcH] = captured?.size ?? [pw, ph];
+    const base: React.CSSProperties = { filter: settings.gray ? "grayscale(1)" : "none", flex: "none" };
+    if (settings.sizing === "fit") return { ...base, ["--img-w" as string]: "100%", ["--img-h" as string]: "100%", objectFit: "contain" } as React.CSSProperties;
+    const k = settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) / 100 : 1;
+    return { ...base, ["--img-w" as string]: `${(srcW * k / sheetW) * 100}%`, ["--img-h" as string]: `${(srcH * k / sheetH) * 100}%`, objectFit: "fill" } as React.CSSProperties;
+  }, [captured?.size, settings.gray, settings.orientation, settings.paperSize, settings.scale, settings.sizing]);
+
   const printerState = useMemo(() => {
+    if (!window.desktop) return "System print dialog";
     const selected = printers.find((p) => p.name === settings.printerName);
-    if (!selected) return "Offline";
+    if (!selected) return printers.length ? "Offline" : "System print dialog";
     if (selected.status === "offline") return "Offline";
     if (selected.status === "printing") return "Printing…";
     return "Ready to print";
@@ -290,19 +304,14 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
           <main className="print-preview-stage print-preview-stage-light">
             <div className="print-preview-toolbar"><span className="print-preview-filename">{fileName}</span><span>{settings.mode === "multiple" ? `${settings.pagesPerSheet} pages / sheet` : settings.mode === "poster" ? "Poster mode" : settings.mode === "booklet" ? "Booklet mode" : "Standard"}</span></div>
             <div className="print-preview-paper-wrap">
-              <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio) }}>
+              <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio), ["--sheet-ratio" as string]: String(sheetRatio) } as React.CSSProperties}>
                 {settings.mode === "size" && image && (
                   <div className="print-preview-page-frame">
                     <img
                       className="print-preview-paper"
                       src={image}
                       alt={paperLabel + " preview"}
-                      style={{
-                        filter: settings.gray ? "grayscale(1)" : "none",
-                        width: `${settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) : settings.sizing === "fit" ? 96 : 100}%`,
-                        height: `${settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) : settings.sizing === "fit" ? 96 : 100}%`,
-                        transform: settings.orientation === "landscape" && settings.autoRotate ? "rotate(90deg)" : "none",
-                      }}
+                      style={previewImageStyle}
                     />
                   </div>
                 )}
@@ -338,7 +347,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
           <span>{settings.paperSize} · {total} page{total === 1 ? "" : "s"} · {settings.mode[0].toUpperCase() + settings.mode.slice(1)}</span>
           <div>
             <Button variant="secondary" type="button" disabled={printing} onClick={onClose}>Cancel</Button>
-            <Button type="button" disabled={printing || !total || printerState === "Offline"} onClick={handlePrint}>
+            <Button type="button" disabled={printing || !total} onClick={handlePrint}>
               {printing ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
               Print
             </Button>
