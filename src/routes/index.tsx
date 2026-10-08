@@ -51,7 +51,6 @@ function Index() {
   const newDocument = useCallback(() => { setActiveId(null); setActiveFolder(""); setDocType("invoice"); setPaperSize("A4"); reset(applyCompanyDetails(createBlankDocumentState(), company)) }, [company, reset]);
   const openDocument = useCallback((entry: SavedDocument) => { setActiveId(entry.id); setActiveFolder(entry.folder); setDocType(entry.docType); setPaperSize(entry.paperSize); reset(entry.state) }, [reset]);
 
-  // Off-screen renderer used to export saved documents without opening them.
   useEffect(() => { if (renderTarget && readyRef.current) { const resolve = readyRef.current; readyRef.current = null; requestAnimationFrame(() => requestAnimationFrame(resolve)) } }, [renderTarget]);
   const captureSaved = useCallback(async (entry: SavedDocument): Promise<CapturedDocument> => {
     await new Promise<void>((resolve) => { readyRef.current = resolve; setRenderTarget(entry) });
@@ -95,7 +94,6 @@ function Index() {
     });
   }, [captureSaved, docType, documents, runExport]);
 
-  // Save Document stores data only — PDFs are produced by the download/export actions.
   const saveRecord = useCallback(async (title: string, folder: string, asCopy: boolean) => {
     const now = Date.now();
     const current = !asCopy ? documents.find((entry) => entry.id === activeId) : undefined;
@@ -130,142 +128,85 @@ function Index() {
   const executePrint = useCallback(async (settings: PrintSettings) => {
     const printRoot = document.getElementById("document-pages");
     
-    // Calculate the scale factor based on sizing selection
-    let scaleFactor = 100;
+    // Calculate scale based on sizing selection
+    let scaleValue = 1;
     if (settings.sizing === "fit") {
-      scaleFactor = 95;
+      scaleValue = 0.95;
     } else if (settings.sizing === "actual") {
-      scaleFactor = 100;
+      scaleValue = 1;
     } else if (settings.sizing === "custom") {
-      scaleFactor = Math.max(10, Math.min(200, settings.scale || 100));
+      scaleValue = Math.min(1.8, Math.max(0.5, (settings.scale || 100) / 100));
     }
 
-    // Apply print settings to the document root
+    // Apply print settings to DOM
+    document.documentElement.style.setProperty("--print-scale", String(scaleValue));
+    document.documentElement.style.setProperty("--print-orientation", settings.orientation);
+
     if (printRoot) {
       printRoot.classList.toggle("print-gray", settings.gray);
-      printRoot.style.setProperty("--print-scale", `${scaleFactor / 100}`);
-      printRoot.style.setProperty("--print-orientation", settings.orientation === "landscape" ? "landscape" : "portrait");
-      printRoot.dataset.printRange = settings.range;
-      printRoot.dataset.printCustomRange = settings.customRange;
-      printRoot.dataset.printOrientation = settings.orientation;
-      printRoot.dataset.printPagesPerSheet = String(settings.pagesPerSheet);
+      printRoot.setAttribute("data-print-orientation", settings.orientation);
+      printRoot.setAttribute("data-print-scale", String(scaleValue));
+      printRoot.style.transform = `scale(${scaleValue})`;
+      printRoot.style.transformOrigin = "top left";
+      printRoot.style.width = `${100 / scaleValue}%`;
     }
 
-    if (window.desktop?.printDocument) {
-      const pageRanges = (() => {
-        if (settings.range === "current") return [{ from: 0, to: 0 }];
-        if (settings.range === "odd" || settings.range === "even") {
-          const wantOdd = settings.range === "odd";
-          const ranges: Array<{ from: number; to: number }> = [];
-          for (let index = 0; index < (printCapture?.images.length ?? 0); index += 1) {
-            if (((index + 1) % 2 === 1) === wantOdd) ranges.push({ from: index, to: index });
-          }
-          return ranges;
+    // Apply CSS media rule for orientation
+    const styleTag = document.createElement("style");
+    const pageSize = ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string,string>)[settings.paperSize] ?? "A4";
+    styleTag.textContent = `
+      @media print {
+        @page {
+          size: ${pageSize} ${settings.orientation};
+          margin: 0;
         }
-        if (settings.range !== "custom") return undefined;
-        return settings.customRange.split(",").flatMap((part) => {
-          const [a, b] = part.trim().split("-").map((value) => Number(value));
-          if (!Number.isFinite(a)) return [];
-          const from = Math.max(0, a - 1);
-          const to = Math.max(from, Number.isFinite(b) ? b - 1 : from);
-          return [{ from, to }];
-        });
-      })();
-
-      try {
-        const success = await window.desktop.printDocument({
-          silent: true,
-          deviceName: settings.printerName || undefined,
-          gray: settings.gray,
-          landscape: settings.orientation === "landscape",
-          sizing: settings.sizing,
-          scaleFactor: scaleFactor,
-          pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
-          copies: settings.copies,
-          pageRanges,
-          duplex: settings.mode === "booklet" ? "shortEdge" : settings.sides === "double" ? "longEdge" : "simplex",
-          paperSize: ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string,string>)[settings.paperSize] ?? "A4",
-          dpi: settings.printAsImage ? settings.dpi : undefined,
-          images: printCapture?.images ?? [],
-          autoRotate: settings.autoRotate,
-          autoCenter: settings.autoCenter,
-          mode: settings.mode,
-          posterTiles: Math.min(4, Math.max(2, Math.ceil(settings.posterScale / 100))) as 2 | 3 | 4,
-          posterScale: settings.posterScale,
-          posterOverlap: settings.posterOverlap,
-          posterCutMarks: settings.posterCutMarks,
-          posterLabels: settings.posterLabels,
-          multiplePageOrder: settings.multiplePageOrder,
-          bookletSubset: settings.bookletSubset,
-          bookletFrom: settings.bookletFrom,
-          bookletTo: settings.bookletTo,
-          bookletBinding: settings.bookletBinding,
-        });
-
-        if (!success) {
-          // Fallback to system print dialog
-          const fallbackSuccess = await window.desktop.printDocument({
-            silent: false,
-            deviceName: settings.printerName || undefined,
-            gray: settings.gray,
-            landscape: settings.orientation === "landscape",
-            sizing: settings.sizing,
-            scaleFactor: scaleFactor,
-            pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
-            copies: settings.copies,
-            pageRanges,
-            duplex: settings.mode === "booklet" ? "shortEdge" : settings.sides === "double" ? "longEdge" : "simplex",
-            paperSize: ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string,string>)[settings.paperSize] ?? "A4",
-            dpi: settings.printAsImage ? settings.dpi : undefined,
-            images: printCapture?.images ?? [],
-            autoRotate: settings.autoRotate,
-            autoCenter: settings.autoCenter,
-            mode: settings.mode,
-            posterTiles: Math.min(4, Math.max(2, Math.ceil(settings.posterScale / 100))) as 2 | 3 | 4,
-          });
-
-          if (!fallbackSuccess) {
-            toast.error("Print could not be started. Check the selected printer status.");
-            return;
-          }
+        html, body {
+          background: white !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
-        toast.success("Print job sent to printer successfully!");
-      } catch (error) {
-        console.error("Desktop print error:", error);
-        toast.error("Print could not be started. Please check your printer.");
+        body.print-gray * {
+          -webkit-filter: grayscale(1) !important;
+          filter: grayscale(1) !important;
+        }
       }
-    } else {
-      // Browser printing
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        
-        if (window.print) {
-          window.print();
-          toast.success("Print dialog opened!");
-        } else {
-          toast.error("Print is not supported in your browser.");
-        }
-      } catch (error) {
-        console.error("Browser print error:", error);
-        toast.error("Print could not be started. Please try again.");
+    `;
+    document.head.appendChild(styleTag);
+
+    try {
+      // Wait for rendering
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      
+      // Trigger browser print
+      if (window.print) {
+        window.print();
+        toast.success("Print dialog opened!");
+      } else {
+        toast.error("Your browser does not support printing.");
       }
+    } catch (error) {
+      console.error("Print error:", error);
+      toast.error("Print could not be started.");
+    } finally {
+      // Cleanup after print
+      setTimeout(() => {
+        document.head.removeChild(styleTag);
+        if (printRoot) {
+          printRoot.classList.remove("print-gray");
+          printRoot.style.transform = "";
+          printRoot.style.transformOrigin = "";
+          printRoot.style.width = "";
+          printRoot.removeAttribute("data-print-orientation");
+          printRoot.removeAttribute("data-print-scale");
+        }
+        document.documentElement.style.removeProperty("--print-scale");
+        document.documentElement.style.removeProperty("--print-orientation");
+        setPrintOpen(false);
+      }, 1000);
     }
-
-    setPrintOpen(false);
-    
-    // Clean up print styles after print completes
-    window.setTimeout(() => {
-      if (printRoot) {
-        printRoot.classList.remove("print-gray");
-        printRoot.style.removeProperty("--print-scale");
-        printRoot.style.removeProperty("--print-orientation");
-        delete printRoot.dataset.printRange;
-        delete printRoot.dataset.printCustomRange;
-        delete printRoot.dataset.printOrientation;
-        delete printRoot.dataset.printPagesPerSheet;
-      }
-    }, 800);
-  }, [printCapture]);
+  }, []);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -340,7 +281,7 @@ function Index() {
   }, [setDocuments, setState]);
 
   return <div className="studio-shell">
-    <style>{`@media print { @page { size: ${paper.page} ${settings?.orientation === 'landscape' ? 'landscape' : 'portrait'}; margin: 0; } }`}</style>
+    <style>{`@media print { @page { size: ${paper.page} portrait; margin: 0; } }`}</style>
     <StartupExperience/>
     <PrintPreview open={printOpen} captured={printCapture} paperLabel={paper.page} fileName={`${DOC_LABELS[docType].replaceAll(" ", "_")}_${state.meta.number || "Untitled"}.pdf`} onClose={() => setPrintOpen(false)} onPaperSizeChange={async (label) => {
               const next = ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string, PaperSizeKey>)[label];
