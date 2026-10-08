@@ -401,14 +401,22 @@ function installIpc() {
       // Basic silent job: only options that are stable across Windows printer
       // drivers. The document HTML/CSS controls paper geometry.
       const printOptions = {
-        silent: Boolean(options.silent),
+        // FINAL SILENT WINDOWS PRINT PATH:
+        // Never open the native Windows print dialog. The user has already
+        // selected the printer in Document Studio.
+        silent: true,
         ...(deviceName ? { deviceName } : {}),
         printBackground: true,
         color: !gray,
         landscape: physicalLandscape,
+        // Our generated HTML applies Fit / Actual / Custom scaling itself.
+        // Keep Chromium's own scale neutral so it cannot apply a second scale.
+        scaleFactor: 100,
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         pageRanges: Array.isArray(options.pageRanges) && options.pageRanges.length ? options.pageRanges : undefined,
-        usePrinterDefaultPageSize: true,
+        pageSize,
+        usePrinterDefaultPageSize: false,
+        margins: { marginType: 'none' },
       };
 
       return await new Promise((resolve) => {
@@ -424,93 +432,30 @@ function installIpc() {
           setTimeout(cleanup, 800);
         };
 
-        const runNativeFallback = () => {
-          if (printWindow.isDestroyed()) {
-            log('Native print fallback skipped because print window was already destroyed.');
-            finish(false);
-            return;
-          }
-
-          const nativeOptions = {
-            silent: false,
-            ...(deviceName ? { deviceName } : {}),
-            printBackground: true,
-            color: !gray,
-            landscape: physicalLandscape,
-            copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-            pageRanges: Array.isArray(options.pageRanges) && options.pageRanges.length ? options.pageRanges : undefined,
-            usePrinterDefaultPageSize: true,
-          };
-
-          log('Silent print failed; opening native Windows print dialog | printer=' + (deviceName || '(default)'));
-          try {
-            printWindow.webContents.print(nativeOptions, (nativeSuccess, nativeFailureReason) => {
-              if (!nativeSuccess) {
-                log('Native Windows print dialog did not submit the job: ' + String(nativeFailureReason || 'unknown'));
-              } else {
-                log('Native Windows print dialog accepted the print job.');
-              }
-              finish(Boolean(nativeSuccess));
-            });
-          } catch (error) {
-            log('Native Windows print fallback threw: ' + error.message);
-            finish(false);
-          }
-        };
-
         try {
           printWindow.webContents.print(printOptions, (success, failureReason) => {
             if (success) {
-              log('Silent print job accepted | printer=' + (deviceName || '(default)'));
+              log('Silent print job accepted | printer=' + (deviceName || '(default)') +
+                ' | paper=' + pageSize +
+                ' | landscape=' + physicalLandscape +
+                ' | requestedScale=' + requestedScale);
               finish(true);
               return;
             }
 
             log('Silent print failed: ' + String(failureReason || 'unknown') +
               ' | printer=' + (deviceName || '(default)') +
+              ' | paper=' + pageSize +
               ' | landscape=' + physicalLandscape +
-              ' | scale=' + requestedScale);
-
-            // IMPORTANT: do not close the hidden print window here. The
-            // previous implementation closed it on the silent failure before
-            // the renderer's fallback could reliably submit a second job.
-            // Fall back in the same main-process print call instead.
-            runNativeFallback();
+              ' | requestedScale=' + requestedScale);
+            // No native dialog. The app must remain a one-click print workflow.
+            finish(false);
           });
         } catch (error) {
           log('Silent print threw: ' + error.message);
-          runNativeFallback();
+          finish(false);
         }
       });;
-    } catch (error) {
-      log('Print preparation failed: ' + error.message);
-      if (!printWindow.isDestroyed()) printWindow.close();
-      if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
-      return false;
-    }
-  });
-  ipcMain.handle('pdf:save-as', async (_event, name, data) => {
-    // PDF Save As is deliberately independent from the Document Studio data root.
-    // The user must remain free to choose Documents, D:, E:, USB storage, etc.
-    // On Windows, pass the initial directory separately from the suggested file
-    // name. This avoids native Save As resolving a non-existent default file as
-    // an invalid path on some installed Windows configurations.
-    const documentsDir = app.getPath('documents');
-    const suggestedName = safePart(name).toLowerCase().endsWith('.pdf') ? safePart(name) : `${safePart(name)}.pdf`;
-    const initialDirectory = fs.existsSync(documentsDir) ? documentsDir : app.getPath('home');
-
-    let result;
-    try {
-      // Give Windows only the filename as the initial value. Passing a full
-      // Documents path here can make the native Save dialog validate the
-      // default target before the user has chosen a location and show
-      // "File not found" even though the folder is writable.
-      result = await dialog.showSaveDialog(win, {
-        title: 'Save PDF',
-        defaultPath: suggestedName,
-        buttonLabel: 'Save',
-        filters: [{ name: 'PDF', extensions: ['pdf'] }],
-      });
     } catch (error) {
       log(`PDF Save dialog retry: ${error.message}`);
       result = await dialog.showSaveDialog(win, {
