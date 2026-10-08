@@ -412,20 +412,76 @@ function installIpc() {
       };
 
       return await new Promise((resolve) => {
-        printWindow.webContents.print(printOptions, (success, failureReason) => {
-          if (!success) {
-            log('Print failed: ' + String(failureReason || 'unknown') +
-              ' | printer=' + (deviceName || '(native dialog)') +
+        let finished = false;
+        const cleanup = () => {
+          if (!printWindow.isDestroyed()) printWindow.close();
+          if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
+        };
+        const finish = (success) => {
+          if (finished) return;
+          finished = true;
+          resolve(Boolean(success));
+          setTimeout(cleanup, 800);
+        };
+
+        const runNativeFallback = () => {
+          if (printWindow.isDestroyed()) {
+            log('Native print fallback skipped because print window was already destroyed.');
+            finish(false);
+            return;
+          }
+
+          const nativeOptions = {
+            silent: false,
+            ...(deviceName ? { deviceName } : {}),
+            printBackground: true,
+            color: !gray,
+            landscape: physicalLandscape,
+            copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+            pageRanges: Array.isArray(options.pageRanges) && options.pageRanges.length ? options.pageRanges : undefined,
+            usePrinterDefaultPageSize: true,
+          };
+
+          log('Silent print failed; opening native Windows print dialog | printer=' + (deviceName || '(default)'));
+          try {
+            printWindow.webContents.print(nativeOptions, (nativeSuccess, nativeFailureReason) => {
+              if (!nativeSuccess) {
+                log('Native Windows print dialog did not submit the job: ' + String(nativeFailureReason || 'unknown'));
+              } else {
+                log('Native Windows print dialog accepted the print job.');
+              }
+              finish(Boolean(nativeSuccess));
+            });
+          } catch (error) {
+            log('Native Windows print fallback threw: ' + error.message);
+            finish(false);
+          }
+        };
+
+        try {
+          printWindow.webContents.print(printOptions, (success, failureReason) => {
+            if (success) {
+              log('Silent print job accepted | printer=' + (deviceName || '(default)'));
+              finish(true);
+              return;
+            }
+
+            log('Silent print failed: ' + String(failureReason || 'unknown') +
+              ' | printer=' + (deviceName || '(default)') +
               ' | landscape=' + physicalLandscape +
               ' | scale=' + requestedScale);
-          }
-          resolve(Boolean(success));
-          setTimeout(() => {
-            if (!printWindow.isDestroyed()) printWindow.close();
-            if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
-          }, 600);
-        });
-      });
+
+            // IMPORTANT: do not close the hidden print window here. The
+            // previous implementation closed it on the silent failure before
+            // the renderer's fallback could reliably submit a second job.
+            // Fall back in the same main-process print call instead.
+            runNativeFallback();
+          });
+        } catch (error) {
+          log('Silent print threw: ' + error.message);
+          runNativeFallback();
+        }
+      });;
     } catch (error) {
       log('Print preparation failed: ' + error.message);
       if (!printWindow.isDestroyed()) printWindow.close();
