@@ -153,9 +153,9 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     const sheetH = settings.orientation === "landscape" ? pw : ph;
     const [srcW, srcH] = captured?.size ?? [pw, ph];
     const base: React.CSSProperties = { filter: settings.gray ? "grayscale(1)" : "none", flex: "none" };
-    if (settings.sizing === "fit") return { ...base, width: "100%", height: "100%", objectFit: "contain", maxWidth: "none", maxHeight: "none" };
+    if (settings.sizing === "fit") return { ...base, ["--img-w" as string]: "100%", ["--img-h" as string]: "100%", objectFit: "contain" } as React.CSSProperties;
     const k = settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) / 100 : 1;
-    return { ...base, width: `${(srcW * k / sheetW) * 100}%`, height: `${(srcH * k / sheetH) * 100}%`, maxWidth: "none", maxHeight: "none" };
+    return { ...base, ["--img-w" as string]: `${(srcW * k / sheetW) * 100}%`, ["--img-h" as string]: `${(srcH * k / sheetH) * 100}%`, objectFit: "fill" } as React.CSSProperties;
   }, [captured?.size, settings.gray, settings.orientation, settings.paperSize, settings.scale, settings.sizing]);
 
   const printerState = useMemo(() => {
