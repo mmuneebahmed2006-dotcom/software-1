@@ -251,17 +251,21 @@ function installIpc() {
         if (mode !== 'size') return '';
         const fit = options.sizing === 'fit';
         const actual = options.sizing === 'actual';
-        // Fit uses a small safety inset. Actual is exactly 100%, and Custom
-        // uses the exact percentage entered by the user.
-        // Fit = the largest page that stays inside the printable sheet.
-        // Actual = exactly 100% of the captured page.
-        // Custom = exactly the percentage entered by the user.
         const safeScale = fit ? 96 : actual ? 100 : Math.min(400, Math.max(10, requestedScale));
-        const rotate = options.autoRotate && physicalLandscape ? 'rotate(90deg)' : 'none';
+
+        // The captured document is in the paper's natural portrait geometry.
+        // For landscape printing we rotate that complete page around its
+        // center after giving it its exact physical dimensions. This prevents
+        // the old percentage-based CSS from shrinking/clipping the page when
+        // the sheet itself is landscape.
+        const scaledW = (paperW * safeScale / 100).toFixed(3);
+        const scaledH = (paperH * safeScale / 100).toFixed(3);
+        const rotate = physicalLandscape ? 'rotate(90deg)' : 'none';
+
         return [
-          'width:' + safeScale + '%',
-          'height:' + safeScale + '%',
-          'object-fit:contain',
+          'width:' + scaledW + 'mm',
+          'height:' + scaledH + 'mm',
+          'object-fit:fill',
           'object-position:center',
           'transform-origin:center center',
           'transform:translate(-50%,-50%) ' + rotate,
@@ -401,60 +405,90 @@ function installIpc() {
       // Basic silent job: only options that are stable across Windows printer
       // drivers. The document HTML/CSS controls paper geometry.
       const printOptions = {
-        // FINAL SILENT WINDOWS PRINT PATH:
-        // Never open the native Windows print dialog. The user has already
-        // selected the printer in Document Studio.
         silent: true,
         ...(deviceName ? { deviceName } : {}),
         printBackground: true,
         color: !gray,
         landscape: physicalLandscape,
-        // Our generated HTML applies Fit / Actual / Custom scaling itself.
-        // Keep Chromium's own scale neutral so it cannot apply a second scale.
-        scaleFactor: 100,
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         pageRanges: Array.isArray(options.pageRanges) && options.pageRanges.length ? options.pageRanges : undefined,
         pageSize,
         usePrinterDefaultPageSize: false,
         margins: { marginType: 'none' },
+        // Electron's print scale is percentage-based. Keep it neutral here;
+        // Fit / Actual / Custom are applied to the document image above.
+        scaleFactor: 100,
       };
 
       return await new Promise((resolve) => {
         let finished = false;
         const cleanup = () => {
           if (!printWindow.isDestroyed()) printWindow.close();
-          if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
+          if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
         };
-        const finish = (success) => {
+        const finish = (result) => {
           if (finished) return;
           finished = true;
-          resolve(Boolean(success));
+          resolve(result);
           setTimeout(cleanup, 800);
         };
 
-        try {
-          printWindow.webContents.print(printOptions, (success, failureReason) => {
-            if (success) {
-              log('Silent print job accepted | printer=' + (deviceName || '(default)') +
+        const submit = (settings, label, allowMinimalRetry = false) => {
+          try {
+            printWindow.webContents.print(settings, (success, failureReason) => {
+              if (success) {
+                log('Print job accepted | printer=' + (deviceName || '(default)') +
+                  ' | mode=' + label +
+                  ' | paper=' + pageSize +
+                  ' | landscape=' + physicalLandscape +
+                  ' | scale=' + requestedScale);
+                finish({ success: true, printer: deviceName, failureReason: '' });
+                return;
+              }
+
+              const reason = String(failureReason || 'Print job failed');
+              log('Print job rejected | printer=' + (deviceName || '(default)') +
+                ' | mode=' + label +
+                ' | reason=' + reason +
                 ' | paper=' + pageSize +
                 ' | landscape=' + physicalLandscape +
-                ' | requestedScale=' + requestedScale);
-              finish(true);
+                ' | scale=' + requestedScale);
+
+              if (allowMinimalRetry) {
+                const minimalOptions = {
+                  silent: true,
+                  ...(deviceName ? { deviceName } : {}),
+                  printBackground: true,
+                  color: !gray,
+                  landscape: physicalLandscape,
+                  copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+                };
+                submit(minimalOptions, 'minimal-driver-options', false);
+                return;
+              }
+
+              finish({ success: false, printer: deviceName, failureReason: reason });
+            });
+          } catch (error) {
+            const reason = String(error?.message || error || 'Print call failed');
+            log('Print call threw | mode=' + label + ' | reason=' + reason);
+            if (allowMinimalRetry) {
+              const minimalOptions = {
+                silent: true,
+                ...(deviceName ? { deviceName } : {}),
+                printBackground: true,
+                color: !gray,
+                landscape: physicalLandscape,
+                copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+              };
+              submit(minimalOptions, 'minimal-driver-options', false);
               return;
             }
+            finish({ success: false, printer: deviceName, failureReason: reason });
+          }
+        };
 
-            log('Silent print failed: ' + String(failureReason || 'unknown') +
-              ' | printer=' + (deviceName || '(default)') +
-              ' | paper=' + pageSize +
-              ' | landscape=' + physicalLandscape +
-              ' | requestedScale=' + requestedScale);
-            // No native dialog. The app must remain a one-click print workflow.
-            finish(false);
-          });
-        } catch (error) {
-          log('Silent print threw: ' + error.message);
-          finish(false);
-        }
+        submit(printOptions, 'full-settings', true);
       });;
     } catch (error) {
       log(`PDF Save dialog retry: ${error.message}`);
