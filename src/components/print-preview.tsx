@@ -291,7 +291,21 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <div className="print-preview-toolbar"><span className="print-preview-filename">{fileName}</span><span>{settings.mode === "multiple" ? `${settings.pagesPerSheet} pages / sheet` : settings.mode === "poster" ? "Poster mode" : settings.mode === "booklet" ? "Booklet mode" : "Standard"}</span></div>
             <div className="print-preview-paper-wrap">
               <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio) }}>
-                {settings.mode === "size" && image && <img className="print-preview-paper" src={image} alt={paperLabel + " preview"} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: settings.autoRotate ? "auto" : "none" }} />}
+                {settings.mode === "size" && image && (
+                  <div className="print-preview-page-frame">
+                    <img
+                      className="print-preview-paper"
+                      src={image}
+                      alt={paperLabel + " preview"}
+                      style={{
+                        filter: settings.gray ? "grayscale(1)" : "none",
+                        width: `${settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) : settings.sizing === "fit" ? 96 : 100}%`,
+                        height: `${settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) : settings.sizing === "fit" ? 96 : 100}%`,
+                        transform: settings.orientation === "landscape" && settings.autoRotate ? "rotate(90deg)" : "none",
+                      }}
+                    />
+                  </div>
+                )}
                 {settings.mode === "poster" && image && (
                   <div className="poster-preview-grid" style={{ width: `${Math.max(100, settings.posterScale)}%`, height: `${Math.max(100, settings.posterScale)}%`, gridTemplateColumns: `repeat(${Math.ceil(settings.posterScale / 100)}, 1fr)` }}>
                     {Array.from({ length: Math.max(1, Math.ceil(settings.posterScale / 100)) ** 2 }, (_, i) => <div className="poster-tile" key={i}><img src={image} alt="" style={{ filter: settings.gray ? "grayscale(1)" : "none" }} /></div>)}
