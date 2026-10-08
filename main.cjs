@@ -147,284 +147,12 @@ function installIpc() {
       const { spawn } = require('child_process');
       const child = spawn('rundll32.exe', ['printui.dll,PrintUIEntry', '/p', '/n', String(deviceName)], { windowsHide: true, stdio: 'ignore' });
       return await new Promise((resolve) => {
-        child.once('error', () => resolve(false));
-        child.once('exit', (code) => resolve(code === 0));
-      });
-    } catch { return false; }
-  });
-  ipcMain.handle('print:document', async (_event, options = {}) => {
-    if (!win || win.isDestroyed()) return false;
-    const pageSize = ['A4', 'A5', 'Letter', 'Legal'].includes(options.paperSize) ? options.paperSize : 'A4';
-    const images = Array.isArray(options.images)
-      ? options.images.filter((src) => typeof src === 'string' && src.startsWith('data:image/'))
-      : [];
-    if (!images.length) return false;
-
-    // All special print modes are imposed here instead of delegating the layout
-    // to the printer driver. That makes Poster, Multiple and Booklet deterministic
-    // on real Windows printers and PDF printers alike.
-    const mode = ['size', 'poster', 'multiple', 'booklet'].includes(options.mode) ? options.mode : 'size';
-    const gray = Boolean(options.gray);
-    const requestedScale = Math.min(400, Math.max(10, Number(options.scaleFactor) || 100));
-    const posterScale = Math.min(400, Math.max(100, Number(options.posterScale) || Number(options.posterTiles) * 100 || 100));
-    const posterTiles = Math.min(4, Math.max(1, Math.ceil(posterScale / 100)));
-    const posterOverlap = Math.min(10, Math.max(0, Number(options.posterOverlap) || 0));
-    const multipleCount = [2, 4, 6, 9, 16].includes(Number(options.pagesPerSheet)) ? Number(options.pagesPerSheet) : 4;
-    const multipleOrder = ["horizontal", "horizontal-reversed", "vertical", "vertical-reversed"].includes(options.multiplePageOrder) ? options.multiplePageOrder : "horizontal";
-
-    const selectedImages = (() => {
-      const ranges = Array.isArray(options.pageRanges) ? options.pageRanges : null;
-      if (!ranges?.length) return images;
-      const indexes = [];
-      for (const range of ranges) {
-        const from = Math.max(0, Number(range.from) || 0);
-        const to = Math.min(images.length - 1, Math.max(from, Number(range.to) || from));
-        for (let index = from; index <= to; index += 1) indexes.push(index);
-      }
-      return [...new Set(indexes)].sort((a, b) => a - b).map((index) => images[index]).filter(Boolean);
-    })();
-    if (!selectedImages.length) return false;
-
-    const gridSpec = (count) => {
-      if (count === 2) return { columns: 2, rows: 1 };
-      if (count === 4) return { columns: 2, rows: 2 };
-      if (count === 6) return { columns: 3, rows: 2 };
-      if (count === 9) return { columns: 3, rows: 3 };
-      return { columns: 4, rows: 4 };
-    };
-
-    const orderedMultipleImages = (() => {
-      if (multipleOrder === "horizontal") return selectedImages;
-      const { columns, rows } = gridSpec(multipleCount);
-      const ordered = [];
-      const cells = Math.ceil(selectedImages.length / multipleCount);
-      for (let sheet = 0; sheet < cells; sheet += 1) {
-        const chunk = selectedImages.slice(sheet * multipleCount, sheet * multipleCount + multipleCount);
-        const indices = [];
-        for (let row = 0; row < rows; row += 1) {
-          for (let col = 0; col < columns; col += 1) {
-            let r = row;
-            let c = col;
-            if (multipleOrder === "horizontal-reversed") c = columns - 1 - col;
-            if (multipleOrder === "vertical") [r, c] = [col % rows, Math.floor(col / rows)];
-            if (multipleOrder === "vertical-reversed") [r, c] = [rows - 1 - (col % rows), Math.floor(col / rows)];
-            const index = r * columns + c;
-            if (index < chunk.length) indices.push(index);
-          }
-        }
-        for (const index of indices) ordered.push(chunk[index]);
-      }
-      return ordered;
-    })();
-
-    const pageMarkup = (src, className = '', extra = '') =>
-      src
-        ? '<img class="' + className + '" src="' + src.replace(/"/g, '&quot;') + '" ' + extra + '>'
-        : '<div class="' + className + ' blank-page"></div>';
-
-    const printWindow = new BrowserWindow({
-      show: false,
-      width: 1200,
-      height: 1000,
-      webPreferences: { sandbox: true },
-    });
-
-    let tempDir = '';
-    try {
-      const isBooklet = mode === 'booklet';
-      const physicalLandscape = isBooklet ? true : Boolean(options.landscape);
-      const PAPER_MM = {
-        A4: [210, 297],
-        A5: [148, 210],
-        Letter: [215.9, 279.4],
-        Legal: [215.9, 355.6],
-      };
-      const [paperW, paperH] = PAPER_MM[pageSize] || PAPER_MM.A4;
-      const paperWidth = (physicalLandscape ? paperH : paperW) + 'mm';
-      const paperHeight = (physicalLandscape ? paperW : paperH) + 'mm';
-
-      // Keep the complete captured document inside the printer's printable
-      // area. The PDF/capture itself remains edge-to-edge; only physical
-      // printer output gets a small safety inset so the top accent and bottom
-      // footer bar are not clipped by non-borderless printer margins.
-      const normalImageStyle = (() => {
-        if (mode !== 'size') return '';
-        const fit = options.sizing === 'fit';
-        const actual = options.sizing === 'actual';
-        const safeScale = fit ? 96 : actual ? 100 : Math.min(400, Math.max(10, requestedScale));
-
-        // The captured document is in the paper's natural portrait geometry.
-        // For landscape printing we rotate that complete page around its
-        // center after giving it its exact physical dimensions. This prevents
-        // the old percentage-based CSS from shrinking/clipping the page when
-        // the sheet itself is landscape.
-        const scaledW = (paperW * safeScale / 100).toFixed(3);
-        const scaledH = (paperH * safeScale / 100).toFixed(3);
-        const rotate = physicalLandscape ? 'rotate(90deg)' : 'none';
-
-        return [
-          'width:' + scaledW + 'mm',
-          'height:' + scaledH + 'mm',
-          'object-fit:fill',
-          'object-position:center',
-          'transform-origin:center center',
-          'transform:translate(-50%,-50%) ' + rotate,
-          'filter:' + (gray ? 'grayscale(1)' : 'none'),
-        ].join(';');
-      })();
-
-      let sheets = [];
-      if (mode === 'size') {
-        sheets = selectedImages.map((src) =>
-          '<section class="sheet size-sheet">' +
-          pageMarkup(src, 'document-image', 'style="' + normalImageStyle + '"') +
-          '</section>'
-        );
-      } else if (mode === 'multiple') {
-        const { columns, rows } = gridSpec(multipleCount);
-        const cells = Math.ceil(selectedImages.length / multipleCount);
-        for (let sheet = 0; sheet < cells; sheet += 1) {
-          const chunk = orderedMultipleImages.slice(sheet * multipleCount, sheet * multipleCount + multipleCount);
-          const items = Array.from({ length: multipleCount }, (_, i) =>
-            '<div class="multiple-cell">' +
-            (chunk[i] ? pageMarkup(chunk[i], 'multiple-image') : '') +
-            '</div>'
-          ).join('');
-          sheets.push('<section class="sheet multiple-sheet" style="--cols:' + columns + ';--rows:' + rows + '">' + items + '</section>');
-        }
-      } else if (mode === 'poster') {
-        const tileCount = posterTiles;
-        for (const src of selectedImages) {
-          for (let row = 0; row < tileCount; row += 1) {
-            for (let col = 0; col < tileCount; col += 1) {
-              const overlapPercent = posterOverlap > 0 ? Math.min(12, posterOverlap / 21 * 100) : 0;
-              const offsetX = -(col * (100 - overlapPercent));
-              const offsetY = -(row * (100 - overlapPercent));
-              const extra = 'style="width:' + (tileCount * 100) + '%;height:' + (tileCount * 100) + '%;left:' + offsetX + '%;top:' + offsetY + '%;filter:' + (gray ? 'grayscale(1)' : 'none') + '"';
-              sheets.push(
-                '<section class="sheet poster-sheet">' +
-                pageMarkup(src, 'poster-image', extra) +
-                (options.posterCutMarks ? '<span class="poster-cut-mark poster-cut-top"></span><span class="poster-cut-mark poster-cut-left"></span>' : '') +
-                (options.posterLabels ? '<span class="poster-label">Page ' + (row * tileCount + col + 1) + '</span>' : '') +
-                '</section>'
-              );
-            }
-          }
-        }
-      } else {
-        // True booklet imposition: pad to a multiple of four, then arrange
-        // [last, first] on the front and [second, penultimate] on the back.
-        // The printer only has to perform short-edge duplex; page ordering is
-        // already correct in the generated physical sheets.
-        const padded = [...selectedImages];
-        while (padded.length % 4) padded.push(null);
-        const totalSheets = Math.max(1, Math.ceil(padded.length / 4));
-        const fromSheet = Math.min(totalSheets, Math.max(1, Number(options.bookletFrom) || 1));
-        const toSheet = Math.min(totalSheets, Math.max(fromSheet, Number(options.bookletTo) || totalSheets));
-        const subset = ["both", "front", "back"].includes(options.bookletSubset) ? options.bookletSubset : "both";
-        const binding = options.bookletBinding === "right" ? "right" : "left";
-        for (let sheetIndex = fromSheet - 1; sheetIndex < toSheet; sheetIndex += 1) {
-          const startIndex = sheetIndex * 4;
-          const a = padded[startIndex];
-          const b = padded[startIndex + 1];
-          const c = padded[startIndex + 2];
-          const d = padded[startIndex + 3];
-          let front = [d, a];
-          let back = [b, c];
-          if (binding === "right") {
-            front = [a, d];
-            back = [c, b];
-          }
-          const sides = subset === "front" ? [front] : subset === "back" ? [back] : [front, back];
-          for (const side of sides) {
-            sheets.push(
-              '<section class="sheet booklet-sheet">' +
-              side.map((src) => '<div class="booklet-cell">' + (src ? pageMarkup(src, 'booklet-image') : '') + '</div>').join('') +
-              '</section>'
-            );
-          }
-        }
-      }
-
-      const html = '<!doctype html><html><head><meta charset="utf-8"><style>' +
-        '@page{size:' + pageSize + (physicalLandscape ? ' landscape' : '') + ';margin:0}' +
-        '*{box-sizing:border-box}' +
-        'html,body{margin:0;padding:0;background:#fff;width:100%;height:100%}' +
-        'body{font-size:0}' +
-        '.sheet{position:relative;width:' + paperWidth + ';height:' + paperHeight + ';margin:0;padding:0;overflow:hidden;background:#fff;break-after:page;page-break-after:always}' +
-        '.sheet:last-child{break-after:auto;page-break-after:auto}' +
-        '.document-image{display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:none;max-height:none}' +
-        '.blank-page{width:100%;height:100%;background:#fff}' +
-        '.multiple-sheet{display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);gap:0}' +
-        '.multiple-cell{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff}' +
-        '.multiple-image{display:block;width:100%;height:100%;object-fit:contain;filter:' + (gray ? 'grayscale(1)' : 'none') + '}' +
-        '.poster-sheet{position:relative}' +
-        '.poster-image{position:absolute;display:block;max-width:none;max-height:none;object-fit:fill}' +
-        '.poster-cut-mark{position:absolute;background:#000;z-index:5}' +
-        '.poster-cut-top{left:50%;top:0;width:1px;height:8mm}' +
-        '.poster-cut-left{left:0;top:50%;width:8mm;height:1px}' +
-        '.poster-label{position:absolute;left:4mm;bottom:3mm;font:9px Arial;color:#000;background:#fff;padding:1px 3px;z-index:6}' +
-        '.booklet-sheet{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr}' +
-        '.booklet-cell{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff}' +
-        '.booklet-image{display:block;width:100%;height:100%;object-fit:contain;filter:' + (gray ? 'grayscale(1)' : 'none') + '}' +
-        '</style></head><body>' + sheets.join('') + '</body></html>';
-
-      tempDir = fs.mkdtempSync(path.join(app.getPath('temp'), 'document-studio-print-'));
-      const tempHtml = path.join(tempDir, 'print.html');
-      fs.writeFileSync(tempHtml, html, 'utf8');
-      await printWindow.loadFile(tempHtml);
-      await printWindow.webContents.executeJavaScript(
-        'Promise.all(Array.from(document.images).map((img) => img.complete ? Promise.resolve() : new Promise((resolve) => { img.addEventListener("load", resolve, {once:true}); img.addEventListener("error", resolve, {once:true}); })))'
-      );
-      await new Promise((resolve) => setTimeout(resolve, 250));
-
-      // Use the selected system printer name when doing a silent print.
-      // Electron requires the OS device name, not the friendly display label.
-      const requestedPrinter = typeof options.deviceName === 'string' ? options.deviceName.trim() : '';
-      let availablePrinters = [];
-      try { availablePrinters = await win.webContents.getPrintersAsync(); } catch (error) {
-        log('Electron printer lookup failed: ' + error.message);
-      }
-
-      const requestedLower = requestedPrinter.toLowerCase();
-      const selectedPrinter = requestedPrinter
-        ? availablePrinters.find((printer) =>
-            String(printer.name || '').toLowerCase() === requestedLower ||
-            String(printer.displayName || '').toLowerCase() === requestedLower
-          )
-        : availablePrinters.find((printer) => printer.isDefault) || availablePrinters[0];
-
-      if (options.silent && !selectedPrinter) {
-        log('Silent print aborted: selected printer is not available | requested=' + requestedPrinter);
-        if (!printWindow.isDestroyed()) printWindow.close();
-        if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} }
-        return false;
-      }
-
-      const deviceName = selectedPrinter?.name || '';
-      // Basic silent job: only options that are stable across Windows printer
-      // drivers. The document HTML/CSS controls paper geometry.
-      const printOptions = {
-        silent: true,
-        ...(deviceName ? { deviceName } : {}),
-        printBackground: true,
-        color: !gray,
-        landscape: physicalLandscape,
-        copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-        pageRanges: Array.isArray(options.pageRanges) && options.pageRanges.length ? options.pageRanges : undefined,
-        pageSize,
-        usePrinterDefaultPageSize: false,
-        margins: { marginType: 'none' },
-        // Electron's print scale is percentage-based. Keep it neutral here;
-        // Fit / Actual / Custom are applied to the document image above.
-        scaleFactor: 100,
-      };
-
-      return await new Promise((resolve) => {
         let finished = false;
         const cleanup = () => {
           if (!printWindow.isDestroyed()) printWindow.close();
-          if (tempDir) { try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
+          if (tempDir) {
+            try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
+          }
         };
         const finish = (result) => {
           if (finished) return;
@@ -433,12 +161,20 @@ function installIpc() {
           setTimeout(cleanup, 800);
         };
 
-        const submit = (settings, label, allowMinimalRetry = false) => {
+        const minimalOptions = {
+          silent: true,
+          ...(deviceName ? { deviceName } : {}),
+          printBackground: true,
+          color: !gray,
+          landscape: physicalLandscape,
+          copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+        };
+
+        const submit = (settings, retry) => {
           try {
             printWindow.webContents.print(settings, (success, failureReason) => {
               if (success) {
                 log('Print job accepted | printer=' + (deviceName || '(default)') +
-                  ' | mode=' + label +
                   ' | paper=' + pageSize +
                   ' | landscape=' + physicalLandscape +
                   ' | scale=' + requestedScale);
@@ -446,50 +182,32 @@ function installIpc() {
                 return;
               }
 
-              const reason = String(failureReason || 'Print job failed');
+              const reason = String(failureReason || 'Windows rejected the print job.');
               log('Print job rejected | printer=' + (deviceName || '(default)') +
-                ' | mode=' + label +
                 ' | reason=' + reason +
                 ' | paper=' + pageSize +
                 ' | landscape=' + physicalLandscape +
                 ' | scale=' + requestedScale);
 
-              if (allowMinimalRetry) {
-                const minimalOptions = {
-                  silent: true,
-                  ...(deviceName ? { deviceName } : {}),
-                  printBackground: true,
-                  color: !gray,
-                  landscape: physicalLandscape,
-                  copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-                };
-                submit(minimalOptions, 'minimal-driver-options', false);
-                return;
+              if (retry) {
+                submit(minimalOptions, false);
+              } else {
+                finish({ success: false, printer: deviceName, failureReason: reason });
               }
-
-              finish({ success: false, printer: deviceName, failureReason: reason });
             });
           } catch (error) {
-            const reason = String(error?.message || error || 'Print call failed');
-            log('Print call threw | mode=' + label + ' | reason=' + reason);
-            if (allowMinimalRetry) {
-              const minimalOptions = {
-                silent: true,
-                ...(deviceName ? { deviceName } : {}),
-                printBackground: true,
-                color: !gray,
-                landscape: physicalLandscape,
-                copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-              };
-              submit(minimalOptions, 'minimal-driver-options', false);
-              return;
+            const reason = String(error && error.message ? error.message : error);
+            log('Print call threw | reason=' + reason);
+            if (retry) {
+              submit(minimalOptions, false);
+            } else {
+              finish({ success: false, printer: deviceName, failureReason: reason });
             }
-            finish({ success: false, printer: deviceName, failureReason: reason });
           }
         };
 
-        submit(printOptions, 'full-settings', true);
-      });;
+        submit(printOptions, true);
+      });;;
     } catch (error) {
       log(`PDF Save dialog retry: ${error.message}`);
       result = await dialog.showSaveDialog(win, {
