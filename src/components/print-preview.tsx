@@ -153,7 +153,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     const sheetH = settings.orientation === "landscape" ? pw : ph;
     const [srcW, srcH] = captured?.size ?? [pw, ph];
     const base: React.CSSProperties = { filter: settings.gray ? "grayscale(1)" : "none", flex: "none" };
-    if (settings.sizing === "fit") return { ...base, width: "100%", height: "100%", objectFit: "contain" };
+    if (settings.sizing === "fit") return { ...base, width: "100%", height: "100%", objectFit: "contain", maxWidth: "none", maxHeight: "none" };
     const k = settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) / 100 : 1;
     return { ...base, width: `${(srcW * k / sheetW) * 100}%`, height: `${(srcH * k / sheetH) * 100}%`, maxWidth: "none", maxHeight: "none" };
   }, [captured?.size, settings.gray, settings.orientation, settings.paperSize, settings.scale, settings.sizing]);
@@ -304,7 +304,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
           <main className="print-preview-stage print-preview-stage-light">
             <div className="print-preview-toolbar"><span className="print-preview-filename">{fileName}</span><span>{settings.mode === "multiple" ? `${settings.pagesPerSheet} pages / sheet` : settings.mode === "poster" ? "Poster mode" : settings.mode === "booklet" ? "Booklet mode" : "Standard"}</span></div>
             <div className="print-preview-paper-wrap">
-              <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio) }}>
+              <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio), ["--sheet-ratio" as string]: String(sheetRatio) } as React.CSSProperties}>
                 {settings.mode === "size" && image && (
                   <div className="print-preview-page-frame">
                     <img

@@ -1311,3 +1311,10 @@ html, body { overflow-x: hidden; }
     min-height:500px!important;
   }
 }
+
+/* Print preview: the white sheet follows the chosen paper + orientation, and the
+   page image inside follows Fit / Actual size / Custom scale exactly like the print output. */
+.print-preview-white.print-preview-three-columns .print-preview-paper-wrap{container-type:size}
+.print-preview-white.print-preview-three-columns .print-output-preview.mode-size{width:min(94cqw,calc(94cqh * var(--sheet-ratio,0.707)))!important;height:auto!important;background:#fff!important;box-shadow:0 2px 14px rgb(0 0 0 / .22)!important}
+.print-preview-white.print-preview-three-columns .print-output-preview.mode-size .print-preview-paper{max-width:none!important;max-height:none!important;box-shadow:none!important;transform:none!important}
+.print-preview-white.print-preview-three-columns .print-output-preview.mode-size .print-preview-page-frame{overflow:hidden}
