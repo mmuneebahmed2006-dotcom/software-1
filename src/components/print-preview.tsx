@@ -95,7 +95,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     bookletSubset: "both", bookletFrom: 1, bookletTo: Math.max(1, captured?.images.length || 1),
     bookletBinding: "left",
   });
-  const [printers, setPrinters] = useState<Array<{ name: string; displayName: string; description: string; options: Record<string, string>; status?: "ready" | "offline" | "printing" | "unknown" }>>([]);
+  const [printers, setPrinters] = useState<Array<{ name: string; displayName: string; description: string; options: Record<string, string>; status?: "ready" | "offline" | "printing" | "unknown"; isDefault?: boolean }>>([]);
   const [page, setPage] = useState(0);
   const [printing, setPrinting] = useState(false);
   const images = captured?.images ?? [];
@@ -128,9 +128,6 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   useEffect(() => {
     if (!open) return;
-    // Load printers once when the print window opens. Do not poll Windows
-    // every few seconds: printer enumeration can be expensive on some drivers
-    // and was making the whole app feel slow.
     void loadPrinters();
   }, [open]);
 
@@ -153,8 +150,6 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     if (!selected) return "Offline";
     if (selected.status === "offline") return "Offline";
     if (selected.status === "printing") return "Printing…";
-    // If Windows exposes the installed printer but its driver does not expose
-    // a readable status, the printer is still connected/available.
     return "Ready to print";
   }, [printers, settings.printerName]);
 
@@ -165,7 +160,13 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   const handlePrint = async () => {
     setPrinting(true);
-    try { await onPrint(settings); } finally { setPrinting(false); }
+    try { 
+      await onPrint(settings); 
+    } catch (error) {
+      console.error("Print error:", error);
+    } finally { 
+      setPrinting(false); 
+    }
   };
 
   const selectedMultiple = orderedIndices(settings.pagesPerSheet, settings.multiplePageOrder);
@@ -189,7 +190,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
                 <select aria-label="Printer" value={settings.printerName} onChange={(e) => patch("printerName", e.target.value)}>
                   {printers.length ? printers.map((printer) => <option key={printer.name} value={printer.name}>{printer.displayName || printer.name}</option>) : <option value="">No printer detected</option>}
                 </select>
-                <button type="button" onClick={() => window.desktop?.openPrinterSettings?.(settings.printerName || undefined)} aria-label="Printer settings" title="Printer properties"><Settings size={15} /></button>
+                <button type="button" onClick={() => window.desktop?.openPrinterSettings?.(settings.printerName || undefined)} aria-label="Printer settings" title="Printer properties"><Settings size={16} /></button>
               </div>
               <div className={"print-printer-hint " + (printerState === "Offline" ? "offline" : "")}>{printerState}</div>
             </section>
@@ -205,8 +206,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <section className="print-setting-group print-group-settings">
               <h3>Print Settings</h3>
               <label className="print-select-row"><span>Copies</span><input className="print-number-input" type="number" min={1} max={999} value={settings.copies} onChange={(e) => patch("copies", Math.max(1, Number(e.target.value) || 1))} /></label>
-              <label className="print-select-row"><span>Paper</span><select value={settings.paperSize} onChange={(e) => void handlePaperChange(e.target.value)}>{PAPER_OPTIONS.map(([label]) => <option key={label}>{label}</option>)}</select></label>
-              <label className="print-select-row"><span>Print sides</span><select value={settings.sides} onChange={(e) => patch("sides", e.target.value as PrintSettings["sides"])}><option value="single">Single side</option><option value="double">Double side</option></select></label>
+              <label className="print-select-row"><span>Paper</span><select value={settings.paperSize} onChange={(e) => void handlePaperChange(e.target.value)}>{PAPER_OPTIONS.map(([label]) => <option key={label} value={label}>{label}</option>)}</select></label>
+              <label className="print-select-row"><span>Print sides</span><select value={settings.sides} onChange={(e) => patch("sides", e.target.value as PrintSettings["sides"])}><option value="single">Single</option><option value="double">Double</option></select></label>
             </section>
 
             <section className="print-setting-group print-mode-group print-group-mode">
@@ -223,7 +224,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
                   <div className="print-radio-list">
                     <label><input type="radio" checked={settings.sizing === "fit"} onChange={() => patch("sizing","fit")} /> Fit</label>
                     <label><input type="radio" checked={settings.sizing === "actual"} onChange={() => patch("sizing","actual")} /> Actual size</label>
-                    <label><input type="radio" checked={settings.sizing === "custom"} onChange={() => patch("sizing","custom")} /> Custom scale <input className="print-scale-input" type="number" min={10} max={400} value={settings.scale} disabled={settings.sizing !== "custom"} onChange={(e) => patch("scale", Math.max(10, Math.min(400, Number(e.target.value) || 100)))} />%</label>
+                    <label><input type="radio" checked={settings.sizing === "custom"} onChange={() => patch("sizing","custom")} /> Custom scale <input className="print-scale-input" type="number" min={10} max={200} value={settings.scale} onChange={(e) => patch("scale", Math.max(10, Number(e.target.value) || 100))} />%</label>
                   </div>
                   <label className="print-check"><input type="checkbox" checked={settings.autoRotate} onChange={(e) => patch("autoRotate", e.target.checked)} /> Auto rotate</label>
                   <label className="print-check"><input type="checkbox" checked={settings.autoCenter} onChange={(e) => patch("autoCenter", e.target.checked)} /> Auto center</label>
@@ -232,8 +233,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
               {settings.mode === "poster" && (
                 <div className="print-special-settings">
-                  <label className="print-select-row"><span>Tile scale</span><input className="print-number-input" type="number" min={100} max={400} value={settings.posterScale} onChange={(e) => patch("posterScale", Math.max(100, Math.min(400, Number(e.target.value) || 100)))} /></label>
-                  <label className="print-select-row"><span>Overlap</span><div className="print-unit-input"><input className="print-number-input" type="number" min={0} max={10} step={0.1} value={settings.posterOverlap} onChange={(e) => patch("posterOverlap", Math.max(0, Math.min(10, Number(e.target.value) || 0)))} /><span>cm</span></div></label>
+                  <label className="print-select-row"><span>Tile scale</span><input className="print-number-input" type="number" min={100} max={400} value={settings.posterScale} onChange={(e) => patch("posterScale", Math.max(100, Number(e.target.value) || 100))} />%</label>
+                  <label className="print-select-row"><span>Overlap</span><div className="print-unit-input"><input className="print-number-input" type="number" min={0} max={10} step={0.1} value={settings.posterOverlap} onChange={(e) => patch("posterOverlap", Math.max(0, Number(e.target.value) || 0))} /> mm</div></label>
                   <label className="print-check"><input type="checkbox" checked={settings.posterCutMarks} onChange={(e) => patch("posterCutMarks", e.target.checked)} /> Cut marks</label>
                   <label className="print-check"><input type="checkbox" checked={settings.posterLabels} onChange={(e) => patch("posterLabels", e.target.checked)} /> Labels</label>
                   <label className="print-check"><input type="checkbox" checked={settings.autoRotate} onChange={(e) => patch("autoRotate", e.target.checked)} /> Auto rotate</label>
@@ -243,8 +244,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
               {settings.mode === "multiple" && (
                 <div className="print-special-settings">
-                  <label className="print-select-row"><span>Pages per sheet</span><select value={settings.pagesPerSheet} onChange={(e) => patch("pagesPerSheet", Number(e.target.value) as PrintSettings["pagesPerSheet"])}>{[2,4,6,9,16].map((n) => <option key={n} value={n}>{n}</option>)}</select></label>
-                  <label className="print-select-row"><span>Page order</span><select value={settings.multiplePageOrder} onChange={(e) => patch("multiplePageOrder", e.target.value as PrintSettings["multiplePageOrder"])}><option value="horizontal">Horizontal</option><option value="horizontal-reversed">Horizontal Reversed</option><option value="vertical">Vertical</option><option value="vertical-reversed">Vertical Reversed</option></select></label>
+                  <label className="print-select-row"><span>Pages per sheet</span><select value={settings.pagesPerSheet} onChange={(e) => patch("pagesPerSheet", Number(e.target.value) as PrintSettings["pagesPerSheet"])}><option value={2}>2</option><option value={4}>4</option><option value={6}>6</option><option value={9}>9</option><option value={16}>16</option></select></label>
+                  <label className="print-select-row"><span>Page order</span><select value={settings.multiplePageOrder} onChange={(e) => patch("multiplePageOrder", e.target.value as PrintSettings["multiplePageOrder"])}><option value="horizontal">Left to right</option><option value="horizontal-reversed">Right to left</option><option value="vertical">Top to bottom</option><option value="vertical-reversed">Bottom to top</option></select></label>
                   <label className="print-check"><input type="checkbox" checked={settings.autoRotate} onChange={(e) => patch("autoRotate", e.target.checked)} /> Auto rotate</label>
                   <label className="print-check"><input type="checkbox" checked={settings.autoCenter} onChange={(e) => patch("autoCenter", e.target.checked)} /> Auto center</label>
                 </div>
@@ -252,8 +253,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
               {settings.mode === "booklet" && (
                 <div className="print-special-settings">
-                  <label className="print-select-row"><span>Booklet subset</span><select value={settings.bookletSubset} onChange={(e) => patch("bookletSubset", e.target.value as PrintSettings["bookletSubset"])}><option value="both">Both sides</option><option value="front">Front side only</option><option value="back">Back side only</option></select></label>
-                  <label className="print-select-row"><span>Sheets from</span><div className="print-range-pair"><input type="number" min={1} max={Math.max(1, Math.ceil(total / 4))} value={Math.min(settings.bookletFrom, Math.max(1, Math.ceil(total / 4)))} onChange={(e) => patch("bookletFrom", Math.max(1, Number(e.target.value) || 1))} /><span>to</span><input type="number" min={1} max={Math.max(1, Math.ceil(total / 4))} value={Math.min(settings.bookletTo, Math.max(1, Math.ceil(total / 4)))} onChange={(e) => patch("bookletTo", Math.max(1, Number(e.target.value) || 1))} /></div></label>
+                  <label className="print-select-row"><span>Booklet subset</span><select value={settings.bookletSubset} onChange={(e) => patch("bookletSubset", e.target.value as PrintSettings["bookletSubset"])}><option value="both">Both sides</option><option value="front">Front only</option><option value="back">Back only</option></select></label>
+                  <label className="print-select-row"><span>Sheets from</span><div className="print-range-pair"><input type="number" min={1} max={Math.max(1, Math.ceil(total / 4))} value={Math.min(settings.bookletFrom, Math.ceil(total / 4))} onChange={(e) => patch("bookletFrom", Math.max(1, Number(e.target.value) || 1))} /> to <input type="number" min={1} max={Math.max(1, Math.ceil(total / 4))} value={Math.min(settings.bookletTo, Math.ceil(total / 4))} onChange={(e) => patch("bookletTo", Math.max(1, Number(e.target.value) || 1))} /></div></label>
                   <div className="print-choice-row"><label><input type="radio" checked={settings.bookletBinding === "left"} onChange={() => patch("bookletBinding","left")} /> Left</label><label><input type="radio" checked={settings.bookletBinding === "right"} onChange={() => patch("bookletBinding","right")} /> Right</label></div>
                   <label className="print-check"><input type="checkbox" checked={settings.autoRotate} onChange={(e) => patch("autoRotate", e.target.checked)} /> Auto rotate</label>
                   <label className="print-check"><input type="checkbox" checked={settings.autoCenter} onChange={(e) => patch("autoCenter", e.target.checked)} /> Auto center</label>
@@ -264,8 +265,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <section className="print-setting-group print-group-orientation">
               <h3>Orientation</h3>
               <div className="print-orientation">
-                <button type="button" className={settings.orientation === "portrait" ? "active" : ""} onClick={() => patch("orientation","portrait")}><span className="orientation-icon portrait-icon" /> Portrait</button>
-                <button type="button" className={settings.orientation === "landscape" ? "active" : ""} onClick={() => patch("orientation","landscape")}><span className="orientation-icon landscape-icon" /> Landscape</button>
+                <button type="button" className={settings.orientation === "portrait" ? "active" : ""} onClick={() => patch("orientation","portrait")}><span className="orientation-icon portrait-icon" /></button>
+                <button type="button" className={settings.orientation === "landscape" ? "active" : ""} onClick={() => patch("orientation","landscape")}><span className="orientation-icon landscape-icon" /></button>
               </div>
             </section>
 
@@ -276,29 +277,29 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
                   <label className="print-check" key={range}><input type="radio" checked={settings.range === range} onChange={() => patch("range",range)} /> {label}</label>
                 ))}
               </div>
-              <div className="print-custom-range"><input disabled={settings.range !== "custom"} value={settings.customRange} onChange={(e) => patch("customRange",e.target.value)} placeholder="1-3,5" /><span>/ {total}</span></div>
+              <div className="print-custom-range"><input disabled={settings.range !== "custom"} value={settings.customRange} onChange={(e) => patch("customRange",e.target.value)} placeholder="1-3, 5" /></div>
             </section>
 
             <section className="print-setting-group print-group-quality">
               <h3>Output quality</h3>
               <label className="print-check"><input type="checkbox" checked={settings.printAsImage} onChange={(e) => patch("printAsImage", e.target.checked)} /> Print as image</label>
-              <label className="print-select-row"><span>DPI</span><select value={settings.dpi} disabled={!settings.printAsImage} onChange={(e) => patch("dpi", Number(e.target.value) as PrintSettings["dpi"])}><option value={150}>150 dpi</option><option value={300}>300 dpi</option><option value={600}>600 dpi</option></select></label>
+              <label className="print-select-row"><span>DPI</span><select value={settings.dpi} disabled={!settings.printAsImage} onChange={(e) => patch("dpi", Number(e.target.value) as PrintSettings["dpi"])}><option value={150}>150 DPI</option><option value={300}>300 DPI</option><option value={600}>600 DPI</option></select></label>
             </section>
           </aside>
 
           <main className="print-preview-stage print-preview-stage-light">
-            <div className="print-preview-toolbar"><span className="print-preview-filename">{fileName}</span><span>{settings.mode === "multiple" ? `${settings.pagesPerSheet} pages / sheet` : settings.mode === "poster" ? `Poster ${settings.posterScale}%` : settings.mode === "booklet" ? "Booklet · 2-up" : settings.orientation === "landscape" ? "Landscape" : "Portrait"}</span></div>
+            <div className="print-preview-toolbar"><span className="print-preview-filename">{fileName}</span><span>{settings.mode === "multiple" ? `${settings.pagesPerSheet} pages / sheet` : settings.mode === "poster" ? "Poster mode" : settings.mode === "booklet" ? "Booklet mode" : "Standard"}</span></div>
             <div className="print-preview-paper-wrap">
               <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio) }}>
-                {settings.mode === "size" && image && <img className="print-preview-paper" src={image} alt={paperLabel + " preview"} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: `scale(${settings.sizing === "custom" ? settings.scale / 100 : settings.sizing === "actual" ? 1 : 0.94}) rotate(${settings.orientation === "landscape" && settings.autoRotate ? 90 : 0}deg)`, objectFit: "contain" }} />}
+                {settings.mode === "size" && image && <img className="print-preview-paper" src={image} alt={paperLabel + " preview"} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: settings.autoRotate ? "auto" : "none" }} />}
                 {settings.mode === "poster" && image && (
-                  <div className="poster-preview-grid" style={{ width: `${Math.max(100, settings.posterScale)}%`, height: `${Math.max(100, settings.posterScale)}%`, gridTemplateColumns: `repeat(${Math.max(1, Math.ceil(settings.posterScale / 100))}, 1fr)`, gridTemplateRows: `repeat(${Math.max(1, Math.ceil(settings.posterScale / 100))}, 1fr)`, transform: settings.autoCenter ? "translate(0,0)" : "translate(-5%,-5%)" }}>
-                    {Array.from({ length: Math.max(1, Math.ceil(settings.posterScale / 100)) ** 2 }, (_, i) => <div className="poster-tile" key={i}><img src={image} alt="" style={{ filter: settings.gray ? "grayscale(1)" : "none", width: `${Math.max(100, settings.posterScale)}%`, height: `${Math.max(100, settings.posterScale)}%`, objectFit: "fill", transform: `translate(${-((i % Math.max(1, Math.ceil(settings.posterScale / 100))) * 100)}%,${-(Math.floor(i / Math.max(1, Math.ceil(settings.posterScale / 100))) * 100)}%)` }} /></div>)}
+                  <div className="poster-preview-grid" style={{ width: `${Math.max(100, settings.posterScale)}%`, height: `${Math.max(100, settings.posterScale)}%`, gridTemplateColumns: `repeat(${Math.ceil(settings.posterScale / 100)}, 1fr)` }}>
+                    {Array.from({ length: Math.max(1, Math.ceil(settings.posterScale / 100)) ** 2 }, (_, i) => <div className="poster-tile" key={i}><img src={image} alt="" style={{ filter: settings.gray ? "grayscale(1)" : "none" }} /></div>)}
                   </div>
                 )}
                 {settings.mode === "multiple" && (
                   <div className="multiple-preview-grid" style={{ gridTemplateColumns: `repeat(${gridSpec(settings.pagesPerSheet).columns}, 1fr)`, gridTemplateRows: `repeat(${gridSpec(settings.pagesPerSheet).rows}, 1fr)` }}>
-                    {selectedMultiple.map((index) => <div className="multiple-preview-cell" key={index}>{images[index] && <img src={images[index]} alt={`Page ${index + 1}`} style={{ filter: settings.gray ? "grayscale(1)" : "none", transform: settings.autoRotate ? "rotate(0deg)" : "none" }} />}</div>)}
+                    {selectedMultiple.map((index) => <div className="multiple-preview-cell" key={index}>{images[index] && <img src={images[index]} alt={`Page ${index + 1}`} style={{ filter: settings.gray ? "grayscale(1)" : "none" }} />}</div>)}
                   </div>
                 )}
                 {settings.mode === "booklet" && (
@@ -321,7 +322,13 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
         <footer className="print-preview-footer print-preview-white-footer">
           <span>{settings.paperSize} · {total} page{total === 1 ? "" : "s"} · {settings.mode[0].toUpperCase() + settings.mode.slice(1)}</span>
-          <div><Button variant="secondary" type="button" disabled={printing} onClick={onClose}>Cancel</Button><Button type="button" disabled={printing || !total || printerState === "Offline"} onClick={() => void handlePrint()}>{printing ? <><Loader2 size={16} className="animate-spin"/> Printing…</> : <><Printer size={16}/> Print</>}</Button></div>
+          <div>
+            <Button variant="secondary" type="button" disabled={printing} onClick={onClose}>Cancel</Button>
+            <Button type="button" disabled={printing || !total || printerState === "Offline"} onClick={handlePrint}>
+              {printing ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
+              Print
+            </Button>
+          </div>
         </footer>
       </div>
     </div>
