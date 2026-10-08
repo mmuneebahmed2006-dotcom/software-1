@@ -21,7 +21,7 @@ const PAPER_ORDER: PaperSizeKey[] = ["A4", "A5", "Letter", "Legal"];
 const noopSetState: Dispatch<SetStateAction<DocState>> = () => {};
 const styleFor = (size: PaperSizeKey) => ({ "--paper-width": PAPER_SIZES[size].width, "--paper-height": PAPER_SIZES[size].height, "--paper-scale": PAPER_SIZES[size].scale } as CSSProperties);
 
-export const Route = createFileRoute("/")({ head: () => ({ meta: [{ title: "Document Studio | 8 Ways Communications" }, { name: "description", content: "Create and manage print-ready invoices, quotations, delivery challans, and sales tax invoices." }, { property: "og:title", content: "Document Studio | 8 Ways Communications" }, { property: "og:description", content: "Create and manage professional print-ready business documents." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Index });
+export const Route = createFileRoute("/")({ head: () => ({ meta: [{ title: "Document Studio | 8 Ways Communications" }, { name: "description", content: "Create and manage print-ready invoices, quotations, and delivery challans." }] }), component: Index });
 
 function Index() {
   const [docType, setDocType] = useState<DocType>("invoice");
@@ -195,7 +195,7 @@ function Index() {
           gray: settings.gray,
           landscape: settings.orientation === "landscape",
           sizing: settings.sizing,
-        scaleFactor: settings.sizing === "custom" ? settings.scale : settings.sizing === "fit" ? 95 : 100,
+          scaleFactor: settings.sizing === "custom" ? settings.scale : settings.sizing === "fit" ? 95 : 100,
           pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
           copies: settings.copies,
           pageRanges,
@@ -214,7 +214,23 @@ function Index() {
         }
       }
     } else {
-      window.setTimeout(() => window.print(), 80);
+      // Browser printing: ensure dialog appears by using a cleaner approach
+      try {
+        // Wait for all rendering to complete
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        
+        // Trigger the browser print dialog
+        if (window.print) {
+          window.print();
+        } else {
+          toast.error("Print is not supported in your browser.");
+          return;
+        }
+      } catch (error) {
+        console.error("Print error:", error);
+        toast.error("Print could not be started. Please try again.");
+        return;
+      }
     }
     setPrintOpen(false);
     window.setTimeout(() => {
@@ -262,7 +278,7 @@ function Index() {
     setActiveFolder(clean);
     storeFolders(window.desktop ? await window.desktop.createFolder(docType, clean) : [...new Set([...folders, clean])]);
     setFolderOpen(false); setFolderName("");
-    toast.success(`Folder “${clean}” created and selected.`);
+    toast.success(`Folder "${clean}" created and selected.`);
   }, [docType, folderName, folders, storeFolders]);
 
   const renameFolder = useCallback(async (from: string, to: string) => {
@@ -270,14 +286,14 @@ function Index() {
     storeFolders(window.desktop && window.desktop.renameFolder ? await window.desktop.renameFolder(docType, from, to) : [...new Set(folders.map((entry) => entry === from ? to : entry))]);
     setDocuments((list) => list.map((entry) => entry.docType === docType && entry.folder === from ? { ...entry, folder: to } : entry));
     if (activeFolder === from) setActiveFolder(to);
-    toast.success(`Folder renamed to “${to}”.`);
+    toast.success(`Folder renamed to "${to}".`);
   }, [activeFolder, docType, folders, setDocuments, storeFolders]);
 
   const deleteFolder = useCallback(async (folder: string) => {
     if (window.desktop?.deleteFolder) { storeFolders(await window.desktop.deleteFolder(docType, folder)); setDocuments(await window.desktop.listDocuments()) }
     else { storeFolders(folders.filter((entry) => entry !== folder)); setDocuments((list) => list.filter((entry) => !(entry.docType === docType && entry.folder === folder))) }
     if (activeFolder === folder) setActiveFolder("");
-    toast.success(`Folder “${folder}” deleted.`);
+    toast.success(`Folder "${folder}" deleted.`);
   }, [activeFolder, docType, folders, setDocuments, storeFolders]);
 
   const renameDocument = useCallback(async (id: string, title: string) => {
@@ -296,8 +312,8 @@ function Index() {
 
   const saveCompany = useCallback(async (details: CompanyDetails, scope: CompanyScope) => {
     if (scope === "current" || scope === "all") setState((current) => applyCompanyDetails(current, details));
-    if (scope === "future" || scope === "all") { setCompany(details); if (window.desktop) await window.desktop.saveCompanyDetails(details); else window.localStorage.setItem("8wc-company-details", JSON.stringify(details)) }
-    if (scope === "previous" || scope === "all") { if (window.desktop) setDocuments(await window.desktop.updatePreviousCompanyDetails(details)); else setDocuments((list) => list.map((entry) => ({ ...entry, state: applyCompanyDetails(entry.state, details), updatedAt: Date.now() }))) }
+    if (scope === "future" || scope === "all") { setCompany(details); if (window.desktop) await window.desktop.saveCompanyDetails(details); else window.localStorage.setItem("8wc-company-details", JSON.stringify(details)); }
+    if (scope === "previous" || scope === "all") { if (window.desktop) setDocuments(await window.desktop.updatePreviousCompanyDetails(details)); else setDocuments((list) => list.map((entry) => ({ ...entry, state: applyCompanyDetails(entry.state, details) }))); }
     toast.success("Company details applied.");
   }, [setDocuments, setState]);
 
@@ -311,17 +327,17 @@ function Index() {
               await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
               try { setPrintCapture(await capturePages(document.getElementById("document-pages") ?? document, next)); } catch {}
             }} onPrint={executePrint}/>
-    <SaveDocumentDialog open={saveOpen} title={saveTitle} folder={saveFolder} folders={folders} onTitle={setSaveTitle} onFolder={setSaveFolder} onCancel={() => setSaveOpen(false)} onSave={() => { setSaveOpen(false); void saveRecord(saveTitle.trim(), saveFolder, true) }}/>
+    <SaveDocumentDialog open={saveOpen} title={saveTitle} folder={saveFolder} folders={folders} onTitle={setSaveTitle} onFolder={setSaveFolder} onCancel={() => setSaveOpen(false)} onSave={() => { void saveRecord(saveTitle, saveFolder, false); setSaveOpen(false); }}/>
     <NewFolderDialog open={folderOpen} value={folderName} category={DOC_LABELS[docType]} onValue={setFolderName} onCancel={() => setFolderOpen(false)} onCreate={() => void createFolder()}/>
-    <SavedDocumentsSidebar documents={documents} docType={docType} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onRename={renameDocument} onDelete={deleteDocument} onCreateFolder={() => setFolderOpen(true)} onRenameFolder={renameFolder} onDeleteFolder={deleteFolder} onDownloadFolder={downloadFolder} onDownloadDocument={downloadSaved}/>
+    <SavedDocumentsSidebar documents={documents} docType={docType} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onDownload={downloadSaved} onDownloadFolder={downloadFolder} onRename={renameDocument} onDelete={deleteDocument}/>
     <div className="studio-main">
       <header className="no-print toolbar"><div className="toolbar-inner">
         <div className="studio-brand"><FileText size={19}/><span>Document Studio</span></div>
         <div className="toolbar-actions">
-          <label className="select-control"><span>Choose Document</span><select value={docType} onChange={(event) => { setDocType(event.target.value as DocType); setActiveFolder("") }} aria-label="Choose Document">{DOC_ORDER.map((type) => <option key={type} value={type}>{DOC_LABELS[type]}</option>)}</select></label>
-          <label className="select-control"><span>Currency</span><select value={state.currency} onChange={(event) => setState((current) => ({ ...current, currency: event.target.value }))} aria-label="Currency">{CURRENCIES.map((currency) => <option key={currency} value={currency}>{currency.trim()}</option>)}</select></label>
-          <label className="select-control"><span>Paper</span><select value={paperSize} onChange={(event) => setPaperSize(event.target.value as PaperSizeKey)} aria-label="Paper size">{PAPER_ORDER.map((size) => <option key={size}>{size}</option>)}</select></label>
-          <label className="select-control"><span>Add Custom Pages</span><input type="number" min={1} max={99} value={state.minimumPages} onChange={(event) => setState((current) => ({ ...current, minimumPages: Math.min(99, Math.max(1, event.target.valueAsNumber || 1)) }))} aria-label="Minimum custom pages"/></label>
+          <label className="select-control"><span>Choose Document</span><select value={docType} onChange={(event) => { setDocType(event.target.value as DocType); setActiveFolder("") }} aria-label="Document type">{DOC_ORDER.map((dt) => <option key={dt} value={dt}>{DOC_LABELS[dt]}</option>)}</select></label>
+          <label className="select-control"><span>Currency</span><select value={state.currency} onChange={(event) => setState((current) => ({ ...current, currency: event.target.value }))} aria-label="Currency">{CURRENCIES.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <label className="select-control"><span>Paper</span><select value={paperSize} onChange={(event) => setPaperSize(event.target.value as PaperSizeKey)} aria-label="Paper size">{PAPER_ORDER.map((size) => { const spec = PAPER_SIZES[size]; return <option key={size} value={size}>{spec.page}</option> })}</select></label>
+          <label className="select-control"><span>Add Custom Pages</span><input type="number" min={1} max={99} value={state.minimumPages} onChange={(event) => setState((current) => ({ ...current, minimumPages: Math.max(1, Number(event.target.value) || 1) }))} aria-label="Minimum pages"/></label>
           <Button type="button" variant="secondary" onClick={() => void persist(false)}><Save size={16}/> Save Document</Button>
           {activeId && <Button type="button" variant="secondary" onClick={() => void persist(true)}><CopyPlus size={16}/> Save As…</Button>}
           <CompanyDetailsDialog details={companyFromState(state)} onSave={saveCompany}/>
