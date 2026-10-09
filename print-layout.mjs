@@ -45,8 +45,11 @@ function gridOrder(count,order) {
   return {cols,rows,positions};
 }
 function bookletSheets(images,subset,from,to,binding) {
-  const count=Math.ceil(images.length/4), first=Math.max(1,Math.min(count||1,Math.floor(Number(from)||1)));
-  const last=Math.max(first,Math.min(count||1,Math.floor(Number(to)||count||1)));
+  const count=Math.ceil(images.length/4);
+  if(!count) return [];
+  const requestedFrom=Math.floor(Number(from)||1), requestedTo=Math.floor(Number(to)||count);
+  if(requestedTo<requestedFrom) return [];
+  const first=Math.max(1,Math.min(count,requestedFrom)), last=Math.max(first,Math.min(count,requestedTo));
   const padded=Array.from({length:count*4},(_,i)=>images[i]||null), result=[];
   for(let s=first-1;s<last;s++) {
     const front=[padded[padded.length-1-2*s],padded[2*s]], back=[padded[2*s+1],padded[padded.length-2-2*s]];
