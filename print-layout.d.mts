@@ -22,6 +22,7 @@ export type PrintLayoutOptions = {
 };
 export const PAPER_MM: Record<string, [number, number]>;
 export function pageRangeIndices(total: number, ranges?: PrintPageRange[] | null): number[];
+export function selectPageRanges(total: number, settings: { range?: string; currentPage?: number; customRange?: string }): PrintPageRange[] | undefined;
 export function gridOrder(count: number, order?: string): { cols: number; rows: number; positions: Array<{ row: number; col: number }> };
 export function bookletSheets(images: Array<string | null>, subset?: string, from?: number, to?: number, binding?: string): Array<{ side: string; pages: Array<string | null> }>;
 export function buildPrintHtml(options: PrintLayoutOptions, images: string[]): string;
