@@ -91,7 +91,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     printAsImage: true, dpi: 300, printerName: "", pagesPerSheet: 2,
     posterScale: 100, posterOverlap: 0, posterCutMarks: false, posterLabels: false,
     multiplePageOrder: "horizontal",
-    bookletSubset: "both", bookletFrom: 1, bookletTo: Math.max(1, captured?.images.length || 1),
+    bookletSubset: "both", bookletFrom: 1, bookletTo: Math.max(1, Math.ceil((captured?.images.length || 1) / 4)),
     bookletBinding: "left",
   });
   const [printers, setPrinters] = useState<Array<{ name: string; displayName: string; description: string; options: Record<string, string>; status?: "ready" | "offline" | "printing" | "unknown"; isDefault?: boolean }>>([]);
@@ -133,7 +133,11 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
   useEffect(() => {
     if (captured?.images.length) {
       setPage((p) => Math.min(p, captured.images.length - 1));
-      setSettings((s) => ({ ...s, bookletTo: Math.max(1, captured.images.length) }));
+      const sheetCount = Math.max(1, Math.ceil(captured.images.length / 4));
+      setSettings((s) => {
+        const bookletFrom = Math.min(s.bookletFrom, sheetCount);
+        return { ...s, bookletFrom, bookletTo: Math.min(sheetCount, Math.max(bookletFrom, s.bookletTo)) };
+      });
     }
   }, [captured?.images.length]);
 
@@ -298,7 +302,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
               {settings.mode === "booklet" && (
                 <div className="print-special-settings">
                   <label className="print-select-row"><span>Booklet subset</span><select value={settings.bookletSubset} onChange={(e) => patch("bookletSubset", e.target.value as PrintSettings["bookletSubset"])}><option value="both">Both sides</option><option value="front">Front only</option><option value="back">Back only</option></select></label>
-                  <label className="print-select-row"><span>Sheets from</span><div className="print-range-pair"><input type="number" min={1} max={Math.max(1, Math.ceil(total / 4))} value={Math.min(settings.bookletFrom, Math.ceil(total / 4))} onChange={(e) => patch("bookletFrom", Math.max(1, Number(e.target.value) || 1))} /> to <input type="number" min={1} max={Math.max(1, Math.ceil(total / 4))} value={Math.min(settings.bookletTo, Math.ceil(total / 4))} onChange={(e) => patch("bookletTo", Math.max(1, Number(e.target.value) || 1))} /></div></label>
+                  <label className="print-select-row"><span>Sheets from</span><div className="print-range-pair"><input type="number" min={1} max={Math.max(1, Math.ceil(total / 4))} value={Math.min(settings.bookletFrom, Math.max(1, Math.ceil(total / 4)))} onChange={(e) => { const next = Math.min(Math.max(1, Math.ceil(total / 4)), Math.max(1, Number(e.target.value) || 1)); setSettings((s) => ({ ...s, bookletFrom: next, bookletTo: Math.max(next, s.bookletTo) })); }} /> to <input type="number" min={1} max={Math.max(1, Math.ceil(total / 4))} value={Math.min(settings.bookletTo, Math.max(1, Math.ceil(total / 4)))} onChange={(e) => { const next = Math.min(Math.max(1, Math.ceil(total / 4)), Math.max(1, Number(e.target.value) || 1)); setSettings((s) => ({ ...s, bookletTo: next, bookletFrom: Math.min(s.bookletFrom, next) })); }} /></div></label>
                   <div className="print-choice-row"><label><input type="radio" checked={settings.bookletBinding === "left"} onChange={() => patch("bookletBinding","left")} /> Left</label><label><input type="radio" checked={settings.bookletBinding === "right"} onChange={() => patch("bookletBinding","right")} /> Right</label></div>
                   <label className="print-check"><input type="checkbox" checked={settings.autoRotate} onChange={(e) => patch("autoRotate", e.target.checked)} /> Auto rotate</label>
                   <label className="print-check"><input type="checkbox" checked={settings.autoCenter} onChange={(e) => patch("autoCenter", e.target.checked)} /> Auto center</label>
