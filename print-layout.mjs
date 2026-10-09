@@ -10,6 +10,27 @@ function pageRangeIndices(total,ranges) {
     .filter(pair=>pair[1]>=pair[0]);
   return Array.from({length:n},(_,i)=>i).filter(i=>valid.some(r=>i>=r[0]&&i<=r[1]));
 }
+function selectPageRanges(total,settings) {
+  const n=Math.max(0,Number(total)||0), mode=settings&&settings.range;
+  if(mode==='current') {
+    if(!n) return [];
+    const index=Math.max(0,Math.min(n-1,Math.floor(Number(settings.currentPage)||0)));
+    return [{from:index,to:index}];
+  }
+  if(mode==='odd'||mode==='even') {
+    const wantOdd=mode==='odd', ranges=[];
+    for(let i=0;i<n;i++) if(((i+1)%2===1)===wantOdd) ranges.push({from:i,to:i});
+    return ranges;
+  }
+  if(mode!=='custom') return undefined;
+  return String(settings.customRange||'').split(',').flatMap(part=>{
+    const match=part.trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/);
+    if(!match) return [];
+    const first=Number(match[1]), last=Number(match[2]||match[1]);
+    if(!Number.isInteger(first)||!Number.isInteger(last)||first<1||last<first||first>n) return [];
+    return [{from:first-1,to:Math.min(n,last)-1}];
+  });
+}
 function gridOrder(count,order) {
   const n=Math.max(1,Math.min(16,Math.floor(Number(count)||1))), cols=Math.ceil(Math.sqrt(n)), rows=Math.ceil(n/cols), positions=[];
   for(let i=0;i<n;i++) {
@@ -88,4 +109,4 @@ function buildPrintHtml(options,images) {
   const css='@page{size:'+W+'mm '+H+'mm;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}.sheet{position:relative;width:'+W+'mm;height:'+H+'mm;overflow:hidden;page-break-after:always;break-after:page;background:#fff}.sheet:last-child{page-break-after:auto;break-after:auto}.pagebox{position:relative;width:var(--bw);height:var(--bh);overflow:hidden;display:flex;align-items:flex-start;justify-content:flex-start}.pagebox.center{align-items:center;justify-content:center}.pagebox img{display:block;max-width:none;max-height:none;object-fit:contain;flex:none}.pagebox img.fit{width:100%!important;height:100%!important;object-fit:contain}.pagebox img.rotated{transform:rotate(90deg);max-width:100%;max-height:100%}.pagebox img.fit.rotated{width:var(--bh)!important;height:var(--bw)!important}.pagebox img.fit.rotated{width:var(--bh)!important;height:var(--bw)!important}.pagebox span{position:absolute;right:1mm;bottom:1mm;font:6pt Arial;color:#555}.grid{display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);padding:5mm;gap:3mm}.cell{min-width:0;min-height:0;overflow:hidden;display:flex;align-items:'+(center?'center':'flex-start')+';justify-content:'+(center?'center':'flex-start')+'}.cell .pagebox{width:100%;height:100%}.spread{padding:5mm}.spread>div{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr}.spread .pagebox{width:100%;height:100%}.spread small{position:absolute;right:2mm;bottom:2mm}.clip{position:absolute;inset:0;overflow:hidden}.clip img{position:absolute;max-width:none;max-height:none;object-fit:fill}.marks{position:absolute;inset:3mm;border:.2mm solid #111;pointer-events:none}.label{position:absolute;left:5mm;bottom:5mm;background:#fff;padding:1mm 2mm;font:8pt Arial}';
   return '<!doctype html><html><head><meta charset="utf-8"><style>'+css+'</style></head><body>'+body+'</body></html>';
 }
-export { PAPER_MM, pageRangeIndices, gridOrder, bookletSheets, buildPrintHtml };
+export { PAPER_MM, pageRangeIndices, selectPageRanges, gridOrder, bookletSheets, buildPrintHtml };
