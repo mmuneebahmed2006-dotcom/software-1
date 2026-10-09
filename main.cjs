@@ -237,17 +237,24 @@ function installIpc() {
         try { const list = await printWindow.webContents.getPrintersAsync(); deviceName = (list.find((p) => p.isDefault) || list[0] || {}).name || ''; } catch {}
       }
       const duplexMode = ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex';
+      // Each generated HTML sheet already has the selected paper dimensions
+      // and its printable-area inset. Keep Electron and the driver on that same
+      // paper and prevent the printer's saved N-up/scaling defaults from shrinking it.
       const base = {
         silent: Boolean(deviceName),
         ...(deviceName ? { deviceName } : {}),
         printBackground: true,
         color: !gray,
         landscape,
+        pageSize,
+        usePrinterDefaultPageSize: false,
+        pagesPerSheet: 1,
+        scaleFactor: 100,
         margins: { marginType: 'none' },
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         ...(options.dpi ? { dpi: { horizontal: Number(options.dpi), vertical: Number(options.dpi) } } : {}),
       };
-      const full = { ...base, pageSize, duplexMode };
+      const full = { ...base, duplexMode };
       const submit = (settings) => new Promise((resolve) => {
         try { printWindow.webContents.print(settings, (success, failureReason) => resolve({ success, failureReason: String(failureReason || '') })); }
         catch (error) { resolve({ success: false, failureReason: String(error && error.message ? error.message : error) }); }
