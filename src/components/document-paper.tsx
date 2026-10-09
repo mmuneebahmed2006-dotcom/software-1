@@ -536,12 +536,16 @@ const DocumentPage = memo(function DocumentPage({
                           align="center"
                         />
                       </td>
-                      <td className="qty-col">
-                        <NumberField value={item.qty} onChange={(value) => updateItem(item.id, { qty: value })} ariaLabel="Quantity" style={numericFieldStyle(item.qty)} />
+                      <td className="qty-col" style={{ textAlign: "center", justifyContent: "center" }}>
+                        <div className="numeric-cell-center">
+                          <NumberField value={item.qty} onChange={(value) => updateItem(item.id, { qty: value })} ariaLabel="Quantity" className="qty-input-field" style={numericFieldStyle(item.qty)} />
+                        </div>
                       </td>
                       {showAmounts && (
-                        <td className="unit-price-col unit-price">
-                          <NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel="Unit price" step={0.01} style={numericFieldStyle(item.rate)} />
+                        <td className="unit-price-col unit-price" style={{ textAlign: "center", justifyContent: "center" }}>
+                          <div className="numeric-cell-center">
+                            <NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel="Unit price" className="unit-price-input-field" step={0.01} style={numericFieldStyle(item.rate)} />
+                          </div>
                         </td>
                       )}
                       {showAmounts && <td className="amount-col line-total" style={{ fontSize: numericTextSize(money((item.qty || 0) * (item.rate || 0), state.currency).length), textAlign: "center" }}>{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
