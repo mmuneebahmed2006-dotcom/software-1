@@ -346,8 +346,8 @@ body.startup-active .document-paper-wrapper {
   .paper {
     box-sizing: border-box !important;
     width: 100% !important; max-width: 100% !important;
-    height: calc(var(--paper-height) - var(--print-margin) - var(--print-margin)) !important;
-    min-height: calc(var(--paper-height) - var(--print-margin) - var(--print-margin)) !important;
+    height: var(--paper-height) !important;
+    min-height: var(--paper-height) !important;
     overflow: visible !important;
     margin: 0 !important;
     break-after: page !important;
@@ -604,8 +604,8 @@ body.startup-active .document-paper-wrapper {
     transform-origin: top left !important;
     width: 100% !important;
     max-width: 100% !important;
-    min-height: calc(var(--paper-height) - var(--print-margin) - var(--print-margin)) !important;
-    height: calc(var(--paper-height) - var(--print-margin) - var(--print-margin)) !important;
+    min-height: var(--paper-height) !important;
+    height: var(--paper-height) !important;
     margin: 0 !important;
   }
 }
