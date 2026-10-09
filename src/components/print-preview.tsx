@@ -148,10 +148,10 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   const previewImageStyle = useMemo<React.CSSProperties>(() => {
     const mm: Record<string, [number, number]> = { "A4 21 × 29.7 cm": [210, 297], "A5 14.8 × 21 cm": [148, 210], "Letter 8.5 × 11 in": [215.9, 279.4], "Legal 8.5 × 14 in": [215.9, 355.6] };
-    const [pw, ph] = mm[settings.paperSize] ?? mm["A4 21 × 29.7 cm"];
+    const [pw, ph] = mm[settings.paperSize] ?? [210, 297];
     const sheetW = settings.orientation === "landscape" ? ph : pw;
     const sheetH = settings.orientation === "landscape" ? pw : ph;
-    const [srcW, srcH] = captured?.size ?? [pw, ph];
+    const [srcW, srcH]: [number, number] = captured?.size ?? [pw, ph];
     const base: React.CSSProperties = { filter: settings.gray ? "grayscale(1)" : "none", flex: "none" };
     if (settings.sizing === "fit") return { ...base, ["--img-w" as string]: "100%", ["--img-h" as string]: "100%", objectFit: "contain" } as React.CSSProperties;
     const k = settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) / 100 : 1;
