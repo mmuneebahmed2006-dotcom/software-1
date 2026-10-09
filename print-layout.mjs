@@ -62,17 +62,21 @@ function bookletSheets(images,subset,from,to,binding) {
 function buildPrintHtml(options,images) {
   const size=PAPER_MM[options.paperSize]||PAPER_MM.A4, pw=size[0], ph=size[1];
   const W=options.landscape?ph:pw, H=options.landscape?pw:ph;
+  const margin=options.paperSize==='A5'?4:6;
+  const pageW=W-2*margin, pageH=H-2*margin;
+  const pageName=options.paperSize==='A5'?'A5':options.paperSize==='Letter'?'letter':options.paperSize==='Legal'?'legal':'A4';
+  const pageOrientation=options.landscape?'landscape':'portrait';
   const src=Array.isArray(options.sourceSize)?options.sourceSize.map(Number):PAPER_MM.A4;
   const sw=Math.max(1,Number.isFinite(src[0])?src[0]:210), sh=Math.max(1,Number.isFinite(src[1])?src[1]:297);
   const mode=['size','poster','multiple','booklet'].includes(options.mode)?options.mode:'size';
-  const center=options.autoCenter!==false, rotate=options.autoRotate!==false, gray=Boolean(options.gray);
+  const center=false, rotate=options.autoRotate!==false, gray=Boolean(options.gray);
   const sizing=['fit','actual','custom','shrink'].includes(options.sizing)?options.sizing:'fit';
   const scale=clamp(options.scaleFactor,10,400,100)/100;
   function pageBox(srcImg,label,bw,bh) {
     if(!srcImg) return '<div class="blank"></div>';
     const turn=rotate&&((sw>sh)!==(bw>bh)), fit=sizing==='fit'||sizing==='shrink', k=sizing==='custom'?scale:1;
     const iw=fit?'100%':(sw*k)+'mm', ih=fit?'100%':(sh*k)+'mm';
-    return '<div class="pagebox'+(center?' center':'')+'" style="--bw:'+bw+'mm;--bh:'+bh+'mm"><img class="'+(fit?'fit ':'')+(turn?'rotated':'')+'" src="'+esc(srcImg)+'" alt="" style="width:'+iw+';height:'+ih+';'+(gray?'filter:grayscale(1);':'')+'"><span>'+esc(label)+'</span></div>';
+    return '<div class="pagebox" style="--bw:'+bw+'mm;--bh:'+bh+'mm"><img class="'+(fit?'fit ':'')+(turn?'rotated':'')+'" src="'+esc(srcImg)+'" alt="" style="width:'+iw+';height:'+ih+';'+(gray?'filter:grayscale(1);':'')+'"><span>'+esc(label)+'</span></div>';
   }
   let body='';
   if(mode==='multiple') {
@@ -81,23 +85,23 @@ function buildPrintHtml(options,images) {
       let cells='';
       for(let slot=0;slot<n;slot++) {
         const pos=spec.positions[slot], im=images[start+slot];
-        cells+='<div class="cell" style="grid-row:'+(pos.row+1)+';grid-column:'+(pos.col+1)+'">'+pageBox(im,im?'Page '+(start+slot+1):'',W/spec.cols,H/spec.rows)+'</div>';
+        cells+='<div class="cell" style="grid-row:'+(pos.row+1)+';grid-column:'+(pos.col+1)+'">'+pageBox(im,im?'Page '+(start+slot+1):'',pageW/spec.cols,pageH/spec.rows)+'</div>';
       }
       body+='<section class="sheet grid" style="--cols:'+spec.cols+';--rows:'+spec.rows+'">'+cells+'</section>';
     }
   } else if(mode==='booklet') {
     const imposed=bookletSheets(images,options.bookletSubset,options.bookletFrom,options.bookletTo,options.bookletBinding);
     imposed.forEach(sheet=>{
-      body+='<section class="sheet spread"><div>'+sheet.pages.map((im,i)=>pageBox(im,im?'Page '+(images.indexOf(im)+1):'',W/2,H)).join('')+'</div><small>'+sheet.side+'</small></section>';
+      body+='<section class="sheet spread"><div>'+sheet.pages.map((im,i)=>pageBox(im,im?'Page '+(images.indexOf(im)+1):'',pageW/2,pageH)).join('')+'</div><small>'+sheet.side+'</small></section>';
     });
   } else if(mode==='poster') {
-    const factor=clamp(options.posterScale,100,400,100)/100, overlap=clamp(options.posterOverlap,0,Math.min(50,Math.min(W,H)-1),0);
-    const stepX=Math.max(1,W-overlap),stepY=Math.max(1,H-overlap);
+    const factor=clamp(options.posterScale,100,400,100)/100, overlap=clamp(options.posterOverlap,0,Math.min(50,Math.min(pageW,pageH)-1),0);
+    const stepX=Math.max(1,pageW-overlap),stepY=Math.max(1,pageH-overlap);
     images.forEach((im,page)=>{
-      const turn=rotate&&((sw>sh)!==(W>H)), rawW=sw*factor, rawH=sh*factor, iw=turn?rawH:rawW, ih=turn?rawW:rawH;
+      const turn=rotate&&((sw>sh)!==(pageW>pageH)), rawW=sw*factor, rawH=sh*factor, iw=turn?rawH:rawW, ih=turn?rawW:rawH;
       const cols=Math.max(1,Math.ceil(Math.max(0,iw-overlap)/stepX)), rows=Math.max(1,Math.ceil(Math.max(0,ih-overlap)/stepY));
-      const offsetX=center?Math.max(0,(cols*W-(cols-1)*overlap-iw)/2):0;
-      const offsetY=center?Math.max(0,(rows*H-(rows-1)*overlap-ih)/2):0;
+      const offsetX=center?Math.max(0,(cols*pageW-(cols-1)*overlap-iw)/2):0;
+      const offsetY=center?Math.max(0,(rows*pageH-(rows-1)*overlap-ih)/2):0;
       for(let row=0;row<rows;row++) for(let col=0;col<cols;col++) {
         const imgLeft=offsetX-col*stepX+(turn?(rawH-rawW)/2:0), imgTop=offsetY-row*stepY+(turn?(rawW-rawH)/2:0);
         body+='<section class="sheet tile"><div class="clip"><img src="'+esc(im)+'" alt="" style="width:'+rawW+'mm;height:'+rawH+'mm;left:'+imgLeft+'mm;top:'+imgTop+'mm;'+(turn?'transform:rotate(90deg);transform-origin:center;':'')+(gray?'filter:grayscale(1);':'')+'"></div>';
@@ -107,9 +111,9 @@ function buildPrintHtml(options,images) {
       }
     });
   } else {
-    images.forEach((im,i)=>{body+='<section class="sheet single">'+pageBox(im,'Page '+(i+1),W,H)+'</section>';});
+    images.forEach((im,i)=>{body+='<section class="sheet single">'+pageBox(im,'Page '+(i+1),pageW,pageH)+'</section>';});
   }
-  const css='@page{size:'+W+'mm '+H+'mm;margin:0}*{box-sizing:border-box}html,body{width:'+W+'mm;margin:0!important;padding:0!important;background:#fff}.sheet{position:relative;box-sizing:border-box;width:'+W+'mm;height:'+H+'mm;max-width:none;overflow:hidden;page-break-after:always;break-after:page;background:#fff}.sheet:last-child{page-break-after:auto;break-after:auto}.pagebox{position:relative;width:var(--bw);height:var(--bh);overflow:hidden;display:flex;align-items:flex-start;justify-content:flex-start}.pagebox.center{align-items:center;justify-content:center}.pagebox img{display:block;max-width:none;max-height:none;object-fit:fill;flex:none}.pagebox img.fit{width:100%!important;height:100%!important;object-fit:fill}.pagebox img.rotated{transform:rotate(90deg);max-width:100%;max-height:100%}.pagebox img.fit.rotated{width:var(--bh)!important;height:var(--bw)!important}.pagebox img.fit.rotated{width:var(--bh)!important;height:var(--bw)!important}.pagebox span{position:absolute;right:1mm;bottom:1mm;font:6pt Arial;color:#555}.grid{display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);padding:5mm;gap:3mm}.cell{min-width:0;min-height:0;overflow:hidden;display:flex;align-items:'+(center?'center':'flex-start')+';justify-content:'+(center?'center':'flex-start')+'}.cell .pagebox{width:100%;height:100%}.spread{padding:5mm}.spread>div{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr}.spread .pagebox{width:100%;height:100%}.spread small{position:absolute;right:2mm;bottom:2mm}.clip{position:absolute;inset:0;overflow:hidden}.clip img{position:absolute;max-width:none;max-height:none;object-fit:fill}.marks{position:absolute;inset:3mm;border:.2mm solid #111;pointer-events:none}.label{position:absolute;left:5mm;bottom:5mm;background:#fff;padding:1mm 2mm;font:8pt Arial}';
+  const css='@page{size:'+pageName+' '+pageOrientation+';margin:'+margin+'mm}*{box-sizing:border-box}html,body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;background:#fff}.sheet{position:relative;display:block;box-sizing:border-box;width:'+pageW+'mm;height:'+pageH+'mm;max-width:100%!important;margin:0!important;padding:0!important;overflow:hidden;page-break-after:always;break-after:page;background:#fff}.sheet:last-child{page-break-after:auto;break-after:auto}.pagebox{position:relative;display:block;width:var(--bw);height:var(--bh);max-width:100%;max-height:100%;margin:0;padding:0;overflow:hidden}.pagebox img{display:block;max-width:none;max-height:none;object-fit:fill;flex:none}.pagebox img.fit{width:100%!important;height:100%!important;object-fit:fill}.pagebox img.rotated{transform:rotate(90deg);max-width:100%;max-height:100%}.pagebox img.fit.rotated{width:var(--bh)!important;height:var(--bw)!important}.pagebox img.fit.rotated{width:var(--bh)!important;height:var(--bw)!important}.pagebox span{position:absolute;right:1mm;bottom:1mm;font:6pt Arial;color:#555}.grid{display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);padding:0;gap:0}.cell{min-width:0;min-height:0;overflow:hidden;display:block;margin:0;padding:0}.cell .pagebox{width:100%;height:100%}.spread{padding:0}.spread>div{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr}.spread .pagebox{width:100%;height:100%}.spread small{position:absolute;right:2mm;bottom:2mm}.clip{position:absolute;inset:0;overflow:hidden}.clip img{position:absolute;max-width:none;max-height:none;object-fit:fill}.marks{position:absolute;inset:3mm;border:.2mm solid #111;pointer-events:none}.label{position:absolute;left:5mm;bottom:5mm;background:#fff;padding:1mm 2mm;font:8pt Arial}';
   return '<!doctype html><html><head><meta charset="utf-8"><style>'+css+'</style></head><body>'+body+'</body></html>';
 }
 export { PAPER_MM, pageRangeIndices, selectPageRanges, gridOrder, bookletSheets, buildPrintHtml };
