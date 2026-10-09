@@ -186,7 +186,7 @@ function Index() {
         copies: settings.copies,
         pageRanges,
         duplex: settings.mode === "booklet"
-          ? "shortEdge"
+          ? settings.bookletSubset === "both" ? "shortEdge" : "simplex"
           : settings.sides === "double" ? "longEdge" : "simplex",
         paperSize,
         dpi: settings.printAsImage ? settings.dpi : undefined,
