@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 interface TextFieldProps {
@@ -112,16 +112,48 @@ interface NumberFieldProps {
 }
 
 export function NumberField({ value, onChange, ariaLabel, className, step = 1, style }: NumberFieldProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [draft, setDraft] = useState(Number.isFinite(value) ? String(value) : "");
+  const lastValue = useRef(value);
+
+  // Keep user-entered text (including a temporarily empty value) while focused.
+  // This avoids React restoring the previous number during Backspace/delete edits.
+  useEffect(() => {
+    if (Object.is(lastValue.current, value)) return;
+    lastValue.current = value;
+    if (document.activeElement !== inputRef.current) {
+      setDraft(Number.isFinite(value) ? String(value) : "");
+    }
+  }, [value]);
+
+  const updateDraft = (next: string) => {
+    if (!/^\\d*\\.?\\d*$/.test(next)) return;
+    setDraft(next);
+    const parsed = next === "" || next === "." ? 0 : Number(next);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      lastValue.current = parsed;
+      onChange(parsed);
+    }
+  };
+
   return (
     <input
-      type="number"
-      min={0}
-      step={step}
-      value={Number.isFinite(value) ? value : ""}
+      ref={inputRef}
+      type="text"
+      inputMode="decimal"
+      value={draft}
       aria-label={ariaLabel}
-      onChange={(event) => onChange(event.target.valueAsNumber)}
-      className={cn("editable w-full border-0 bg-transparent p-0.5 text-right tabular-nums", className)}
+      onChange={(event) => updateDraft(event.target.value)}
+      onBlur={() => {
+        const parsed = draft === "" || draft === "." ? 0 : Number(draft);
+        if (Number.isFinite(parsed) && parsed >= 0) {
+          lastValue.current = parsed;
+          onChange(parsed);
+        }
+      }}
+      className={cn("editable w-full border-0 bg-transparent p-0.5 tabular-nums", className)}
       style={style}
+      data-step={step}
     />
   );
 }
