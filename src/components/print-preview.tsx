@@ -33,6 +33,7 @@ export type PrintSettings = {
   bookletFrom: number;
   bookletTo: number;
   bookletBinding: "left" | "right";
+  currentPage?: number;
 };
 
 type Props = {
@@ -175,7 +176,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
   const handlePrint = async () => {
     setPrinting(true);
     try { 
-      await onPrint(settings); 
+      await onPrint({ ...settings, currentPage: page }); 
     } catch (error) {
       console.error("Print error:", error);
     } finally { 
@@ -286,11 +287,10 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
             <section className="print-setting-group print-group-range">
               <h3>Page range</h3>
-              <div className="print-range-grid print-range-grid-five">
-                {([["current","Current page"],["view","Current view"],["all","All pages"],["odd","Odd pages"],["even","Even pages"],["custom","Custom"]] as const).map(([range,label]) => (
-                  <label className="print-check" key={range}><input type="radio" checked={settings.range === range} onChange={() => patch("range",range)} /> {label}</label>
-                ))}
-              </div>
+              <label className="print-select-row"><span>Pages</span><select value={settings.range} onChange={(e) => patch("range", e.target.value as PrintSettings["range"])} aria-label="Page range">
+                <option value="all">All Pages</option><option value="odd">Odd Pages</option><option value="even">Even Pages</option>
+                <option value="current">Current page</option><option value="view">Current view</option><option value="custom">Custom</option>
+              </select></label>
               <div className="print-custom-range"><input disabled={settings.range !== "custom"} value={settings.customRange} onChange={(e) => patch("customRange",e.target.value)} placeholder="1-3, 5" /></div>
             </section>
 
