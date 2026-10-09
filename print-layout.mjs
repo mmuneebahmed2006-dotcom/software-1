@@ -72,8 +72,10 @@ function buildPrintHtml(options,images) {
     images.forEach((im,page)=>{
       const turn=rotate&&((sw>sh)!==(W>H)), rawW=sw*factor, rawH=sh*factor, iw=turn?rawH:rawW, ih=turn?rawW:rawH;
       const cols=Math.max(1,Math.ceil(Math.max(0,iw-overlap)/stepX)), rows=Math.max(1,Math.ceil(Math.max(0,ih-overlap)/stepY));
+      const offsetX=center?Math.max(0,(cols*W-(cols-1)*overlap-iw)/2):0;
+      const offsetY=center?Math.max(0,(rows*H-(rows-1)*overlap-ih)/2):0;
       for(let row=0;row<rows;row++) for(let col=0;col<cols;col++) {
-        const imgLeft=turn?-col*stepX+(rawH-rawW)/2:-col*stepX, imgTop=turn?-row*stepY+(rawW-rawH)/2:-row*stepY;
+        const imgLeft=offsetX-col*stepX+(turn?(rawH-rawW)/2:0), imgTop=offsetY-row*stepY+(turn?(rawW-rawH)/2:0);
         body+='<section class="sheet tile"><div class="clip"><img src="'+esc(im)+'" alt="" style="width:'+rawW+'mm;height:'+rawH+'mm;left:'+imgLeft+'mm;top:'+imgTop+'mm;'+(turn?'transform:rotate(90deg);transform-origin:center;':'')+(gray?'filter:grayscale(1);':'')+'"></div>';
         if(options.posterCutMarks) body+='<i class="marks"></i>';
         if(options.posterLabels) body+='<small class="label">Page '+(page+1)+' · '+(row+1)+','+(col+1)+' / '+rows+','+cols+'</small>';
