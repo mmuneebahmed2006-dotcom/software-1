@@ -122,7 +122,20 @@ function installIpc() {
   ipcMain.handle('documents:list', () => listStoredDocuments());
   ipcMain.handle('documents:save', (_event, document, pdfData) => saveStoredDocument(document, pdfData));
   ipcMain.handle('documents:rename', (_event, document, title) => { const files = documentPaths(document); if (!fs.existsSync(files.json)) throw new Error('The saved document could not be found.'); const saved = { ...document, title: safePart(title), updatedAt: Date.now(), storagePath: path.relative(dataRoot(), files.json) }; fs.writeFileSync(files.json, JSON.stringify(saved, null, 2)); return saved; });
-  ipcMain.handle('documents:delete', (_event, document) => { const files = documentPaths(document); for (const file of [files.json, files.pdf]) if (fs.existsSync(file)) fs.unlinkSync(file); });
+  ipcMain.handle('documents:delete', async (_event, document) => {
+    let files = documentPaths(document);
+    // A folder move can make an already-open card carry an old storagePath.
+    // Resolve the current record by id before deciding that deletion succeeded.
+    if (!fs.existsSync(files.json)) {
+      const current = listStoredDocuments().find((entry) => entry.id === document?.id);
+      if (!current) throw new Error('The saved document could not be found.');
+      files = documentPaths(current);
+    }
+    await fs.promises.unlink(files.json);
+    try { await fs.promises.unlink(files.pdf); }
+    catch (error) { if (error?.code !== 'ENOENT') throw error; }
+    return true;
+  });
   ipcMain.handle('folders:create', (_event, categoryKey, name) => {
     const category = CATEGORIES[categoryKey];
     const cleanName = String(name ?? '').trim();
