@@ -41,6 +41,10 @@ test('booklet imposes padded outer-to-inner spreads and honors subset and right 
   assert.deepEqual(bookletSheets(['1','2','3'], 'both', 1, 1, 'left'), [
     { side: 'front', pages: [null, '1'] }, { side: 'back', pages: ['2', '3'] },
   ]);
+  assert.deepEqual(bookletSheets(pages, 'back', 2, 2, 'left'), [
+    { side: 'back', pages: ['4', '5'] },
+  ]);
+  assert.deepEqual(bookletSheets(pages, 'both', 2, 1, 'left'), []);
 });
 
 test('print HTML creates poster tiles, ordered multiple grids, booklet spreads, orientation, and labels', () => {
