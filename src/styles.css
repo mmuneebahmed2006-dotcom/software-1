@@ -335,7 +335,22 @@ body.startup-active .document-paper-wrapper {
   .no-print, .saved-sidebar, .toolbar, button { display: none !important; }
   .print-area { margin: 0 !important; padding: 0 !important; overflow: visible !important; background: var(--paper) !important; }
   /* height fix kar dene aur usi ke sath overflow:hidden rakhne se hi neechay wala hissa kat raha tha, is liye height ko min-height bana diya aur overflow visible */
-  .document-pages { display: block !important; }.paper { width: var(--paper-width) !important; height: auto !important; min-height: var(--paper-height) !important; overflow: visible !important; margin: 0 !important; break-after: page !important; page-break-after: always !important; break-inside: avoid !important; page-break-inside: avoid !important; box-shadow: none !important; }.paper:last-child { break-after: auto !important; page-break-after: auto !important; }
+  .document-pages { display: block !important; }
+  .paper {
+    box-sizing: border-box !important;
+    width: var(--paper-width) !important;
+    height: var(--paper-height) !important;
+    min-height: var(--paper-height) !important;
+    max-width: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    break-after: page !important;
+    page-break-after: always !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    box-shadow: none !important;
+  }
+  .paper:last-child { break-after: auto !important; page-break-after: auto !important; }
   .totals { margin-right: 0; }
   input, textarea, select, .editable, .editable:hover, .editable:focus { border: 0 !important; outline: 0 !important; background: transparent !important; box-shadow: none !important; }
   .top-accent { display: block !important; width: 100% !important; height: 10px !important; border-top: 10px solid var(--primary) !important; background: var(--primary) !important; }
@@ -578,10 +593,10 @@ body.startup-active .document-paper-wrapper {
   .paper {
     transform: none !important;
     transform-origin: top left !important;
-    width: calc(var(--paper-width) - 7mm) !important;
-    min-height: calc(var(--paper-height) - 7mm) !important;
-    height: auto !important;
-    margin: 3.5mm auto !important;
+    width: var(--paper-width) !important;
+    min-height: var(--paper-height) !important;
+    height: var(--paper-height) !important;
+    margin: 0 !important;
   }
 }
 
