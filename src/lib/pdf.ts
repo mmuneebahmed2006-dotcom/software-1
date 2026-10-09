@@ -4,7 +4,7 @@ import { PAPER_SIZES, type PaperSizeKey } from "@/lib/document";
 
 export interface CapturedDocument { images: string[]; size: [number, number] }
 
-/** Rasterises every `[data-pdf-page]` element inside `root` at high resolution. */
+/** Rasterises document pages at print-ready resolution without excessive canvas memory use. */
 export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): Promise<CapturedDocument> {
   const elements = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-page]"));
   if (!elements.length) throw new Error("No document pages");
@@ -42,7 +42,7 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): P
       images.push(await toPng(element, {
         width,
         height,
-        pixelRatio: 4,
+        pixelRatio: 2,
         backgroundColor: "white",
         fontEmbedCSS,
         skipFonts: false,
