@@ -1,6 +1,6 @@
 export type PrintPageRange = { from: number; to: number };
 export type PrintLayoutOptions = {
-  paperSize?: "A4" | "A5" | "Letter" | "Legal";
+  paperSize?: string;
   sourceSize?: [number, number];
   landscape?: boolean;
   autoRotate?: boolean;
