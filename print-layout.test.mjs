@@ -1,13 +1,22 @@
 'use strict';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pageRangeIndices, gridOrder, bookletSheets, buildPrintHtml } from './print-layout.mjs';
+import { pageRangeIndices, selectPageRanges, gridOrder, bookletSheets, buildPrintHtml } from './print-layout.mjs';
 
 test('page range filtering uses one-based UI selections converted to zero-based inclusive ranges', () => {
   assert.deepEqual(pageRangeIndices(6, [{ from: 0, to: 0 }, { from: 2, to: 2 }, { from: 4, to: 4 }]), [0, 2, 4]);
   assert.deepEqual(pageRangeIndices(6, [{ from: 1, to: 3 }]), [1, 2, 3]);
   assert.deepEqual(pageRangeIndices(3, [{ from: 9, to: 12 }]), []);
   assert.deepEqual(pageRangeIndices(4, []), [0, 1, 2, 3]);
+});
+
+test('All, odd, even, current, and validated custom page ranges are selected correctly', () => {
+  assert.equal(selectPageRanges(6, { range: 'all' }), undefined);
+  assert.deepEqual(selectPageRanges(6, { range: 'odd' }), [{ from: 0, to: 0 }, { from: 2, to: 2 }, { from: 4, to: 4 }]);
+  assert.deepEqual(selectPageRanges(6, { range: 'even' }), [{ from: 1, to: 1 }, { from: 3, to: 3 }, { from: 5, to: 5 }]);
+  assert.deepEqual(selectPageRanges(6, { range: 'current', currentPage: 99 }), [{ from: 5, to: 5 }]);
+  assert.deepEqual(selectPageRanges(6, { range: 'custom', customRange: '1-3, 5, 99, 3-2, bad, 0' }), [{ from: 0, to: 2 }, { from: 4, to: 4 }]);
+  assert.deepEqual(selectPageRanges(0, { range: 'current', currentPage: 0 }), []);
 });
 
 test('grid order produces distinct horizontal and vertical placement for partial grids', () => {
