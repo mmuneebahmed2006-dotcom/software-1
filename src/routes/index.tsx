@@ -168,7 +168,7 @@ function Index() {
       const ranges = pageRanges;
       const pages = ranges?.length ? printCapture.images.filter((_, i) => ranges.some((r) => i >= r.from && i <= r.to)) : printCapture.images;
       const dims: Record<string, [number, number]> = { A4: [210, 297], A5: [148, 210], Letter: [215.9, 279.4], Legal: [215.9, 355.6] };
-      const [pw, ph] = dims[paperSize] ?? dims.A4;
+      const [pw, ph] = dims[paperSize] ?? [210, 297];
       const landscape = settings.orientation === "landscape";
       const [w, h] = landscape ? [ph, pw] : [pw, ph];
       const [sw, sh] = printCapture.size;
