@@ -277,12 +277,12 @@ function installIpc() {
     const bytes = decodeData(data);
 
     try {
-      fs.mkdirSync(path.dirname(selectedPath), { recursive: true });
-      // Write directly to the user-selected destination. Using a temporary
-      // rename on Windows can make the native Save dialog report "File not found"
-      // when the destination already exists or is on a removable/network drive.
-      fs.writeFileSync(selectedPath, bytes, { flag: 'w' });
-      if (!fs.existsSync(selectedPath)) throw new Error('The PDF file was not created.');
+      // Use async filesystem calls so large PDFs do not block Electron's main
+      // process while the selected destination directory is being prepared.
+      await fs.promises.mkdir(path.dirname(selectedPath), { recursive: true });
+      await fs.promises.writeFile(selectedPath, bytes);
+      const savedFile = await fs.promises.stat(selectedPath);
+      if (!savedFile.isFile() || savedFile.size === 0) throw new Error('The PDF file was not created.');
       return true;
     } catch (error) {
       log(`PDF save failed: ${error.message} | target=${selectedPath}`);
