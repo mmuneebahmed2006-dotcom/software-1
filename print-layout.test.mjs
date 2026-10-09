@@ -46,6 +46,12 @@ test('booklet imposes padded outer-to-inner spreads and honors subset and right 
 test('print HTML creates poster tiles, ordered multiple grids, booklet spreads, orientation, and labels', () => {
   const pages = ['data:image/png;base64,AA==', 'data:image/png;base64,BB==', 'data:image/png;base64,CC=='];
   const base = { paperSize: 'A4', sourceSize: [210, 297], autoCenter: true, autoRotate: true };
+  const rotated = buildPrintHtml({ ...base, mode: 'size', landscape: true, sizing: 'fit' }, pages.slice(0, 1));
+  assert.match(rotated, /class="fit rotated"/);
+  assert.match(rotated, /img\\.fit\\.rotated\\{width:var\\(--bh\\)!important;height:var\\(--bw\\)!important/);
+  const notCentered = buildPrintHtml({ ...base, mode: 'size', autoCenter: false }, pages.slice(0, 1));
+  assert.doesNotMatch(notCentered, /class="pagebox center"/);
+
   const poster = buildPrintHtml({ ...base, mode: 'poster', posterScale: 250, posterOverlap: 10, posterCutMarks: true, posterLabels: true }, pages.slice(0, 1));
   assert.match(poster, /@page\{size:210mm 297mm/);
   assert.match(poster, /class="marks"/);
