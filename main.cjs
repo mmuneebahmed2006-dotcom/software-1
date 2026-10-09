@@ -63,7 +63,17 @@ const withinRoot = (...parts) => { const root = dataRoot(); const target = path.
 const decodeData = (value) => Buffer.from(String(value).replace(/^data:[^;]+;base64,/, ''), 'base64');
 const getServerEntry = () => app.isPackaged ? path.join(process.resourcesPath, 'app-output', 'server', 'index.mjs') : path.join(__dirname, '.output', 'server', 'index.mjs');
 const log = (message) => { try { fs.appendFileSync(path.join(app.getPath('userData'), 'document-generator.log'), `[${new Date().toISOString()}] ${message}\n`); } catch {} };
-function ensureWorkspace(root) { fs.mkdirSync(root, { recursive: true }); Object.values(CATEGORIES).forEach((category) => fs.mkdirSync(path.join(root, category, 'General'), { recursive: true })); fs.mkdirSync(path.join(root, 'AutoBackups'), { recursive: true }); }
+function ensureWorkspace(root) {
+  fs.mkdirSync(root, { recursive: true });
+  for (const category of Object.values(CATEGORIES)) {
+    const categoryPath = path.join(root, category);
+    fs.mkdirSync(categoryPath, { recursive: true });
+    // Remove only an empty legacy default; preserve any user documents inside it.
+    const legacyGeneral = path.join(categoryPath, 'General');
+    try { if (fs.statSync(legacyGeneral).isDirectory() && fs.readdirSync(legacyGeneral).length === 0) fs.rmdirSync(legacyGeneral); } catch {}
+  }
+  fs.mkdirSync(path.join(root, 'AutoBackups'), { recursive: true });
+}
 function walkJson(root) { if (!fs.existsSync(root)) return []; return fs.readdirSync(root, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? walkJson(path.join(root, entry.name)) : entry.name.endsWith('.document.json') ? [path.join(root, entry.name)] : []); }
 function companyPath() { return path.join(dataRoot(), '.document-studio-company.json'); }
 function readCompany() { try { return { ...EMPTY_COMPANY, ...JSON.parse(fs.readFileSync(companyPath(), 'utf8')) }; } catch { return { ...EMPTY_COMPANY }; } }
@@ -113,10 +123,46 @@ function installIpc() {
   ipcMain.handle('documents:save', (_event, document, pdfData) => saveStoredDocument(document, pdfData));
   ipcMain.handle('documents:rename', (_event, document, title) => { const files = documentPaths(document); if (!fs.existsSync(files.json)) throw new Error('The saved document could not be found.'); const saved = { ...document, title: safePart(title), updatedAt: Date.now(), storagePath: path.relative(dataRoot(), files.json) }; fs.writeFileSync(files.json, JSON.stringify(saved, null, 2)); return saved; });
   ipcMain.handle('documents:delete', (_event, document) => { const files = documentPaths(document); for (const file of [files.json, files.pdf]) if (fs.existsSync(file)) fs.unlinkSync(file); });
-  ipcMain.handle('folders:create', (_event, categoryKey, name) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); fs.mkdirSync(withinRoot(category, name), { recursive: true }); return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
-  ipcMain.handle('folders:list', (_event, categoryKey) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const root = withinRoot(category); fs.mkdirSync(root, { recursive: true }); return fs.readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
-  ipcMain.handle('folders:rename', (_event, categoryKey, from, to) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const source = withinRoot(category, from); const target = withinRoot(category, to); if (fs.existsSync(source) && !fs.existsSync(target)) fs.renameSync(source, target); return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
-  ipcMain.handle('folders:delete', (_event, categoryKey, name) => { const category = CATEGORIES[categoryKey]; if (!category) throw new Error('Invalid category'); const target = withinRoot(category, name); if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true }); return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort(); });
+  ipcMain.handle('folders:create', (_event, categoryKey, name) => {
+    const category = CATEGORIES[categoryKey];
+    const cleanName = String(name ?? '').trim();
+    if (!category || !cleanName || cleanName.toLowerCase() === 'general') throw new Error('Enter a valid folder name.');
+    fs.mkdirSync(withinRoot(category, cleanName), { recursive: true });
+    return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).filter((entry) => entry.toLowerCase() !== 'general').sort();
+  });
+  ipcMain.handle('folders:list', (_event, categoryKey) => {
+    const category = CATEGORIES[categoryKey];
+    if (!category) throw new Error('Invalid category');
+    const root = withinRoot(category);
+    fs.mkdirSync(root, { recursive: true });
+    return fs.readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).filter((entry) => entry.toLowerCase() !== 'general').sort();
+  });
+  ipcMain.handle('folders:rename', (_event, categoryKey, from, to) => {
+    const category = CATEGORIES[categoryKey];
+    const cleanTo = String(to ?? '').trim();
+    if (!category || !cleanTo || cleanTo.toLowerCase() === 'general') throw new Error('Enter a valid folder name.');
+    const source = withinRoot(category, from);
+    const target = withinRoot(category, cleanTo);
+    if (!fs.existsSync(source) || (fs.existsSync(target) && path.resolve(source) !== path.resolve(target))) throw new Error('The folder could not be renamed.');
+    if (path.resolve(source) !== path.resolve(target)) fs.renameSync(source, target);
+    for (const file of walkJson(target)) {
+      const document = validStoredDocument(file);
+      if (document?.docType && CATEGORIES[document.docType] === category && document.folder === from) {
+        fs.writeFileSync(file, JSON.stringify({ ...document, folder: cleanTo }, null, 2));
+      }
+    }
+    return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).filter((entry) => entry.toLowerCase() !== 'general').sort();
+  });
+  ipcMain.handle('folders:delete', (_event, categoryKey, name) => {
+    const category = CATEGORIES[categoryKey];
+    if (!category) throw new Error('Invalid category');
+    const target = withinRoot(category, name);
+    if (!fs.existsSync(target)) throw new Error('The folder could not be found.');
+    // Folder deletion intentionally removes saved JSON/PDF files in that folder,
+    // matching the confirmation shown in the UI.
+    fs.rmSync(target, { recursive: true, force: true });
+    return fs.readdirSync(withinRoot(category), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).filter((entry) => entry.toLowerCase() !== 'general').sort();
+  });
   let printerListCache = { at: 0, printers: [] };
   ipcMain.handle('printers:list', async () => {
     if (!win || win.isDestroyed()) return printerListCache.printers;
