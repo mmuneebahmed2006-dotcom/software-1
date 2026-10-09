@@ -151,8 +151,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     const sheetH = settings.orientation === "landscape" ? pw : ph;
     const [srcW, srcH]: [number, number] = captured?.size ?? [pw, ph];
     const rotate = settings.autoRotate && ((srcW > srcH) !== (sheetW > sheetH));
-    const pageW = rotate ? srcH : srcW;
-    const pageH = rotate ? srcW : srcH;
+    const pageW = srcW;
+    const pageH = srcH;
     const base: React.CSSProperties = { filter: settings.gray ? "grayscale(1)" : "none", flex: "none" };
     if (settings.sizing === "fit") return {
       ...base,
