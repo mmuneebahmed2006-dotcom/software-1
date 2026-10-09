@@ -213,6 +213,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
   const posterOverlap = Math.max(0, Math.min(50, settings.posterOverlap));
   const posterCols = Math.max(1, Math.ceil(Math.max(0, posterImageW - posterOverlap) / Math.max(1, previewW - posterOverlap)));
   const posterRows = Math.max(1, Math.ceil(Math.max(0, posterImageH - posterOverlap) / Math.max(1, previewH - posterOverlap)));
+  const posterOffsetX = settings.autoCenter ? Math.max(0, (posterCols * previewW - (posterCols - 1) * posterOverlap - posterImageW) / 2) : 0;
+  const posterOffsetY = settings.autoCenter ? Math.max(0, (posterRows * previewH - (posterRows - 1) * posterOverlap - posterImageH) / 2) : 0;
 
   if (!open) return null;
 
@@ -347,8 +349,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
                     {Array.from({ length: posterRows * posterCols }, (_, i) => {
                       const row = Math.floor(i / posterCols), col = i % posterCols;
                       const stepX = previewW - posterOverlap, stepY = previewH - posterOverlap;
-                      const left = posterRotate ? -col * stepX + (posterRawH - posterRawW) / 2 : -col * stepX;
-                      const top = posterRotate ? -row * stepY + (posterRawW - posterRawH) / 2 : -row * stepY;
+                      const left = posterOffsetX - col * stepX + (posterRotate ? (posterRawH - posterRawW) / 2 : 0);
+                      const top = posterOffsetY - row * stepY + (posterRotate ? (posterRawW - posterRawH) / 2 : 0);
                       return <div className="poster-tile" key={i} style={{ position: "relative", overflow: "hidden", minWidth: 0, minHeight: 0, background: "#fff", border: "1px solid #cfd3d8" }}>
                         <img src={image} alt="" style={{ position: "absolute", maxWidth: "none", maxHeight: "none", width: `${posterRawW / previewW * 100}%`, height: `${posterRawH / previewH * 100}%`, left: `${left / previewW * 100}%`, top: `${top / previewH * 100}%`, transform: posterRotate ? "rotate(90deg)" : undefined, transformOrigin: "center", filter: settings.gray ? "grayscale(1)" : "none" }} />
                         {settings.posterCutMarks && <span aria-hidden="true" style={{ position: "absolute", inset: 3, border: "1px dashed #333", pointerEvents: "none" }} />}
