@@ -154,7 +154,12 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     const pageW = rotate ? srcH : srcW;
     const pageH = rotate ? srcW : srcH;
     const base: React.CSSProperties = { filter: settings.gray ? "grayscale(1)" : "none", flex: "none" };
-    if (settings.sizing === "fit") return { ...base, ["--img-w" as string]: "100%", ["--img-h" as string]: "100%", objectFit: "contain" } as React.CSSProperties;
+    if (settings.sizing === "fit") return {
+      ...base,
+      ["--img-w" as string]: rotate ? `${100 / sheetRatio}%` : "100%",
+      ["--img-h" as string]: rotate ? `${sheetRatio * 100}%` : "100%",
+      objectFit: "contain",
+    } as React.CSSProperties;
     const k = settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) / 100 : 1;
     return { ...base, ["--img-w" as string]: `${(pageW * k / sheetW) * 100}%`, ["--img-h" as string]: `${(pageH * k / sheetH) * 100}%`, objectFit: "fill" } as React.CSSProperties;
   }, [captured?.size, settings.gray, settings.orientation, settings.paperSize, settings.scale, settings.sizing]);
@@ -185,7 +190,29 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
   };
 
   const selectedMultiple = orderedIndices(settings.pagesPerSheet, settings.multiplePageOrder);
-  const bookletImages = images.slice(Math.max(0, settings.bookletFrom - 1), Math.min(total, settings.bookletTo));
+  const multipleStart = Math.floor(page / settings.pagesPerSheet) * settings.pagesPerSheet;
+  const bookletSheetCount = Math.max(1, Math.ceil(total / 4));
+  const bookletSheet = Math.min(bookletSheetCount - 1, Math.max(0, settings.bookletFrom - 1));
+  const paddedPageIndices = Array.from({ length: Math.ceil(total / 4) * 4 }, (_, i) => i < total ? i : null);
+  let bookletFront = [paddedPageIndices[paddedPageIndices.length - 1 - 2 * bookletSheet] ?? null, paddedPageIndices[2 * bookletSheet] ?? null];
+  let bookletBack = [paddedPageIndices[2 * bookletSheet + 1] ?? null, paddedPageIndices[paddedPageIndices.length - 2 - 2 * bookletSheet] ?? null];
+  if (settings.bookletBinding === "right") { bookletFront = bookletFront.reverse(); bookletBack = bookletBack.reverse(); }
+  const bookletPreviewPages = settings.bookletSubset === "back" ? bookletBack : bookletFront;
+  const previewDimensions: Record<string, [number, number]> = {
+    "A4 21 × 29.7 cm": [210, 297], "A5 14.8 × 21 cm": [148, 210],
+    "Letter 8.5 × 11 in": [215.9, 279.4], "Legal 8.5 × 14 in": [215.9, 355.6],
+  };
+  const rawPaper = previewDimensions[settings.paperSize] ?? [210, 297];
+  const [previewW, previewH] = settings.orientation === "landscape" ? [rawPaper[1], rawPaper[0]] : rawPaper;
+  const [sourceW, sourceH] = captured?.size ?? rawPaper;
+  const posterRotate = settings.autoRotate && ((sourceW > sourceH) !== (previewW > previewH));
+  const posterRawW = sourceW * Math.max(1, settings.posterScale) / 100;
+  const posterRawH = sourceH * Math.max(1, settings.posterScale) / 100;
+  const posterImageW = posterRotate ? posterRawH : posterRawW;
+  const posterImageH = posterRotate ? posterRawW : posterRawH;
+  const posterOverlap = Math.max(0, Math.min(50, settings.posterOverlap));
+  const posterCols = Math.max(1, Math.ceil(Math.max(0, posterImageW - posterOverlap) / Math.max(1, previewW - posterOverlap)));
+  const posterRows = Math.max(1, Math.ceil(Math.max(0, posterImageH - posterOverlap) / Math.max(1, previewH - posterOverlap)));
 
   if (!open) return null;
 
@@ -316,18 +343,32 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
                   </div>
                 )}
                 {settings.mode === "poster" && image && (
-                  <div className="poster-preview-grid" style={{ width: `${Math.max(100, settings.posterScale)}%`, height: `${Math.max(100, settings.posterScale)}%`, gridTemplateColumns: `repeat(${Math.ceil(settings.posterScale / 100)}, 1fr)` }}>
-                    {Array.from({ length: Math.max(1, Math.ceil(settings.posterScale / 100)) ** 2 }, (_, i) => <div className="poster-tile" key={i}><img src={image} alt="" style={{ filter: settings.gray ? "grayscale(1)" : "none" }} /></div>)}
+                  <div className="poster-preview-grid" style={{ width: "100%", height: "100%", gridTemplateColumns: `repeat(${posterCols}, minmax(0,1fr))`, gridTemplateRows: `repeat(${posterRows}, minmax(0,1fr))`, gap: 2 }}>
+                    {Array.from({ length: posterRows * posterCols }, (_, i) => {
+                      const row = Math.floor(i / posterCols), col = i % posterCols;
+                      const stepX = previewW - posterOverlap, stepY = previewH - posterOverlap;
+                      const left = posterRotate ? -col * stepX + (posterRawH - posterRawW) / 2 : -col * stepX;
+                      const top = posterRotate ? -row * stepY + (posterRawW - posterRawH) / 2 : -row * stepY;
+                      return <div className="poster-tile" key={i} style={{ position: "relative", overflow: "hidden", minWidth: 0, minHeight: 0, background: "#fff", border: "1px solid #cfd3d8" }}>
+                        <img src={image} alt="" style={{ position: "absolute", maxWidth: "none", maxHeight: "none", width: `${posterRawW / previewW * 100}%`, height: `${posterRawH / previewH * 100}%`, left: `${left / previewW * 100}%`, top: `${top / previewH * 100}%`, transform: posterRotate ? "rotate(90deg)" : undefined, transformOrigin: "center", filter: settings.gray ? "grayscale(1)" : "none" }} />
+                        {settings.posterCutMarks && <span aria-hidden="true" style={{ position: "absolute", inset: 3, border: "1px dashed #333", pointerEvents: "none" }} />}
+                        {settings.posterLabels && <small style={{ position: "absolute", left: 3, bottom: 2, background: "#fff", color: "#222", fontSize: 8 }}>{page + 1} · {row + 1},{col + 1}</small>}
+                      </div>;
+                    })}
                   </div>
                 )}
                 {settings.mode === "multiple" && (
                   <div className="multiple-preview-grid" style={{ gridTemplateColumns: `repeat(${gridSpec(settings.pagesPerSheet).columns}, 1fr)`, gridTemplateRows: `repeat(${gridSpec(settings.pagesPerSheet).rows}, 1fr)` }}>
-                    {selectedMultiple.map((index) => <div className="multiple-preview-cell" key={index}>{images[index] && <img src={images[index]} alt={`Page ${index + 1}`} style={{ filter: settings.gray ? "grayscale(1)" : "none" }} />}</div>)}
+                    {selectedMultiple.map((cellIndex, slot) => {
+                      const index = multipleStart + slot;
+                      const grid = gridSpec(settings.pagesPerSheet);
+                      return <div className="multiple-preview-cell" key={slot} style={{ gridColumn: cellIndex % grid.columns + 1, gridRow: Math.floor(cellIndex / grid.columns) + 1 }}>{images[index] && <img src={images[index]} alt={`Page ${index + 1}`} style={{ filter: settings.gray ? "grayscale(1)" : "none" }} />}</div>;
+                    })}
                   </div>
                 )}
                 {settings.mode === "booklet" && (
                   <div className="booklet-preview-grid">
-                    {bookletImages.slice(0, 2).map((src, i) => <div className="booklet-preview-cell" key={i}><img src={src} alt={`Booklet page ${i + 1}`} style={{ filter: settings.gray ? "grayscale(1)" : "none" }} /></div>)}
+                    {bookletPreviewPages.map((index, i) => <div className="booklet-preview-cell" key={i}>{index !== null && images[index] && <img src={images[index]} alt={`Booklet page ${index + 1}`} style={{ filter: settings.gray ? "grayscale(1)" : "none" }} />}</div>)}
                   </div>
                 )}
               </div>
