@@ -1332,3 +1332,9 @@ html, body { overflow-x: hidden; }
 body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   display: none !important;
 }
+
+
+/* The print preview uses a swapped box plus a quarter-turn when auto-rotation is needed. */
+.print-preview-white.print-preview-three-columns .print-output-preview.mode-size .print-preview-paper.auto-rotated {
+  transform: rotate(90deg) !important;
+}
