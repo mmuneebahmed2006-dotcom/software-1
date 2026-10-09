@@ -17,6 +17,23 @@ interface Props {
 const A4_FIRST_PAGE_ROWS = 12;
 const A4_NEXT_PAGE_ROWS = 20;
 
+const numericTextSize = (length: number) => {
+  const px = Math.max(7, Math.min(11, (11 * 12) / Math.max(12, length)));
+  return `calc(${px}px * var(--paper-scale, 1))`;
+};
+
+const numericFieldStyle = (value: number): CSSProperties => {
+  const length = Number.isFinite(value) ? String(value).length : 1;
+  return {
+    boxSizing: "border-box",
+    width: `${Math.max(3, length + 1)}ch`,
+    maxWidth: "100%",
+    marginInline: "auto",
+    textAlign: "center",
+    fontSize: numericTextSize(length),
+  };
+};
+
 export const DocumentPaper = memo(function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
@@ -520,14 +537,14 @@ const DocumentPage = memo(function DocumentPage({
                         />
                       </td>
                       <td className="qty-col">
-                        <NumberField value={item.qty} onChange={(value) => updateItem(item.id, { qty: value })} ariaLabel="Quantity" />
+                        <NumberField value={item.qty} onChange={(value) => updateItem(item.id, { qty: value })} ariaLabel="Quantity" style={numericFieldStyle(item.qty)} />
                       </td>
                       {showAmounts && (
                         <td className="unit-price-col unit-price">
-                          <NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel="Unit price" step={0.01} />
+                          <NumberField value={item.rate} onChange={(value) => updateItem(item.id, { rate: value })} ariaLabel="Unit price" step={0.01} style={numericFieldStyle(item.rate)} />
                         </td>
                       )}
-                      {showAmounts && <td className="amount-col line-total">{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
+                      {showAmounts && <td className="amount-col line-total" style={{ fontSize: numericTextSize(money((item.qty || 0) * (item.rate || 0), state.currency).length), textAlign: "center" }}>{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
                       <td className="no-print action-col">
                         <Button type="button" size="icon" variant="danger" onClick={() => removeItem(item.id)} aria-label="Remove row">
                           <Trash2 size={14} />
