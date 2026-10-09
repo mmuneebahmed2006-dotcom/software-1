@@ -127,8 +127,9 @@ export function NumberField({ value, onChange, ariaLabel, className, step = 1, s
   }, [value]);
 
   const updateDraft = (next: string) => {
-    if (!/^\d*\.?\d*$/.test(next)) return;
+    // Never reject an edit here: Backspace/Delete must always update the visible draft.
     setDraft(next);
+    const parsed = next.trim() === "" ? 0 : Number(next);
     const parsed = next === "" || next === "." ? 0 : Number(next);
     if (Number.isFinite(parsed) && parsed >= 0) {
       lastValue.current = parsed;
@@ -145,10 +146,13 @@ export function NumberField({ value, onChange, ariaLabel, className, step = 1, s
       aria-label={ariaLabel}
       onChange={(event) => updateDraft(event.target.value)}
       onBlur={() => {
-        const parsed = draft === "" || draft === "." ? 0 : Number(draft);
+        const parsed = draft.trim() === "" ? 0 : Number(draft);
         if (Number.isFinite(parsed) && parsed >= 0) {
           lastValue.current = parsed;
           onChange(parsed);
+          setDraft(String(parsed));
+        } else {
+          setDraft(Number.isFinite(value) ? String(value) : "");
         }
       }}
       className={cn("editable w-full border-0 bg-transparent p-0.5 tabular-nums", className)}
