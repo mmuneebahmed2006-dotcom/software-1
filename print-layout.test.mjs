@@ -82,16 +82,16 @@ test('print HTML creates poster tiles, ordered multiple grids, booklet spreads, 
 
 test('all physical paper sizes use exact page names, margins, and printable dimensions', () => {
   const cases = [
-    ['A4', 210, 297, 5],
-    ['A5', 148, 210, 4],
-    ['Letter', 215.9, 279.4, 5],
-    ['Legal', 215.9, 355.6, 5],
+    ['A4', 210, 297, 0],
+    ['A5', 148, 210, 0],
+    ['Letter', 215.9, 279.4, 0],
+    ['Legal', 215.9, 355.6, 0],
   ];
   for (const [paperSize, width, height, margin] of cases) {
     const name = paperSize === 'Letter' ? 'letter' : paperSize === 'Legal' ? 'legal' : paperSize;
     const html = buildPrintHtml({ paperSize, sourceSize: [width, height], mode: 'size', landscape: false, sizing: 'fit' }, ['data:image/png;base64,AA==']);
     assert.ok(html.includes('@page{size:' + name + ' portrait;margin:' + margin + 'mm}'), paperSize + ' @page dimensions and margin');
-    assert.ok(html.includes('width:' + (width - margin * 2) + 'mm;height:' + (height - margin * 2) + 'mm'), paperSize + ' printable sheet dimensions');
+    assert.ok(html.includes('width:' + width + 'mm;height:' + height + 'mm'), paperSize + ' full-size sheet dimensions');
     assert.ok(!html.includes('class="pagebox center"'), paperSize + ' must not center the page image');
   }
 });
