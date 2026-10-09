@@ -27,8 +27,8 @@ export type CompanyScope = "current" | "future" | "previous" | "all";
 export const DOC_LABELS: Record<DocType, string> = { invoice: "Invoice", quotation: "Quotation", dc: "Delivery Challan", tax: "Sales Tax Invoice" };
 export const CATEGORY_FOLDERS: Record<DocType, string> = { invoice: "Invoice", quotation: "Quotation", dc: "Delivery Challan", tax: "Sales Tax Invoice" };
 export const CURRENCIES = ["Rs. ", "$", "€", "£", "AED "] as const;
-export const PAPER_SIZES: Record<PaperSizeKey, { width: string; height: string; page: string; scale: number; rows: number; contRows: number; pdf: [number, number] }> = {
-  A4: { width: "210mm", height: "297mm", page: "A4", printMargin: "6mm", scale: 1, rows: 13, contRows: 19, pdf: [210, 297] },
+export const PAPER_SIZES: Record<PaperSizeKey, { width: string; height: string; page: string; printMargin: string; scale: number; rows: number; contRows: number; pdf: [number, number] }> = {
+  A4: { width: "210mm", height: "297mm", page: "A4", printMargin: "5mm", scale: 1, rows: 13, contRows: 19, pdf: [210, 297] },
   A5: { width: "148mm", height: "210mm", page: "A5", printMargin: "4mm", scale: .73, rows: 7, contRows: 11, pdf: [148, 210] },
   Letter: { width: "8.5in", height: "11in", page: "letter", printMargin: "6mm", scale: .96, rows: 9, contRows: 15, pdf: [215.9, 279.4] },
   Legal: { width: "8.5in", height: "14in", page: "legal", printMargin: "6mm", scale: 1, rows: 14, contRows: 20, pdf: [215.9, 355.6] },
