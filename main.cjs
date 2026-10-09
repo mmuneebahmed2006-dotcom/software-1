@@ -1,5 +1,4 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell, powerMonitor } = require('electron');
-const { pageRangeIndices, buildPrintHtml } = require('./print-layout.cjs');
 const path = require('path');
 const { fork } = require('child_process');
 const http = require('http');
@@ -151,6 +150,7 @@ function installIpc() {
     } catch (error) { log('Printer settings failed: ' + error.message); return false; }
   });
   ipcMain.handle('print:document', async (_event, options = {}) => {
+    const { pageRangeIndices, buildPrintHtml } = await import('./print-layout.mjs');
     const PAPER_MM = { A4: [210, 297], A5: [148, 210], Letter: [215.9, 279.4], Legal: [215.9, 355.6] };
     const pageSize = PAPER_MM[options.paperSize] ? options.paperSize : 'A4';
     const landscape = Boolean(options.landscape);
