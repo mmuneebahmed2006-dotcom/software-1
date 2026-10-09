@@ -127,7 +127,7 @@ export function NumberField({ value, onChange, ariaLabel, className, step = 1, s
   }, [value]);
 
   const updateDraft = (next: string) => {
-    if (!/^\\d*\\.?\\d*$/.test(next)) return;
+    if (!/^\d*\.?\d*$/.test(next)) return;
     setDraft(next);
     const parsed = next === "" || next === "." ? 0 : Number(next);
     if (Number.isFinite(parsed) && parsed >= 0) {
