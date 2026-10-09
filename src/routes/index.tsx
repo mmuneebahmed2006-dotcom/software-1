@@ -143,7 +143,7 @@ function Index() {
       }
       if (settings.range !== "custom") return undefined;
       return settings.customRange.split(",").flatMap((part) => {
-        const match = part.trim().match(/^(\\d+)(?:\\s*-\\s*(\\d+))?$/);
+        const match = part.trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/);
         if (!match) return [];
         const first = Number(match[1]);
         const last = Number(match[2] ?? match[1]);
