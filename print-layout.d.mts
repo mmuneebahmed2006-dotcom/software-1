@@ -1,0 +1,27 @@
+export type PrintPageRange = { from: number; to: number };
+export type PrintLayoutOptions = {
+  paperSize?: "A4" | "A5" | "Letter" | "Legal";
+  sourceSize?: [number, number];
+  landscape?: boolean;
+  autoRotate?: boolean;
+  autoCenter?: boolean;
+  gray?: boolean;
+  sizing?: "fit" | "actual" | "custom" | "shrink";
+  scaleFactor?: number;
+  mode?: "size" | "poster" | "multiple" | "booklet";
+  posterScale?: number;
+  posterOverlap?: number;
+  posterCutMarks?: boolean;
+  posterLabels?: boolean;
+  pagesPerSheet?: number;
+  multiplePageOrder?: "horizontal" | "horizontal-reversed" | "vertical" | "vertical-reversed";
+  bookletSubset?: "both" | "front" | "back";
+  bookletFrom?: number;
+  bookletTo?: number;
+  bookletBinding?: "left" | "right";
+};
+export const PAPER_MM: Record<string, [number, number]>;
+export function pageRangeIndices(total: number, ranges?: PrintPageRange[] | null): number[];
+export function gridOrder(count: number, order?: string): { cols: number; rows: number; positions: Array<{ row: number; col: number }> };
+export function bookletSheets(images: Array<string | null>, subset?: string, from?: number, to?: number, binding?: string): Array<{ side: string; pages: Array<string | null> }>;
+export function buildPrintHtml(options: PrintLayoutOptions, images: string[]): string;
