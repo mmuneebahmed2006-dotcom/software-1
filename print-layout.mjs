@@ -62,9 +62,10 @@ function bookletSheets(images,subset,from,to,binding) {
 function buildPrintHtml(options,images) {
   const size=PAPER_MM[options.paperSize]||PAPER_MM.A4, pw=size[0], ph=size[1];
   const W=options.landscape?ph:pw, H=options.landscape?pw:ph;
-  // Keep the captured page inside a printer-safe area so edge-bound bars are not clipped.
-  const margin=options.paperSize==='A5'?4:5;
-  const pageW=W-2*margin, pageH=H-2*margin;
+  // Captured pages already match the selected physical paper size. Keep the
+  // generated sheet full-bleed so actual/custom sizing cannot clip its edges.
+  const margin=0;
+  const pageW=W, pageH=H;
   const pageName=options.paperSize==='A5'?'A5':options.paperSize==='Letter'?'letter':options.paperSize==='Legal'?'legal':'A4';
   const pageOrientation=options.landscape?'landscape':'portrait';
   const src=Array.isArray(options.sourceSize)?options.sourceSize.map(Number):PAPER_MM.A4;
