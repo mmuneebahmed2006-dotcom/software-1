@@ -48,7 +48,7 @@ test('print HTML creates poster tiles, ordered multiple grids, booklet spreads, 
   const base = { paperSize: 'A4', sourceSize: [210, 297], autoCenter: true, autoRotate: true };
   const rotated = buildPrintHtml({ ...base, mode: 'size', landscape: true, sizing: 'fit' }, pages.slice(0, 1));
   assert.match(rotated, /class="fit rotated"/);
-  assert.match(rotated, /img\\.fit\\.rotated\\{width:var\\(--bh\\)!important;height:var\\(--bw\\)!important/);
+  assert.ok(rotated.includes(".pagebox img.fit.rotated{width:var(--bh)!important;height:var(--bw)!important}"));
   const notCentered = buildPrintHtml({ ...base, mode: 'size', autoCenter: false }, pages.slice(0, 1));
   assert.doesNotMatch(notCentered, /class="pagebox center"/);
 
