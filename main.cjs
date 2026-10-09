@@ -247,7 +247,6 @@ function installIpc() {
         color: !gray,
         landscape,
         pageSize,
-        usePrinterDefaultPageSize: false,
         pagesPerSheet: 1,
         scaleFactor: 100,
         margins: { marginType: 'none' },
