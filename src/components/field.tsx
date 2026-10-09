@@ -130,7 +130,6 @@ export function NumberField({ value, onChange, ariaLabel, className, step = 1, s
     // Never reject an edit here: Backspace/Delete must always update the visible draft.
     setDraft(next);
     const parsed = next.trim() === "" ? 0 : Number(next);
-    const parsed = next === "" || next === "." ? 0 : Number(next);
     if (Number.isFinite(parsed) && parsed >= 0) {
       lastValue.current = parsed;
       onChange(parsed);
