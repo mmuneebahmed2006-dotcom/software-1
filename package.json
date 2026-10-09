@@ -13,6 +13,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
+    "test:print": "node --test print-layout.test.mjs",
     "format": "prettier --write ."
   },
   "overrides": {
@@ -105,6 +106,7 @@
     "asar": true,
     "files": [
       "main.cjs",
+      "print-layout.mjs",
       "preload.cjs",
       "backup-worker.cjs",
       "splash.html",
