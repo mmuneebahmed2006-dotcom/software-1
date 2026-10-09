@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell, powerMonitor } = require('electron');
+const { pageRangeIndices, buildPrintHtml } = require('./print-layout.cjs');
 const path = require('path');
 const { fork } = require('child_process');
 const http = require('http');
@@ -153,48 +154,15 @@ function installIpc() {
     const PAPER_MM = { A4: [210, 297], A5: [148, 210], Letter: [215.9, 279.4], Legal: [215.9, 355.6] };
     const pageSize = PAPER_MM[options.paperSize] ? options.paperSize : 'A4';
     const landscape = Boolean(options.landscape);
-    const [pw, ph] = PAPER_MM[pageSize];
-    const sheetW = landscape ? ph : pw;
-    const sheetH = landscape ? pw : ph;
-    const [srcW, srcH] = Array.isArray(options.sourceSize) && options.sourceSize.length === 2 ? options.sourceSize.map(Number) : [pw, ph];
     const all = Array.isArray(options.images) ? options.images.filter((v) => typeof v === 'string' && v.startsWith('data:image/')) : [];
     if (!all.length) return { success: false, failureReason: 'Nothing to print.' };
-    const ranges = Array.isArray(options.pageRanges) ? options.pageRanges : null;
-    const images = ranges && ranges.length ? all.filter((_, i) => ranges.some((r) => i >= r.from && i <= r.to)) : all;
+    const indices = pageRangeIndices(all.length, options.pageRanges);
+    const images = indices.map((index) => all[index]);
     if (!images.length) return { success: false, failureReason: 'The selected page range is empty.' };
     const sizing = ['fit', 'actual', 'custom', 'shrink'].includes(options.sizing) ? options.sizing : 'fit';
     const scale = Math.min(400, Math.max(10, Number(options.scaleFactor) || 100)) / 100;
-    const center = options.autoCenter !== false;
-    const perSheet = options.mode === 'multiple' ? Math.max(1, Math.min(16, Number(options.pagesPerSheet) || 1)) : 1;
     const gray = Boolean(options.gray);
-
-    let body = '';
-    if (perSheet > 1) {
-      const cols = Math.ceil(Math.sqrt(perSheet));
-      const rows = Math.ceil(perSheet / cols);
-      for (let i = 0; i < images.length; i += perSheet) {
-        const cells = images.slice(i, i + perSheet).map((src) => `<div class="cell"><img class="fit" src="${src}"></div>`).join('');
-        body += `<section class="sheet grid" style="grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr)">${cells}</section>`;
-      }
-    } else {
-      for (const src of images) {
-        let img;
-        if (sizing === 'fit' || sizing === 'shrink') img = `<img class="fit" src="${src}">`;
-        else { const k = sizing === 'custom' ? scale : 1; img = `<img style="width:${srcW * k}mm;height:${srcH * k}mm;flex:none" src="${src}">`; }
-        body += `<section class="sheet ${center ? 'center' : ''}">${img}</section>`;
-      }
-    }
-    const html = `<!doctype html><html><head><meta charset="utf-8"><style>
-@page{size:${sheetW}mm ${sheetH}mm;margin:0}
-html,body{margin:0;padding:0;background:#fff}
-.sheet{width:${sheetW}mm;height:${sheetH}mm;overflow:hidden;display:flex;align-items:flex-start;justify-content:flex-start;page-break-after:always;break-after:page;box-sizing:border-box}
-.sheet:last-child{page-break-after:auto;break-after:auto}
-.sheet.center{align-items:center;justify-content:center}
-.sheet.grid{display:grid;gap:3mm;padding:5mm}
-.cell{display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:0;min-height:0}
-img.fit{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
-${gray ? 'img{filter:grayscale(100%)}' : ''}
-</style></head><body>${body}</body></html>`;
+    const html = buildPrintHtml({ ...options, paperSize: pageSize, landscape, sizing, scaleFactor: scale * 100, gray }, images);
 
     const os = require('os');
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'docstudio-print-'));
