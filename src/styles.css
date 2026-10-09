@@ -579,8 +579,10 @@ body.startup-active .document-paper-wrapper {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
-  .paper .document-content { box-sizing: border-box !important; width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; overflow: visible !important; }
-  .paper .document-header, .paper .identity-grid, .paper .items-section, .paper table, .paper .totals, .paper .document-footer, .paper .closing-content { box-sizing: border-box !important; width: 100% !important; max-width: 100% !important; }
+  /* Keep the live document's normal inner padding and totals width during capture.
+     Only size the content box to its paper frame; never flatten its layout. */
+  .paper .document-content { box-sizing: border-box !important; width: 100% !important; max-width: 100% !important; overflow: visible !important; }
+  .paper .document-header, .paper .identity-grid, .paper .items-section, .paper table, .paper .document-footer, .paper .closing-content { box-sizing: border-box !important; width: 100% !important; max-width: 100% !important; }
 
   /* zoom wale container ki extra neechay ki jagah print me na aaye (faltu blank page na bane) */
   #document-pages { padding-bottom: 0 !important; transform: none !important; }
@@ -1367,6 +1369,3 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
 .saved-item-actions button:focus-visible { opacity: 1; outline: 2px solid var(--primary); outline-offset: 1px; }
 
 
-/* Raster exports use the same full-width content box as print output. */
-.paper.exporting .document-content { width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; }
-.paper.exporting .document-header, .paper.exporting .identity-grid, .paper.exporting .items-section, .paper.exporting table, .paper.exporting .totals, .paper.exporting .document-footer, .paper.exporting .closing-content { width: 100% !important; max-width: 100% !important; }
