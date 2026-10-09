@@ -568,12 +568,20 @@ body.startup-active .document-paper-wrapper {
 }
 
 /* ===== PRINT: upar/neechay ki kali patti printer ke kinare me kat jati thi ===== */
-/* Printer kinaron (~4mm) par print nahi kar sakta, isliye page ko thora sa chhota karke beech me rakha hai.
-   Agar patti kinare tak chahiye to 0.97 ki jagah 1 likh dein. */
+/* @page margin 0 hai, lekin asal printer apne kagaz ke bilkul kinare (~3-4mm) par
+   print nahi kar sakta, chahe browser se margin 0 maanga jaye. Isi liye top-accent
+   (upar wali kali patti) aur footer (neechay wala kali box) kat rahe the.
+   Fix: paper ko har taraf se thora chhota karke, physical page ke beech me
+   center kar diya - ab kali patti aur footer kinare se thori andar, printable
+   area ke andar rahenge. */
 @media print {
   .paper {
     transform: none !important;
     transform-origin: top left !important;
+    width: calc(var(--paper-width) - 7mm) !important;
+    min-height: calc(var(--paper-height) - 7mm) !important;
+    height: auto !important;
+    margin: 3.5mm auto !important;
   }
 }
 
