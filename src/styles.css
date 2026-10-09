@@ -331,15 +331,15 @@ body.startup-active .document-paper-wrapper {
 
 @media print {
   #document-pages { transform: none !important; }
-  html, body, #root, .studio-shell, .studio-main, .print-area, #document-pages, .document-paper-wrapper {
+  html, body, #root, .studio-shell, .studio-main, .print-area, #document-pages, .document-paper-wrapper, .invoice-container {
     display: block !important; width: 100% !important; max-width: 100% !important;
-    height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important;
+    height: 100% !important; min-height: 100% !important; margin: 0 !important; padding: 0 !important;
     align-items: flex-start !important; justify-content: flex-start !important; background: #fff !important;
   }
   .no-print, .saved-sidebar, .toolbar, button { display: none !important; }
   .print-area { overflow: visible !important; }
   /* height fix kar dene aur usi ke sath overflow:hidden rakhne se hi neechay wala hissa kat raha tha, is liye height ko min-height bana diya aur overflow visible */
-  .document-pages { display: block !important; }
+  .document-pages { display: block !important; height: auto !important; min-height: 0 !important; }
   .paper {
     box-sizing: border-box !important;
     width: 100% !important; max-width: 100% !important;
