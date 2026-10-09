@@ -80,12 +80,12 @@ test('print HTML creates poster tiles, ordered multiple grids, booklet spreads, 
 });
 
 
-test('all physical paper sizes use exact page names, margins, and printable dimensions', () => {
+test('all physical paper sizes use exact page names and full-bleed dimensions', () => {
   const cases = [
-    ['A4', 210, 297, 5],
-    ['A5', 148, 210, 4],
-    ['Letter', 215.9, 279.4, 5],
-    ['Legal', 215.9, 355.6, 5],
+    ['A4', 210, 297, 0],
+    ['A5', 148, 210, 0],
+    ['Letter', 215.9, 279.4, 0],
+    ['Legal', 215.9, 355.6, 0],
   ];
   for (const [paperSize, width, height, margin] of cases) {
     const name = paperSize === 'Letter' ? 'letter' : paperSize === 'Legal' ? 'legal' : paperSize;
