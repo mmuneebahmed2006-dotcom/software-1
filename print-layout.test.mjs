@@ -63,13 +63,13 @@ test('print HTML creates poster tiles, ordered multiple grids, booklet spreads, 
   assert.doesNotMatch(notCentered, /class="pagebox center"/);
 
   const poster = buildPrintHtml({ ...base, mode: 'poster', posterScale: 250, posterOverlap: 10, posterCutMarks: true, posterLabels: true }, pages.slice(0, 1));
-  assert.match(poster, /@page\{size:A4 portrait;margin:5mm\}/);
+  assert.match(poster, /@page\{size:A4 portrait;margin:0mm\}/);
   assert.match(poster, /class="marks"/);
   assert.match(poster, /Page 1 · 1,1/);
   assert.ok((poster.match(/class="sheet tile"/g) || []).length > 1);
 
   const multiple = buildPrintHtml({ ...base, mode: 'multiple', pagesPerSheet: 4, multiplePageOrder: 'vertical', landscape: true }, pages);
-  assert.match(multiple, /@page\{size:A4 landscape;margin:5mm\}/);
+  assert.match(multiple, /@page\{size:A4 landscape;margin:0mm\}/);
   assert.match(multiple, /grid-row:2;grid-column:1/);
 
   const booklet = buildPrintHtml({ ...base, mode: 'booklet', bookletSubset: 'front', bookletFrom: 1, bookletTo: 1, bookletBinding: 'right' }, pages);
@@ -91,7 +91,7 @@ test('all physical paper sizes use exact page names and full-bleed dimensions', 
     const name = paperSize === 'Letter' ? 'letter' : paperSize === 'Legal' ? 'legal' : paperSize;
     const html = buildPrintHtml({ paperSize, sourceSize: [width, height], mode: 'size', landscape: false, sizing: 'fit' }, ['data:image/png;base64,AA==']);
     assert.ok(html.includes('@page{size:' + name + ' portrait;margin:' + margin + 'mm}'), paperSize + ' @page dimensions and margin');
-    assert.ok(html.includes('width:' + (width - margin * 2) + 'mm;height:' + (height - margin * 2) + 'mm'), paperSize + ' printer-safe sheet dimensions');
+    assert.ok(html.includes('width:' + (width - margin * 2) + 'mm;height:' + (height - margin * 2) + 'mm'), paperSize + ' full paper sheet dimensions');
     assert.ok(!html.includes('class="pagebox center"'), paperSize + ' must not center the page image');
   }
 });
