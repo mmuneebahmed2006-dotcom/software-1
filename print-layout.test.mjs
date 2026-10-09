@@ -29,6 +29,12 @@ test('grid order produces distinct horizontal and vertical placement for partial
     { row: 1, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 2 },
   ]);
   assert.equal(gridOrder(16, 'vertical').positions.length, 16);
+  assert.deepEqual(gridOrder(4, 'horizontal-reversed').positions, [
+    { row: 0, col: 1 }, { row: 0, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 0 },
+  ]);
+  assert.deepEqual(gridOrder(4, 'vertical-reversed').positions, [
+    { row: 1, col: 0 }, { row: 0, col: 0 }, { row: 1, col: 1 }, { row: 0, col: 1 },
+  ]);
 });
 
 test('booklet imposes padded outer-to-inner spreads and honors subset and right binding', () => {
