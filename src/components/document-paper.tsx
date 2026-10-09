@@ -17,7 +17,7 @@ interface Props {
 const A4_FIRST_PAGE_ROWS = 12;
 const A4_NEXT_PAGE_ROWS = 20;
 
-export function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
+export const DocumentPaper = memo(function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
   const baseRows = PAPER_SIZES[paperSize].rows || 15;
@@ -304,7 +304,7 @@ export function DocumentPaper({ docType, state, setState, paperStyle, paperSize 
       </div>
     </div>
   );
-}
+});
 
 interface PageProps extends Props {
   items: LineItem[];
