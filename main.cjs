@@ -172,6 +172,7 @@ function installIpc() {
     const cleanup = () => { try { if (!printWindow.isDestroyed()) printWindow.close(); } catch {} try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} };
     try {
       await printWindow.loadFile(file);
+      await printWindow.webContents.executeJavaScript('Promise.all(Array.from(document.images, image => image.decode().catch(() => undefined)))');
       let deviceName = options.deviceName ? String(options.deviceName) : '';
       if (!deviceName) {
         try { const list = await printWindow.webContents.getPrintersAsync(); deviceName = (list.find((p) => p.isDefault) || list[0] || {}).name || ''; } catch {}
