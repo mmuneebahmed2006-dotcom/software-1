@@ -331,17 +331,20 @@ body.startup-active .document-paper-wrapper {
 
 @media print {
   #document-pages { transform: none !important; }
-  html, body { width: 100%; height: auto; background: var(--paper) !important; }
+  html, body, #root, .studio-shell, .studio-main, .print-area, #document-pages, .document-paper-wrapper {
+    display: block !important; width: 100% !important; max-width: 100% !important;
+    height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important;
+    align-items: flex-start !important; justify-content: flex-start !important; background: #fff !important;
+  }
   .no-print, .saved-sidebar, .toolbar, button { display: none !important; }
-  .print-area { margin: 0 !important; padding: 0 !important; overflow: visible !important; background: var(--paper) !important; }
+  .print-area { overflow: visible !important; }
   /* height fix kar dene aur usi ke sath overflow:hidden rakhne se hi neechay wala hissa kat raha tha, is liye height ko min-height bana diya aur overflow visible */
   .document-pages { display: block !important; }
   .paper {
     box-sizing: border-box !important;
-    width: var(--paper-width) !important;
-    height: var(--paper-height) !important;
-    min-height: var(--paper-height) !important;
-    max-width: none !important;
+    width: 100% !important; max-width: 100% !important;
+    height: calc(var(--paper-height) - var(--print-margin) - var(--print-margin)) !important;
+    min-height: calc(var(--paper-height) - var(--print-margin) - var(--print-margin)) !important;
     overflow: visible !important;
     margin: 0 !important;
     break-after: page !important;
@@ -523,7 +526,7 @@ body.startup-active .document-paper-wrapper {
 }
 
 /* ===== PRINT FIX: upar ki kali patti + logo na kate + 2 pages ===== */
-@page { margin: 0; }
+/* Dynamic @page size and margins are supplied by the active document. */
 
 @media print {
   html, body { margin: 0 !important; padding: 0 !important; }
@@ -576,7 +579,8 @@ body.startup-active .document-paper-wrapper {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
-  .paper .document-content { overflow: visible !important; }
+  .paper .document-content { box-sizing: border-box !important; width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; overflow: visible !important; }
+  .paper .document-header, .paper .identity-grid, .paper .items-section, .paper table, .paper .totals, .paper .document-footer, .paper .closing-content { box-sizing: border-box !important; width: 100% !important; max-width: 100% !important; }
 
   /* zoom wale container ki extra neechay ki jagah print me na aaye (faltu blank page na bane) */
   #document-pages { padding-bottom: 0 !important; transform: none !important; }
@@ -593,9 +597,10 @@ body.startup-active .document-paper-wrapper {
   .paper {
     transform: none !important;
     transform-origin: top left !important;
-    width: var(--paper-width) !important;
-    min-height: var(--paper-height) !important;
-    height: var(--paper-height) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: calc(var(--paper-height) - var(--print-margin) - var(--print-margin)) !important;
+    height: calc(var(--paper-height) - var(--print-margin) - var(--print-margin)) !important;
     margin: 0 !important;
   }
 }
@@ -1360,3 +1365,8 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   .saved-item-actions { opacity: 1; }
 }
 .saved-item-actions button:focus-visible { opacity: 1; outline: 2px solid var(--primary); outline-offset: 1px; }
+
+
+/* Raster exports use the same full-width content box as print output. */
+.paper.exporting .document-content { width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; }
+.paper.exporting .document-header, .paper.exporting .identity-grid, .paper.exporting .items-section, .paper.exporting table, .paper.exporting .totals, .paper.exporting .document-footer, .paper.exporting .closing-content { width: 100% !important; max-width: 100% !important; }
