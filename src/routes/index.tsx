@@ -235,6 +235,8 @@ function Index() {
     return () => window.removeEventListener("keydown", handler);
   }, [activeId, newDocument, persist, printDocument, redo, undo]);
 
+  const openFolderDialog = useCallback(() => { setFolderName(""); setFolderOpen(true); }, []);
+
   const storeFolders = useCallback((next: string[]) => { setFolders(next); if (!window.desktop) window.localStorage.setItem(`8wc-folders-${docType}`, JSON.stringify(next)) }, [docType]);
 
   useEffect(() => {
@@ -272,17 +274,30 @@ function Index() {
   }, [activeFolder, docType, folders, setDocuments, storeFolders]);
 
   const renameDocument = useCallback(async (id: string, title: string) => {
-    const entry = documents.find((item) => item.id === id); if (!entry) return;
-    const renamed = window.desktop ? await window.desktop.renameDocument(entry, title) : { ...entry, title, updatedAt: Date.now() };
-    setDocuments((list) => list.map((item) => item.id === id ? renamed : item));
-    toast.success("Document renamed.");
+    const cleanTitle = title.trim();
+    const entry = documents.find((item) => item.id === id);
+    if (!entry || !cleanTitle) return;
+    try {
+      const renamed = window.desktop ? await window.desktop.renameDocument(entry, cleanTitle) : { ...entry, title: cleanTitle, updatedAt: Date.now() };
+      setDocuments((list) => list.map((item) => item.id === id ? renamed : item));
+      toast.success("Document renamed.");
+    } catch (error) {
+      console.error("Document rename failed:", error);
+      toast.error("The document could not be renamed. Please try again.");
+    }
   }, [documents, setDocuments]);
 
   const deleteDocument = useCallback(async (entry: SavedDocument) => {
     if (!window.confirm("Delete this saved document?")) return;
-    if (window.desktop) await window.desktop.deleteDocument(entry);
-    setDocuments((list) => list.filter((item) => item.id !== entry.id));
-    if (activeId === entry.id) newDocument();
+    try {
+      if (window.desktop) await window.desktop.deleteDocument(entry);
+      setDocuments((list) => list.filter((item) => item.id !== entry.id));
+      if (activeId === entry.id) newDocument();
+      toast.success("Document deleted.");
+    } catch (error) {
+      console.error("Document delete failed:", error);
+      toast.error("The document could not be deleted. Please try again.");
+    }
   }, [activeId, newDocument, setDocuments]);
 
   const saveCompany = useCallback(async (details: CompanyDetails, scope: CompanyScope) => {
@@ -304,7 +319,7 @@ function Index() {
             }} onPrint={executePrint}/>
     <SaveDocumentDialog open={saveOpen} title={saveTitle} folder={saveFolder} folders={folders} onTitle={setSaveTitle} onFolder={setSaveFolder} onCancel={() => setSaveOpen(false)} onSave={() => { void saveRecord(saveTitle, saveFolder, false); setSaveOpen(false); }}/>
     <NewFolderDialog open={folderOpen} value={folderName} category={DOC_LABELS[docType]} onValue={setFolderName} onCancel={() => setFolderOpen(false)} onCreate={() => void createFolder()}/>
-    <SavedDocumentsSidebar documents={documents} docType={docType} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onCreateFolder={() => { setFolderName(""); setFolderOpen(true); }} onRenameFolder={renameFolder} onDeleteFolder={deleteFolder} onDownloadFolder={downloadFolder} onDownloadDocument={downloadSaved} onRename={renameDocument} onDelete={deleteDocument}/>
+    <SavedDocumentsSidebar documents={documents} docType={docType} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onCreateFolder={openFolderDialog} onRenameFolder={renameFolder} onDeleteFolder={deleteFolder} onDownloadFolder={downloadFolder} onDownloadDocument={downloadSaved} onRename={renameDocument} onDelete={deleteDocument}/>
     <div className="studio-main">
       <header className="no-print toolbar"><div className="toolbar-inner">
         <div className="studio-brand"><FileText size={19}/><span>Document Studio</span></div>
