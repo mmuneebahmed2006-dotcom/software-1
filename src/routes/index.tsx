@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from "react";
+import { buildPrintHtml, pageRangeIndices } from "../../print-layout.mjs";
 import { createFileRoute } from "@tanstack/react-router";
 import { CopyPlus, Download, FileText, Loader2, Printer, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -164,18 +165,20 @@ function Index() {
     } as Record<string, string>)[settings.paperSize] ?? "A4";
 
     if (!window.desktop?.printDocument) {
-      // Browser preview: print the captured pages through a hidden frame so the
-      // chosen sizing and orientation still apply.
-      const ranges = pageRanges;
-      const pages = ranges?.length ? printCapture.images.filter((_, i) => ranges.some((r) => i >= r.from && i <= r.to)) : printCapture.images;
-      const dims: Record<string, [number, number]> = { A4: [210, 297], A5: [148, 210], Letter: [215.9, 279.4], Legal: [215.9, 355.6] };
-      const [pw, ph] = dims[paperSize] ?? [210, 297];
-      const landscape = settings.orientation === "landscape";
-      const [w, h] = landscape ? [ph, pw] : [pw, ph];
-      const [sw, sh] = printCapture.size;
-      const k = settings.sizing === "custom" ? scale / 100 : 1;
-      const img = (src: string) => settings.sizing === "fit" ? `<img class="fit" src="${src}">` : `<img style="width:${sw * k}mm;height:${sh * k}mm;flex:none" src="${src}">`;
-      const html = `<!doctype html><html><head><style>@page{size:${w}mm ${h}mm;margin:0}html,body{margin:0}.s{width:${w}mm;height:${h}mm;overflow:hidden;display:flex;align-items:${settings.autoCenter ? "center" : "flex-start"};justify-content:${settings.autoCenter ? "center" : "flex-start"};break-after:page}.s:last-child{break-after:auto}img.fit{max-width:100%;max-height:100%;object-fit:contain}${settings.gray ? "img{filter:grayscale(1)}" : ""}</style></head><body>${pages.map((src) => `<section class="s">${img(src)}</section>`).join("")}</body></html>`;
+      const indices = pageRangeIndices(printCapture.images.length, pageRanges);
+      const pages = indices.map((index) => printCapture.images[index]);
+      if (!pages.length) { toast.error("The selected page range is empty."); return; }
+      const html = buildPrintHtml({
+        paperSize, sourceSize: printCapture.size,
+        landscape: settings.orientation === "landscape",
+        sizing: settings.sizing, scaleFactor: scale,
+        autoRotate: settings.autoRotate, autoCenter: settings.autoCenter,
+        mode: settings.mode, posterScale: settings.posterScale, posterOverlap: settings.posterOverlap,
+        posterCutMarks: settings.posterCutMarks, posterLabels: settings.posterLabels,
+        pagesPerSheet: settings.pagesPerSheet, multiplePageOrder: settings.multiplePageOrder,
+        bookletSubset: settings.bookletSubset, bookletFrom: settings.bookletFrom,
+        bookletTo: settings.bookletTo, bookletBinding: settings.bookletBinding, gray: settings.gray,
+      }, pages);
       const frame = document.createElement("iframe");
       frame.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0";
       document.body.append(frame);
