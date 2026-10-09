@@ -326,7 +326,7 @@ function Index() {
   }, [setDocuments, setState]);
 
   return <div className="studio-shell">
-    <style>{`@media print { @page { size: ${paper.page} portrait; margin: ${paper.printMargin}; } }`}</style>
+    <style>{`@media print { @page { size: ${paper.page} portrait; margin: 0; } }`}</style>
     <StartupExperience/>
     <PrintPreview open={printOpen} captured={printCapture} paperLabel={paper.page} fileName={`${DOC_LABELS[docType].replaceAll(" ", "_")}_${state.meta.number || "Untitled"}.pdf`} onClose={() => setPrintOpen(false)} onPaperSizeChange={async (label) => {
               const next = ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string, PaperSizeKey>)[label];
