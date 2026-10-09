@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from "react";
-import { buildPrintHtml, pageRangeIndices } from "../../print-layout.mjs";
+import { buildPrintHtml, pageRangeIndices, selectPageRanges } from "../../print-layout.mjs";
 import { createFileRoute } from "@tanstack/react-router";
 import { CopyPlus, Download, FileText, Loader2, Printer, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -132,26 +132,7 @@ function Index() {
     // window.print(), because that opens the browser/native print dialog.
     if (!printCapture?.images?.length) { toast.error("Nothing to print."); return; }
 
-    const pageRanges = (() => {
-      if (settings.range === "current") { const current = Math.max(0, Math.min(printCapture.images.length - 1, Math.floor(settings.currentPage ?? 0))); return [{ from: current, to: current }]; }
-      if (settings.range === "odd" || settings.range === "even") {
-        const wantOdd = settings.range === "odd";
-        const ranges: Array<{ from: number; to: number }> = [];
-        for (let index = 0; index < printCapture.images.length; index += 1) {
-          if (((index + 1) % 2 === 1) === wantOdd) ranges.push({ from: index, to: index });
-        }
-        return ranges;
-      }
-      if (settings.range !== "custom") return undefined;
-      return settings.customRange.split(",").flatMap((part) => {
-        const match = part.trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/);
-        if (!match) return [];
-        const first = Number(match[1]);
-        const last = Number(match[2] ?? match[1]);
-        if (!Number.isInteger(first) || !Number.isInteger(last) || first < 1 || last < first || first > printCapture.images.length) return [];
-        return [{ from: first - 1, to: Math.min(printCapture.images.length, last) - 1 }];
-      });
-    })();
+    const pageRanges = selectPageRanges(printCapture.images.length, settings);
 
     const scale = settings.sizing === "custom"
       ? Math.min(400, Math.max(10, Number(settings.scale) || 100))
