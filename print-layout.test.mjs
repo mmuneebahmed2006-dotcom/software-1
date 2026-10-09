@@ -1,6 +1,6 @@
 'use strict';
-const test = import test from 'node:test';
-const assert = import assert from 'node:assert/strict';
+import test from 'node:test';
+import assert from 'node:assert/strict';
 import { pageRangeIndices, gridOrder, bookletSheets, buildPrintHtml } from './print-layout.mjs';
 
 test('page range filtering uses one-based UI selections converted to zero-based inclusive ranges', () => {
