@@ -36,7 +36,6 @@ function Index() {
   const [saveTitle, setSaveTitle] = useState("");
   const [saveFolder, setSaveFolder] = useState("");
   const [folderOpen, setFolderOpen] = useState(false);
-  const [folderName, setFolderName] = useState("");
   const [busy, setBusy] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
@@ -235,7 +234,7 @@ function Index() {
     return () => window.removeEventListener("keydown", handler);
   }, [activeId, newDocument, persist, printDocument, redo, undo]);
 
-  const openFolderDialog = useCallback(() => { setFolderName(""); setFolderOpen(true); }, []);
+  const openFolderDialog = useCallback(() => { setFolderOpen(true); }, []);
 
   const storeFolders = useCallback((next: string[]) => { setFolders(next); if (!window.desktop) window.localStorage.setItem(`8wc-folders-${docType}`, JSON.stringify(next)) }, [docType]);
 
@@ -250,13 +249,20 @@ function Index() {
     void load();
   }, [docType]);
 
-  const createFolder = useCallback(async () => {
-    const clean = folderName.trim(); if (!clean) return;
-    setActiveFolder(clean);
-    storeFolders(window.desktop ? await window.desktop.createFolder(docType, clean) : [...new Set([...folders, clean])]);
-    setFolderOpen(false); setFolderName("");
-    toast.success(`Folder "${clean}" created and selected.`);
-  }, [docType, folderName, folders, storeFolders]);
+  const createFolder = useCallback(async (name: string) => {
+    const clean = name.trim();
+    if (!clean) return;
+    try {
+      const next = window.desktop ? await window.desktop.createFolder(docType, clean) : [...new Set([...folders, clean])];
+      storeFolders(next);
+      setActiveFolder(clean);
+      setFolderOpen(false);
+      toast.success(`Folder "${clean}" created and selected.`);
+    } catch (error) {
+      console.error("Folder creation failed:", error);
+      toast.error("The folder could not be created. Please try again.");
+    }
+  }, [docType, folders, storeFolders]);
 
   const renameFolder = useCallback(async (from: string, to: string) => {
     if (from === to) return;
@@ -318,7 +324,7 @@ function Index() {
               try { setPrintCapture(await capturePages(document.getElementById("document-pages") ?? document, next)); } catch {}
             }} onPrint={executePrint}/>
     <SaveDocumentDialog open={saveOpen} title={saveTitle} folder={saveFolder} folders={folders} onTitle={setSaveTitle} onFolder={setSaveFolder} onCancel={() => setSaveOpen(false)} onSave={() => { void saveRecord(saveTitle, saveFolder, false); setSaveOpen(false); }}/>
-    <NewFolderDialog open={folderOpen} value={folderName} category={DOC_LABELS[docType]} onValue={setFolderName} onCancel={() => setFolderOpen(false)} onCreate={() => void createFolder()}/>
+    <NewFolderDialog open={folderOpen} category={DOC_LABELS[docType]} onCancel={() => setFolderOpen(false)} onCreate={createFolder}/>
     <SavedDocumentsSidebar documents={documents} docType={docType} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onCreateFolder={openFolderDialog} onRenameFolder={renameFolder} onDeleteFolder={deleteFolder} onDownloadFolder={downloadFolder} onDownloadDocument={downloadSaved} onRename={renameDocument} onDelete={deleteDocument}/>
     <div className="studio-main">
       <header className="no-print toolbar"><div className="toolbar-inner">
