@@ -20,7 +20,7 @@ import { CURRENCIES, DOC_LABELS, PAPER_SIZES, applyCompanyDetails, companyFromSt
 const DOC_ORDER: DocType[] = ["invoice", "quotation", "dc", "tax"];
 const PAPER_ORDER: PaperSizeKey[] = ["A4", "A5", "Letter", "Legal"];
 const noopSetState: Dispatch<SetStateAction<DocState>> = () => {};
-const styleFor = (size: PaperSizeKey) => ({ "--paper-width": PAPER_SIZES[size].width, "--paper-height": PAPER_SIZES[size].height, "--paper-scale": PAPER_SIZES[size].scale } as CSSProperties);
+const styleFor = (size: PaperSizeKey) => ({ "--paper-width": PAPER_SIZES[size].width, "--paper-height": PAPER_SIZES[size].height, "--paper-scale": PAPER_SIZES[size].scale, "--print-margin": PAPER_SIZES[size].printMargin } as CSSProperties);
 
 export const Route = createFileRoute("/")({ head: () => ({ meta: [{ title: "Document Studio | 8 Ways Communications" }, { name: "description", content: "Create and manage print-ready invoices, quotations, and delivery challans." }] }), component: Index });
 
@@ -326,7 +326,7 @@ function Index() {
   }, [setDocuments, setState]);
 
   return <div className="studio-shell">
-    <style>{`@media print { @page { size: ${paper.page} portrait; margin: 0; } }`}</style>
+    <style>{`@media print { @page { size: ${paper.page} portrait; margin: ${paper.printMargin}; } }`}</style>
     <StartupExperience/>
     <PrintPreview open={printOpen} captured={printCapture} paperLabel={paper.page} fileName={`${DOC_LABELS[docType].replaceAll(" ", "_")}_${state.meta.number || "Untitled"}.pdf`} onClose={() => setPrintOpen(false)} onPaperSizeChange={async (label) => {
               const next = ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string, PaperSizeKey>)[label];
