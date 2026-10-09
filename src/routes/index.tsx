@@ -266,10 +266,22 @@ function Index() {
 
   const renameFolder = useCallback(async (from: string, to: string) => {
     if (from === to) return;
-    storeFolders(window.desktop && window.desktop.renameFolder ? await window.desktop.renameFolder(docType, from, to) : [...new Set(folders.map((entry) => entry === from ? to : entry))]);
-    setDocuments((list) => list.map((entry) => entry.docType === docType && entry.folder === from ? { ...entry, folder: to } : entry));
-    if (activeFolder === from) setActiveFolder(to);
-    toast.success(`Folder renamed to "${to}".`);
+    try {
+      if (window.desktop?.renameFolder) {
+        storeFolders(await window.desktop.renameFolder(docType, from, to));
+        // Reload storage paths after the directory move so later card actions
+        // address the moved files rather than their old paths.
+        setDocuments(await window.desktop.listDocuments());
+      } else {
+        storeFolders([...new Set(folders.map((entry) => entry === from ? to : entry))]);
+        setDocuments((list) => list.map((entry) => entry.docType === docType && entry.folder === from ? { ...entry, folder: to } : entry));
+      }
+      if (activeFolder === from) setActiveFolder(to);
+      toast.success(`Folder renamed to "${to}".`);
+    } catch (error) {
+      console.error("Folder rename failed:", error);
+      toast.error("The folder could not be renamed. Please try again.");
+    }
   }, [activeFolder, docType, folders, setDocuments, storeFolders]);
 
   const deleteFolder = useCallback(async (folder: string) => {
