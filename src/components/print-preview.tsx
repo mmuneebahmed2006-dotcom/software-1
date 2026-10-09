@@ -53,6 +53,13 @@ const PAPER_OPTIONS = [
   ["Legal 8.5 × 14 in", "Legal"],
 ] as const;
 
+/** Accept either the display label or the canonical key supplied by the workspace. */
+const normalizePaperLabel = (value: string) => {
+  const normalized = value.trim().toLowerCase();
+  return PAPER_OPTIONS.find(([label, key]) => label === value || key.toLowerCase() === normalized)?.[0]
+    ?? PAPER_OPTIONS[0][0];
+};
+
 const PAPER_RATIOS: Record<string, number> = {
   "A4 21 × 29.7 cm": 210 / 297,
   "A5 14.8 × 21 cm": 148 / 210,
@@ -85,7 +92,7 @@ function orderedIndices(count: number, order: PrintSettings["multiplePageOrder"]
 export function PrintPreview({ open, captured, paperLabel, fileName, onClose, onPrint, onPaperSizeChange }: Props) {
   const [settings, setSettings] = useState<PrintSettings>({
     gray: false, printDocument: true, printComment: true, printForm: true,
-    sides: "single", copies: 1, paperSize: paperLabel || "A4 21 × 29.7 cm",
+    sides: "single", copies: 1, paperSize: normalizePaperLabel(paperLabel || "A4"),
     mode: "size", sizing: "fit", scale: 100, autoRotate: true, autoCenter: true,
     orientation: "portrait", range: "all", customRange: "1",
     printAsImage: true, dpi: 300, printerName: "", pagesPerSheet: 2,
@@ -142,7 +149,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
   }, [captured?.images.length]);
 
   useEffect(() => {
-    if (paperLabel) setSettings((s) => ({ ...s, paperSize: paperLabel }));
+    if (paperLabel) setSettings((s) => ({ ...s, paperSize: normalizePaperLabel(paperLabel) }));
   }, [paperLabel]);
 
   const paperRatio = PAPER_RATIOS[settings.paperSize] ?? PAPER_RATIOS["A4 21 × 29.7 cm"];
