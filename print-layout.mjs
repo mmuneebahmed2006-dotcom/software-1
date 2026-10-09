@@ -62,7 +62,9 @@ function bookletSheets(images,subset,from,to,binding) {
 function buildPrintHtml(options,images) {
   const size=PAPER_MM[options.paperSize]||PAPER_MM.A4, pw=size[0], ph=size[1];
   const W=options.landscape?ph:pw, H=options.landscape?pw:ph;
-  const margin=options.paperSize==='A5'?4:5;
+  // The captured image already includes the live workspace page frame and its content margins.
+  // Use the full physical sheet here so print output does not get an extra 4–5 mm scale-down.
+  const margin=0;
   const pageW=W-2*margin, pageH=H-2*margin;
   const pageName=options.paperSize==='A5'?'A5':options.paperSize==='Letter'?'letter':options.paperSize==='Legal'?'legal':'A4';
   const pageOrientation=options.landscape?'landscape':'portrait';
