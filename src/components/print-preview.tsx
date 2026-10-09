@@ -70,19 +70,16 @@ const gridSpec = (count: number) => {
 
 function orderedIndices(count: number, order: PrintSettings["multiplePageOrder"]) {
   const { columns, rows } = gridSpec(count);
-  const out: number[] = [];
-  for (let row = 0; row < rows; row += 1) {
-    for (let col = 0; col < columns; col += 1) {
-      let r = row;
-      let c = col;
-      if (order === "horizontal-reversed") c = columns - 1 - col;
-      if (order === "vertical") [r, c] = [col % rows, Math.floor(col / rows)];
-      if (order === "vertical-reversed") [r, c] = [rows - 1 - (col % rows), Math.floor(col / rows)];
-      const index = r * columns + c;
-      if (index < count) out.push(index);
+  return Array.from({ length: count }, (_, index) => {
+    if (order === "vertical" || order === "vertical-reversed") {
+      const row = index % rows;
+      const col = Math.floor(index / rows);
+      return (order === "vertical-reversed" ? rows - 1 - row : row) * columns + col;
     }
-  }
-  return out;
+    const row = Math.floor(index / columns);
+    const col = index % columns;
+    return row * columns + (order === "horizontal-reversed" ? columns - 1 - col : col);
+  });
 }
 
 export function PrintPreview({ open, captured, paperLabel, fileName, onClose, onPrint, onPaperSizeChange }: Props) {
@@ -153,10 +150,13 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     const sheetW = settings.orientation === "landscape" ? ph : pw;
     const sheetH = settings.orientation === "landscape" ? pw : ph;
     const [srcW, srcH]: [number, number] = captured?.size ?? [pw, ph];
+    const rotate = settings.autoRotate && ((srcW > srcH) !== (sheetW > sheetH));
+    const pageW = rotate ? srcH : srcW;
+    const pageH = rotate ? srcW : srcH;
     const base: React.CSSProperties = { filter: settings.gray ? "grayscale(1)" : "none", flex: "none" };
     if (settings.sizing === "fit") return { ...base, ["--img-w" as string]: "100%", ["--img-h" as string]: "100%", objectFit: "contain" } as React.CSSProperties;
     const k = settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) / 100 : 1;
-    return { ...base, ["--img-w" as string]: `${(srcW * k / sheetW) * 100}%`, ["--img-h" as string]: `${(srcH * k / sheetH) * 100}%`, objectFit: "fill" } as React.CSSProperties;
+    return { ...base, ["--img-w" as string]: `${(pageW * k / sheetW) * 100}%`, ["--img-h" as string]: `${(pageH * k / sheetH) * 100}%`, objectFit: "fill" } as React.CSSProperties;
   }, [captured?.size, settings.gray, settings.orientation, settings.paperSize, settings.scale, settings.sizing]);
 
   const printerState = useMemo(() => {
@@ -308,7 +308,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
                 {settings.mode === "size" && image && (
                   <div className="print-preview-page-frame">
                     <img
-                      className="print-preview-paper"
+                      className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated" : "")}
                       src={image}
                       alt={paperLabel + " preview"}
                       style={previewImageStyle}
