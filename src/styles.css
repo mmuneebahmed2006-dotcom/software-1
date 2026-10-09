@@ -1326,3 +1326,9 @@ html, body { overflow-x: hidden; }
 .print-preview-white.print-preview-three-columns .print-output-preview.mode-size{width:min(94cqw,calc(94cqh * var(--sheet-ratio,0.707)))!important;height:auto!important;background:#fff!important;box-shadow:0 2px 14px rgb(0 0 0 / .22)!important}
 .print-preview-white.print-preview-three-columns .print-output-preview.mode-size .print-preview-paper{width:var(--img-w,100%)!important;height:var(--img-h,100%)!important;flex:none;max-width:none!important;max-height:none!important;box-shadow:none!important;transform:none!important}
 .print-preview-white.print-preview-three-columns .print-output-preview.mode-size .print-preview-page-frame{overflow:hidden}
+
+
+/* Hide the document's floating zoom and page toolbar while print preview is open. */
+body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
+  display: none !important;
+}
