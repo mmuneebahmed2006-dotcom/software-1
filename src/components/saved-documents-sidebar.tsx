@@ -17,7 +17,7 @@ interface Props {
   onNew: () => void;
   onOpen: (document: SavedDocument) => void;
   onRename: (id: string, title: string) => void | Promise<void>;
-  onDelete: (document: SavedDocument) => void;
+  onDelete: (document: SavedDocument) => void | Promise<void>;
   onCreateFolder: () => void;
   onRenameFolder: (from: string, to: string) => void | Promise<void>;
   onDeleteFolder: (folder: string) => void | Promise<void>;
@@ -129,7 +129,7 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
           <div className="saved-item-actions">
             <Button type="button" size="icon" variant="outline" disabled={busy} onClick={() => void onDownloadDocument(document)} aria-label={`Download ${document.title} as PDF`}><Download size={14}/></Button>
             <Button type="button" size="icon" variant="outline" onClick={() => setDraft({ id: document.id, value: document.title })} aria-label={`Rename ${document.title}`}><Pencil size={14}/></Button>
-            <Button type="button" size="icon" variant="danger" onClick={() => onDelete(document)} aria-label={`Delete ${document.title}`}><Trash2 size={14}/></Button>
+            <Button type="button" size="icon" variant="danger" onClick={() => void onDelete(document)} aria-label={`Delete ${document.title}`}><Trash2 size={14}/></Button>
           </div>
         </div>)}</section>)}
       </div>
