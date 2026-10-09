@@ -241,7 +241,9 @@ function installIpc() {
       // and its printable-area inset. Keep Electron and the driver on that same
       // paper and prevent the printer's saved N-up/scaling defaults from shrinking it.
       const base = {
-        silent: Boolean(deviceName),
+        // The native dialog is required for printer-driver options such as borderless media.
+        // Electron exposes zero margins, but no portable borderless-print flag.
+        silent: false,
         ...(deviceName ? { deviceName } : {}),
         printBackground: true,
         color: !gray,
