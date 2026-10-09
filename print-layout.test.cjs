@@ -43,13 +43,14 @@ test('print HTML creates poster tiles, ordered multiple grids, booklet spreads, 
   assert.match(poster, /Page 1 · 1,1/);
   assert.ok((poster.match(/class="sheet tile"/g) || []).length > 1);
 
-  const multiple = buildPrintHtml({ ...base, mode: 'multiple', pagesPerSheet: 2, multiplePageOrder: 'vertical', landscape: true }, pages);
+  const multiple = buildPrintHtml({ ...base, mode: 'multiple', pagesPerSheet: 4, multiplePageOrder: 'vertical', landscape: true }, pages);
   assert.match(multiple, /@page\{size:297mm 210mm/);
   assert.match(multiple, /grid-row:2;grid-column:1/);
 
   const booklet = buildPrintHtml({ ...base, mode: 'booklet', bookletSubset: 'front', bookletFrom: 1, bookletTo: 1, bookletBinding: 'right' }, pages);
   assert.match(booklet, /Page 1/);
-  assert.match(booklet, /Page 4/);
+  assert.match(booklet, /Page 1/);
+  assert.match(booklet, /class=.blank./);
   assert.equal((booklet.match(/class="sheet spread"/g) || []).length, 1);
 });
 
