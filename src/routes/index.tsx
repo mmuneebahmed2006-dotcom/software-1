@@ -304,7 +304,7 @@ function Index() {
             }} onPrint={executePrint}/>
     <SaveDocumentDialog open={saveOpen} title={saveTitle} folder={saveFolder} folders={folders} onTitle={setSaveTitle} onFolder={setSaveFolder} onCancel={() => setSaveOpen(false)} onSave={() => { void saveRecord(saveTitle, saveFolder, false); setSaveOpen(false); }}/>
     <NewFolderDialog open={folderOpen} value={folderName} category={DOC_LABELS[docType]} onValue={setFolderName} onCancel={() => setFolderOpen(false)} onCreate={() => void createFolder()}/>
-    <SavedDocumentsSidebar documents={documents} docType={docType} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onDownload={downloadSaved} onDownloadFolder={downloadFolder} onRename={renameDocument} onDelete={deleteDocument}/>
+    <SavedDocumentsSidebar documents={documents} docType={docType} activeId={activeId} folders={folders} activeFolder={activeFolder} busy={busy} onSelectFolder={setActiveFolder} onNew={newDocument} onOpen={openDocument} onCreateFolder={() => { setFolderName(""); setFolderOpen(true); }} onRenameFolder={renameFolder} onDeleteFolder={deleteFolder} onDownloadFolder={downloadFolder} onDownloadDocument={downloadSaved} onRename={renameDocument} onDelete={deleteDocument}/>
     <div className="studio-main">
       <header className="no-print toolbar"><div className="toolbar-inner">
         <div className="studio-brand"><FileText size={19}/><span>Document Studio</span></div>
