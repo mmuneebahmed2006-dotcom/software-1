@@ -208,6 +208,66 @@ function installIpc() {
       return true;
     } catch (error) { log('Printer settings failed: ' + error.message); return false; }
   });
+  ipcMain.handle('print:pdf', async (_event, data, options = {}) => {
+    const payload = String(data || '');
+    if (!payload.startsWith('data:application/pdf;base64,')) {
+      return { success: false, failureReason: 'The print PDF is invalid.' };
+    }
+    const bytes = decodeData(payload);
+    if (!bytes.subarray(0, 5).equals(Buffer.from('%PDF-'))) {
+      return { success: false, failureReason: 'The print PDF is invalid.' };
+    }
+    const os = require('os');
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'docstudio-print-pdf-'));
+    const file = path.join(tempDir, 'document.pdf');
+    fs.writeFileSync(file, bytes);
+    const printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
+    });
+    const cleanup = () => {
+      try { if (!printWindow.isDestroyed()) printWindow.close(); } catch {}
+      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
+    };
+    try {
+      await printWindow.loadFile(file);
+      // Chromium's built-in PDF viewer finishes painting shortly after the file
+      // load event. Wait before handing the PDF page to the printer pipeline.
+      await printWindow.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 700))');
+      const deviceName = options.deviceName ? String(options.deviceName) : '';
+      const paperSize = ['A4', 'A5', 'Letter', 'Legal'].includes(options.paperSize) ? options.paperSize : 'A4';
+      const settings = {
+        silent: true,
+        ...(deviceName ? { deviceName } : {}),
+        printBackground: true,
+        color: !Boolean(options.gray),
+        landscape: Boolean(options.landscape),
+        pageSize: paperSize,
+        pagesPerSheet: 1,
+        scaleFactor: 100,
+        margins: { marginType: 'none' },
+        copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+        duplexMode: ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex',
+        ...(options.dpi ? { dpi: { horizontal: Number(options.dpi), vertical: Number(options.dpi) } } : {}),
+      };
+      const result = await new Promise((resolve) => {
+        try {
+          printWindow.webContents.print(settings, (success, failureReason) => {
+            resolve({ success, failureReason: String(failureReason || '') });
+          });
+        } catch (error) {
+          resolve({ success: false, failureReason: String(error?.message || error) });
+        }
+      });
+      log(`PDF print ${result.success ? 'accepted' : 'rejected'} | printer=${deviceName || '(default)'} | paper=${paperSize} | landscape=${Boolean(options.landscape)} | reason=${result.failureReason}`);
+      return { ...result, printer: deviceName, failureReason: result.success ? '' : (result.failureReason || 'Windows rejected the PDF print job.') };
+    } catch (error) {
+      log('PDF print failed: ' + error.message);
+      return { success: false, failureReason: String(error.message || error) };
+    } finally {
+      setTimeout(cleanup, 1500);
+    }
+  });
   ipcMain.handle('print:document', async (_event, options = {}) => {
     const { pageRangeIndices, buildPrintHtml } = await import('./print-layout.mjs');
     const PAPER_MM = { A4: [210, 297], A5: [148, 210], Letter: [215.9, 279.4], Legal: [215.9, 355.6] };
