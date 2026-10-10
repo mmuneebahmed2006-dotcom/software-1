@@ -1704,7 +1704,7 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
 }
 
 
-/* Floating document zoom controls use the app's neutral toolbar palette. */
+/* White slider controls match the white controls on the dark app toolbar. */
 .document-floating-toolbar .document-zoom-slider {
   appearance: none;
   -webkit-appearance: none;
@@ -1714,16 +1714,17 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   padding: 0;
   background: transparent;
   cursor: pointer;
+  accent-color: #fff;
 }
 .document-floating-toolbar .document-zoom-slider::-webkit-slider-runnable-track {
   height: 3px;
   border-radius: 999px;
-  background: var(--muted-foreground, #858b95);
+  background: #fff;
 }
 .document-floating-toolbar .document-zoom-slider::-moz-range-track {
   height: 3px;
   border-radius: 999px;
-  background: var(--muted-foreground, #858b95);
+  background: #fff;
 }
 .document-floating-toolbar .document-zoom-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -1732,23 +1733,23 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   margin-top: -5px;
   border: 2px solid var(--toolbar, #171717);
   border-radius: 50%;
-  background: var(--toolbar-foreground, #f7f7f7);
+  background: #fff;
 }
 .document-floating-toolbar .document-zoom-slider::-moz-range-thumb {
   width: 10px;
   height: 10px;
   border: 2px solid var(--toolbar, #171717);
   border-radius: 50%;
-  background: var(--toolbar-foreground, #f7f7f7);
+  background: #fff;
 }
 .document-floating-toolbar .document-zoom-slider:focus-visible {
-  outline: 2px solid var(--muted-foreground, #858b95);
+  outline: 2px solid #fff;
   outline-offset: 3px;
   border-radius: 999px;
 }
 .document-floating-toolbar .document-zoom-value {
   min-width: 42px;
-  color: var(--toolbar-foreground, #f7f7f7);
+  color: #fff;
   font-size: 13px;
   font-weight: 700;
   text-align: center;
