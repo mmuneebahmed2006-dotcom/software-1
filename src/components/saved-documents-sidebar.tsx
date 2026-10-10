@@ -118,6 +118,7 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
       <label className="history-filter"><span>History</span><select value={range} onChange={(event) => setRange(event.target.value)} aria-label="Document history date range"><option value="all">All dates</option><option value="3">Last 3 months</option><option value="4">Last 4 months</option><option value="6">Last 6 months</option><option value="custom">Custom range</option></select></label>
       {range === "custom" && <div className="history-custom"><input type="date" value={from} onChange={(event) => setFrom(event.target.value)} aria-label="History start date"/><input type="date" value={to} onChange={(event) => setTo(event.target.value)} aria-label="History end date"/></div>}
 
+      <div className="sidebar-top-section">
       <div className="sidebar-folders-area">
       <div className="folder-toolbar">
         <button type="button" className={`folder-all ${folder === "all" ? "active" : ""}`} onClick={() => { setFolder("all"); onSelectFolder("") }}>All folders</button>
@@ -137,8 +138,10 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
       </div>
       </div>
 
-      <div className="sidebar-files-area">
       <label className="document-search"><Search size={16}/><input id="document-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, number, or folder" aria-label="Search saved documents"/></label>
+      </div>
+      <div className="sidebar-files-divider" role="separator" aria-orientation="horizontal"/>
+      <div className="sidebar-bottom-section">
       <div className="saved-list">
         {Object.keys(groups).length === 0 && <div className="saved-empty"><FileText size={23}/><span>{categoryDocuments.length ? "No documents found" : "No saved documents yet"}</span></div>}
         {Object.entries(groups).map(([label, entries]) => <section className="saved-group" key={label}><h3>{label}</h3>{entries.map((document) => <div key={document.id} className={`saved-item ${activeId === document.id ? "active" : ""}`}>
