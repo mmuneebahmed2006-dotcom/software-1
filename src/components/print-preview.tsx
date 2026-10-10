@@ -154,21 +154,6 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   const paperRatio = PAPER_RATIOS[settings.paperSize] ?? PAPER_RATIOS["A4 21 × 29.7 cm"];
   const sheetRatio = settings.orientation === "landscape" ? 1 / paperRatio : paperRatio;
-  const previewSheetMm = ({
-    "A4 21 × 29.7 cm": [210, 297],
-    "A5 14.8 × 21 cm": [148, 210],
-    "Letter 8.5 × 11 in": [215.9, 279.4],
-    "Legal 8.5 × 14 in": [215.9, 355.6],
-  } as Record<string, [number, number]>)[settings.paperSize] ?? [210, 297];
-  const safeMarginMm = settings.paperSize === "A5 14.8 × 21 cm" ? 4 : 5;
-  const [previewSheetWidth, previewSheetHeight] = settings.orientation === "landscape"
-    ? [previewSheetMm[1], previewSheetMm[0]]
-    : previewSheetMm;
-  const safeAreaFrameStyle: React.CSSProperties | undefined = settings.sizing === "fit" ? {
-    width: `${((previewSheetWidth - 2 * safeMarginMm) / previewSheetWidth) * 100}%`,
-    height: `${((previewSheetHeight - 2 * safeMarginMm) / previewSheetHeight) * 100}%`,
-  } : undefined;
-
   const previewImageStyle = useMemo<React.CSSProperties>(() => {
     const mm: Record<string, [number, number]> = { "A4 21 × 29.7 cm": [210, 297], "A5 14.8 × 21 cm": [148, 210], "Letter 8.5 × 11 in": [215.9, 279.4], "Legal 8.5 × 14 in": [215.9, 355.6] };
     const [pw, ph] = mm[settings.paperSize] ?? [210, 297];
@@ -360,7 +345,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <div className="print-preview-paper-wrap">
               <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio), ["--sheet-ratio" as string]: String(sheetRatio) } as React.CSSProperties}>
                 {settings.mode === "size" && image && (
-                  <div className="print-preview-page-frame" style={safeAreaFrameStyle}>
+                  <div className="print-preview-page-frame">
                     <img
                       className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated" : "")}
                       src={image}
