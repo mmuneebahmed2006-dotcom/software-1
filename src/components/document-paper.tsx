@@ -217,21 +217,21 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
           display: "flex",
           alignItems: "center",
           gap: "10px",
-          backgroundColor: "var(--toolbar)",
-          color: "var(--toolbar-foreground)",
+          backgroundColor: "#fff",
+          color: "var(--foreground)",
           padding: "8px 16px",
           borderRadius: "40px",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-          border: "1px solid var(--sidebar-border)"
+          boxShadow: "0 8px 24px rgba(0,0,0,0.16)",
+          border: "1px solid var(--border)"
         }}
       >
         <select
           value={currentPage}
           onChange={(e) => jumpToPage(Number(e.target.value))}
           style={{
-            background: "var(--toolbar)",
-            color: "var(--toolbar-foreground)",
-            border: "1px solid var(--sidebar-border)",
+            background: "#fff",
+            color: "var(--foreground)",
+            border: "1px solid var(--border)",
             borderRadius: "6px",
             padding: "4px 10px",
             fontSize: "13px",
@@ -246,7 +246,7 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
           ))}
         </select>
 
-        <div style={{ width: "1px", height: "18px", backgroundColor: "var(--toolbar-muted)" }} />
+        <div style={{ width: "1px", height: "18px", backgroundColor: "var(--border)" }} />
 
         <div
           className="document-zoom-slider"
@@ -291,7 +291,7 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
           variant="ghost"
           size="icon"
           onClick={() => handleZoom(100)}
-          style={{ color: "var(--toolbar-foreground)", height: "30px", width: "30px" }}
+          style={{ color: "var(--foreground)", height: "30px", width: "30px" }}
           title="Reset Zoom"
         >
           <RotateCcw size={14} />
