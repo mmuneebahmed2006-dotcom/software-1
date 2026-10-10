@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain, shell, powerMonitor } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell, powerMonitor, screen } = require('electron');
 const path = require('path');
 const { fork } = require('child_process');
 const http = require('http');
@@ -355,15 +355,18 @@ function waitForServer(url, callback, attempts = 60) { http.get(url, callback).o
 let splashWin;
 
 function createSplashWindow() {
+  const { width: displayWidth, height: displayHeight } = screen.getPrimaryDisplay().workAreaSize;
   splashWin = new BrowserWindow({
-    width: 1440,
-    height: 900,
+    width: Math.min(1440, displayWidth),
+    height: Math.min(900, displayHeight),
+    center: true,
+    useContentSize: true,
     frame: false,
     resizable: false,
     movable: false,
     alwaysOnTop: true,
     show: true,
-    backgroundColor: '#000000',
+    backgroundColor: '#0b0b0b',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
