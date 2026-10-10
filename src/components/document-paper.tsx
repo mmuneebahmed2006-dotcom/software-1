@@ -248,17 +248,41 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
 
         <div style={{ width: "1px", height: "18px", backgroundColor: "var(--toolbar-muted)" }} />
 
-        <input
+        <div
           className="document-zoom-slider"
-          type="range"
-          min={40}
-          max={160}
-          step={1}
-          value={zoom}
-          onChange={(event) => handleZoom(Number(event.currentTarget.value))}
+          role="slider"
+          tabIndex={0}
           aria-label="Preview zoom"
+          aria-valuemin={40}
+          aria-valuemax={160}
+          aria-valuenow={zoom}
+          aria-valuetext={`${zoom}%`}
           title="Adjust preview zoom"
-        />
+          onPointerDown={(event) => {
+            event.currentTarget.setPointerCapture(event.pointerId);
+            const bounds = event.currentTarget.getBoundingClientRect();
+            handleZoom(40 + Math.round(((event.clientX - bounds.left) / bounds.width) * 120));
+          }}
+          onPointerMove={(event) => {
+            if (event.buttons !== 1) return;
+            const bounds = event.currentTarget.getBoundingClientRect();
+            handleZoom(40 + Math.round(((event.clientX - bounds.left) / bounds.width) * 120));
+          }}
+          onKeyDown={(event) => {
+            const changes: Record<string, number> = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -10, PageUp: 10 };
+            if (event.key === "Home") { event.preventDefault(); handleZoom(40); return; }
+            if (event.key === "End") { event.preventDefault(); handleZoom(160); return; }
+            const change = changes[event.key];
+            if (change !== undefined) { event.preventDefault(); handleZoom(zoom + change); }
+          }}
+        >
+          <span className="document-zoom-slider-track" aria-hidden="true" />
+          <span
+            className="document-zoom-slider-thumb"
+            aria-hidden="true"
+            style={{ left: `${((zoom - 40) / 120) * 100}%` }}
+          />
+        </div>
 
         <span className="document-zoom-value" aria-live="polite">{zoom}%</span>
 
