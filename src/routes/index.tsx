@@ -173,39 +173,6 @@ function Index() {
     }
 
     try {
-      // Standard page printing goes through the same page-sized PDF pipeline
-      // used by Download PDF. This avoids a second HTML-to-printer scaling pass.
-      if (settings.mode === "size" && window.desktop.printPdf) {
-        const selectedIndices = pageRangeIndices(printCapture.images.length, pageRanges);
-        if (!selectedIndices.length) { toast.error("The selected page range is empty."); return; }
-        const pdf = await buildPrintPdf(printCapture, {
-          paperSize: paperSize as PaperSizeKey,
-          landscape: settings.orientation === "landscape",
-          sizing: settings.sizing,
-          scale,
-          autoRotate: settings.autoRotate,
-          autoCenter: settings.autoCenter,
-          gray: settings.gray,
-          pageIndices: selectedIndices,
-        });
-        const result = await window.desktop.printPdf(await blobToDataUrl(pdf), {
-          paperSize,
-          deviceName: settings.printerName || undefined,
-          landscape: settings.orientation === "landscape",
-          copies: settings.copies,
-          duplex: settings.sides === "double" ? "longEdge" : "simplex",
-          dpi: settings.printAsImage ? settings.dpi : undefined,
-        });
-        if (result?.cancelled) return;
-        if (!result?.success) {
-          toast.error(`Print failed: ${result?.failureReason || "Windows rejected the print job."}`);
-          return;
-        }
-        toast.success("Print sent to the selected printer.");
-        setPrintOpen(false);
-        return;
-      }
-
       const printResult = await window.desktop.printDocument({
         // Keep the native printer media synchronized with the paper selected
         // in the print dialog. Without this field, main.cjs falls back to A4
