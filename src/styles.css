@@ -1704,54 +1704,86 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
 }
 
 
-/* White slider controls match the white controls on the dark app toolbar. */
+/* Explicit cross-browser styling for the white zoom slider on the dark floating toolbar. */
+.document-floating-toolbar {
+  align-items: center;
+}
 .document-floating-toolbar .document-zoom-slider {
-  appearance: none;
-  -webkit-appearance: none;
+  display: block;
+  flex: 0 0 92px;
+  align-self: center;
+  box-sizing: border-box;
   width: 92px;
   height: 20px;
   margin: 0 2px;
   padding: 0;
+  border: 0;
+  border-radius: 999px;
   background: transparent;
-  cursor: pointer;
   accent-color: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
 }
 .document-floating-toolbar .document-zoom-slider::-webkit-slider-runnable-track {
+  width: 100%;
   height: 3px;
-  border-radius: 999px;
-  background: #fff;
-}
-.document-floating-toolbar .document-zoom-slider::-moz-range-track {
-  height: 3px;
+  border: 0;
   border-radius: 999px;
   background: #fff;
 }
 .document-floating-toolbar .document-zoom-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
   width: 13px;
   height: 13px;
   margin-top: -5px;
-  border: 2px solid var(--toolbar, #171717);
+  border: 0;
   border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px #fff;
+}
+.document-floating-toolbar .document-zoom-slider::-moz-range-track {
+  width: 100%;
+  height: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+}
+.document-floating-toolbar .document-zoom-slider::-moz-range-progress {
+  height: 3px;
+  border: 0;
+  border-radius: 999px;
   background: #fff;
 }
 .document-floating-toolbar .document-zoom-slider::-moz-range-thumb {
-  width: 10px;
-  height: 10px;
-  border: 2px solid var(--toolbar, #171717);
+  box-sizing: border-box;
+  width: 13px;
+  height: 13px;
+  border: 0;
   border-radius: 50%;
   background: #fff;
+  box-shadow: 0 0 0 1px #fff;
+}
+.document-floating-toolbar .document-zoom-slider:focus {
+  outline: none;
 }
 .document-floating-toolbar .document-zoom-slider:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 3px;
-  border-radius: 999px;
 }
 .document-floating-toolbar .document-zoom-value {
+  display: inline-flex;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
   min-width: 42px;
+  height: 30px;
   color: #fff;
   font-size: 13px;
   font-weight: 700;
+  line-height: 1;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
