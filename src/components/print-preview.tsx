@@ -364,9 +364,9 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <div className="print-preview-paper-wrap">
               <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio), ["--sheet-ratio" as string]: String(sheetRatio) } as React.CSSProperties}>
                 {settings.mode === "size" && image && (
-                  <div className="print-preview-page-frame" style={{ ...safeAreaFrameStyle, alignItems: settings.sizing === "fit" || settings.autoCenter ? "center" : "flex-start", justifyContent: settings.sizing === "fit" || settings.autoCenter ? "center" : "flex-start" }}>
+                  <div className="print-preview-page-frame" style={{ ...safeAreaFrameStyle, alignItems: settings.sizing === "fit" ? "center" : "flex-start", justifyContent: settings.sizing === "fit" ? "center" : "flex-start" }}>
                     <img
-                      className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated" + (settings.autoCenter ? " auto-centered" : "") : "")}
+                      className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated" : "")}
                       src={image}
                       alt={paperLabel + " preview"}
                       style={previewImageStyle}
