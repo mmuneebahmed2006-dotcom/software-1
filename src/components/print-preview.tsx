@@ -156,6 +156,12 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
   const sheetRatio = settings.orientation === "landscape" ? 1 / paperRatio : paperRatio;
   // Mirror the 8 mm print-safe inset used by the PDF output on all scaling modes.
   const printMarginMm = 8;
+  const fitSheetMm = ({
+    "A4 21 × 29.7 cm": [210, 297],
+    "A5 14.8 × 21 cm": [148, 210],
+    "Letter 8.5 × 11 in": [215.9, 279.4],
+    "Legal 8.5 × 14 in": [215.9, 355.6],
+  } as Record<string, [number, number]>)[settings.paperSize] ?? [210, 297];
   const [pageWidthMm, pageHeightMm] = settings.orientation === "landscape"
     ? [fitSheetMm[1], fitSheetMm[0]]
     : fitSheetMm;
@@ -358,7 +364,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <div className="print-preview-paper-wrap">
               <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio), ["--sheet-ratio" as string]: String(sheetRatio) } as React.CSSProperties}>
                 {settings.mode === "size" && image && (
-                  <div className="print-preview-page-frame" style={{ ...safeAreaFrameStyle, alignItems: settings.sizing === "fit" || settings.autoCenter ? "center" : "flex-start", justifyContent: settings.sizing === "fit" || settings.autoCenter ? "center" : "flex-start" }}>
+                  <div className="print-preview-page-frame" style={{ ...safeAreaFrameStyle, alignItems: "center", justifyContent: "center" }}>
                     <img
                       className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated" + (settings.autoCenter ? " auto-centered" : "") : "")}
                       src={image}
