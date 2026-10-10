@@ -1884,3 +1884,35 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
     print-color-adjust: exact !important;
   }
 }
+
+
+/* PDF/print capture happens before @media print, so remove page gutters there too. */
+.paper.exporting {
+  width: var(--paper-width) !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+.paper.exporting > .document-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+.paper.exporting .document-content > div,
+.paper.exporting .document-header,
+.paper.exporting .identity-grid,
+.paper.exporting .items-section,
+.paper.exporting table,
+.paper.exporting .totals,
+.paper.exporting .closing-content,
+.paper.exporting .document-footer {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
