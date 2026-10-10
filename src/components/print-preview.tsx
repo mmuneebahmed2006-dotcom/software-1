@@ -154,10 +154,15 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   const paperRatio = PAPER_RATIOS[settings.paperSize] ?? PAPER_RATIOS["A4 21 × 29.7 cm"];
   const sheetRatio = settings.orientation === "landscape" ? 1 / paperRatio : paperRatio;
-  // The generated print sheet is full-size; keep its preview frame full-size too.
-  const safeAreaFrameStyle: React.CSSProperties | undefined = settings.mode === "size" && settings.sizing === "fit"
-    ? { width: "100%", height: "100%" }
-    : undefined;
+  // Mirror the 8 mm print-safe inset used by the PDF output on all scaling modes.
+  const printMarginMm = 8;
+  const [pageWidthMm, pageHeightMm] = settings.orientation === "landscape"
+    ? [fitSheetMm[1], fitSheetMm[0]]
+    : fitSheetMm;
+  const safeAreaFrameStyle: React.CSSProperties | undefined = settings.mode === "size" ? {
+    width: `${((pageWidthMm - 2 * printMarginMm) / pageWidthMm) * 100}%`,
+    height: `${((pageHeightMm - 2 * printMarginMm) / pageHeightMm) * 100}%`,
+  } : undefined;
   const previewImageStyle = useMemo<React.CSSProperties>(() => {
     const mm: Record<string, [number, number]> = { "A4 21 × 29.7 cm": [210, 297], "A5 14.8 × 21 cm": [148, 210], "Letter 8.5 × 11 in": [215.9, 279.4], "Legal 8.5 × 14 in": [215.9, 355.6] };
     const [pw, ph] = mm[settings.paperSize] ?? [210, 297];
@@ -165,17 +170,21 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     const sheetH = settings.orientation === "landscape" ? pw : ph;
     const [srcW, srcH]: [number, number] = captured?.size ?? [pw, ph];
     const rotate = settings.autoRotate && ((srcW > srcH) !== (sheetW > sheetH));
-    const pageW = srcW;
-    const pageH = srcH;
+    const pageW = rotate ? srcH : srcW;
+    const pageH = rotate ? srcW : srcH;
+    const usableW = sheetW - printMarginMm * 2;
+    const usableH = sheetH - printMarginMm * 2;
     const base: React.CSSProperties = { filter: settings.gray ? "grayscale(1)" : "none", flex: "none" };
     if (settings.sizing === "fit") return {
       ...base,
-      ["--img-w" as string]: rotate ? `${100 / sheetRatio}%` : "100%",
-      ["--img-h" as string]: rotate ? `${sheetRatio * 100}%` : "100%",
+      ["--img-w" as string]: "100%",
+      ["--img-h" as string]: "100%",
       objectFit: "contain",
     } as React.CSSProperties;
-    const k = settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) / 100 : 1;
-    return { ...base, ["--img-w" as string]: `${(pageW * k / sheetW) * 100}%`, ["--img-h" as string]: `${(pageH * k / sheetH) * 100}%`, objectFit: "fill" } as React.CSSProperties;
+    const requestedScale = settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) / 100 : 1;
+    const fitScale = Math.min(usableW / pageW, usableH / pageH);
+    const k = Math.min(requestedScale, fitScale);
+    return { ...base, ["--img-w" as string]: `${(pageW * k / usableW) * 100}%`, ["--img-h" as string]: `${(pageH * k / usableH) * 100}%`, objectFit: "fill" } as React.CSSProperties;
   }, [captured?.size, settings.gray, settings.orientation, settings.paperSize, settings.scale, settings.sizing]);
 
   const printerState = useMemo(() => {
