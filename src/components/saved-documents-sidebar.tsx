@@ -42,8 +42,11 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
   const [folder, setFolder] = useState("all");
   const [menuFolder, setMenuFolder] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [menuDocument, setMenuDocument] = useState<string | null>(null);
+  const [documentMenuPosition, setDocumentMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [deleteFolder, setDeleteFolder] = useState<string | null>(null);
   const folderMenuRef = useRef<HTMLDivElement | null>(null);
+  const documentMenuRef = useRef<HTMLDivElement | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<{ from: string; value: string } | null>(null);
   const [downloadFolder, setDownloadFolder] = useState<string | null>(null);
   const search = useDebounced(query);
@@ -68,6 +71,23 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [menuFolder]);
+
+  useEffect(() => {
+    if (!menuDocument) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!documentMenuRef.current?.contains(event.target as Node)) { setMenuDocument(null); setDocumentMenuPosition(null); }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") { setMenuDocument(null); setDocumentMenuPosition(null); } };
+    const closeOnScroll = () => { setMenuDocument(null); setDocumentMenuPosition(null); };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("scroll", closeOnScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("scroll", closeOnScroll, true);
+    };
+  }, [menuDocument]);
 
   const categoryDocuments = useMemo(() => (documents ?? []).filter((entry) => entry.docType === docType), [documents, docType]);
   const folderNames = useMemo(() => [...new Set([...(folders ?? []), ...categoryDocuments.map((entry) => entry.folder)])].filter(Boolean).sort(), [folders, categoryDocuments]);
@@ -97,6 +117,7 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
       <label className="history-filter"><span>History</span><select value={range} onChange={(event) => setRange(event.target.value)} aria-label="Document history date range"><option value="all">All dates</option><option value="3">Last 3 months</option><option value="4">Last 4 months</option><option value="6">Last 6 months</option><option value="custom">Custom range</option></select></label>
       {range === "custom" && <div className="history-custom"><input type="date" value={from} onChange={(event) => setFrom(event.target.value)} aria-label="History start date"/><input type="date" value={to} onChange={(event) => setTo(event.target.value)} aria-label="History end date"/></div>}
 
+      <div className="sidebar-folders-area">
       <div className="folder-toolbar">
         <button type="button" className={`folder-all ${folder === "all" ? "active" : ""}`} onClick={() => { setFolder("all"); onSelectFolder("") }}>All folders</button>
         <label className="folder-search"><Search size={13}/><input value={folderQuery} onChange={(event) => setFolderQuery(event.target.value)} placeholder="Search folders" aria-label="Search folders"/></label>
@@ -113,7 +134,9 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
         </span>)}
         {!visibleFolders.length && <small className="folder-empty">No folders match.</small>}
       </div>
+      </div>
 
+      <div className="sidebar-files-area">
       <label className="document-search"><Search size={16}/><input id="document-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, number, or folder" aria-label="Search saved documents"/></label>
       <div className="saved-list">
         {Object.keys(groups).length === 0 && <div className="saved-empty"><FileText size={23}/><span>{categoryDocuments.length ? "No documents found" : "No saved documents yet"}</span></div>}
@@ -122,16 +145,18 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
             {draft?.id === document.id
               ? <input autoFocus value={draft.value} onClick={(event) => event.stopPropagation()} onChange={(event) => setDraft({ id: document.id, value: event.target.value })} onBlur={commitDraft} onKeyDown={(event) => { if (event.key === "Enter") commitDraft(); if (event.key === "Escape") setDraft(null) }} aria-label="Document title"/>
               : <strong>{document.title}</strong>}
-            <small>{document.state.meta.number || DOC_LABELS[document.docType]} · {document.state.client.name || "No client"}</small>
-            <small>{document.state.meta.date || "No date"} · {document.folder || "No folder"}</small>
-            <small className="saved-item-total">{document.docType === "dc" ? "No pricing" : money(documentTotal(document.state, document.docType), document.state.currency)}</small>
+            <small className="saved-item-total">{document.docType === "dc" ? "No pricing" : `Total balance: ${money(documentTotal(document.state, document.docType), document.state.currency)}`}</small>
           </span></button>
           <div className="saved-item-actions">
-            <Button type="button" size="icon" variant="outline" disabled={busy} onClick={() => void onDownloadDocument(document)} aria-label={`Download ${document.title} as PDF`}><Download size={14}/></Button>
-            <Button type="button" size="icon" variant="outline" onClick={() => setDraft({ id: document.id, value: document.title })} aria-label={`Rename ${document.title}`}><Pencil size={14}/></Button>
-            <Button type="button" size="icon" variant="danger" onClick={() => void onDelete(document)} aria-label={`Delete ${document.title}`}><Trash2 size={14}/></Button>
+            <Button type="button" size="icon" variant="outline" className="saved-item-menu-trigger" aria-label={`Options for ${document.title}`} aria-haspopup="menu" aria-expanded={menuDocument === document.id} onClick={(event) => { event.stopPropagation(); if (menuDocument === document.id) { setMenuDocument(null); setDocumentMenuPosition(null); } else { const rect = event.currentTarget.getBoundingClientRect(); setMenuDocument(document.id); setDocumentMenuPosition({ top: rect.bottom + 4, left: rect.right - 156 }); } }}><MoreVertical size={15}/></Button>
+            {menuDocument === document.id && documentMenuPosition && <div ref={documentMenuRef} className="saved-document-menu" role="menu" style={documentMenuPosition}>
+              <button type="button" role="menuitem" onClick={() => { setDraft({ id: document.id, value: document.title }); setMenuDocument(null); setDocumentMenuPosition(null); }}><Pencil size={13}/> Rename</button>
+              <button type="button" role="menuitem" disabled={busy} onClick={() => { setMenuDocument(null); setDocumentMenuPosition(null); void onDownloadDocument(document); }}><Download size={13}/> Download</button>
+              <button type="button" role="menuitem" className="danger" onClick={() => { setMenuDocument(null); setDocumentMenuPosition(null); void onDelete(document); }}><Trash2 size={13}/> Delete</button>
+            </div>}
           </div>
         </div>)}</section>)}
+      </div>
       </div>
     </>}
 
