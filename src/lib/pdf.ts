@@ -111,22 +111,19 @@ export async function buildPrintPdf(
       if (rotate) [drawSourceW, drawSourceH] = [sourceH, sourceW];
     }
 
-    // Keep a fixed 8 mm print-safe inset on every edge. Cap Actual/Custom
-    // at that printable box when their requested scale would cross it.
-    const marginMm = 8;
-    const usableW = Math.max(1, pageW - marginMm * 2);
-    const usableH = Math.max(1, pageH - marginMm * 2);
-    const fitScale = Math.min(usableW / drawSourceW, usableH / drawSourceH);
-    const requestedScale = options.sizing === "fit"
+    // Use the entire selected sheet as the scale reference. Fit is the only
+    // mode that scales automatically; Actual is 1:1 and Custom uses its exact
+    // requested percentage. Do not silently cap either mode to a margin box.
+    const fitScale = Math.min(pageW / drawSourceW, pageH / drawSourceH);
+    const factor = options.sizing === "fit"
       ? fitScale
       : options.sizing === "custom"
         ? Math.min(400, Math.max(10, Number(options.scale) || 100)) / 100
         : 1;
-    const factor = Math.min(requestedScale, fitScale);
     const drawW = drawSourceW * factor;
     const drawH = drawSourceH * factor;
-    const x = (pageW - drawW) / 2;
-    const y = (pageH - drawH) / 2;
+    const x = options.autoCenter ? (pageW - drawW) / 2 : 0;
+    const y = options.autoCenter ? (pageH - drawH) / 2 : 0;
 
     if (outputIndex > 0) pdf.addPage([pageW, pageH], orientation);
     pdf.addImage(image, "PNG", x, y, drawW, drawH, undefined, "NONE");
