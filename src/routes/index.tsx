@@ -135,7 +135,7 @@ function Index() {
 
     const scale = settings.sizing === "custom"
       ? Math.min(400, Math.max(10, Number(settings.scale) || 100))
-      : settings.sizing === "actual" ? 100 : 96;
+      : 100;
 
     const paperSize = ({
       "A4 21 × 29.7 cm": "A4",
