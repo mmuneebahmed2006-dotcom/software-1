@@ -1765,3 +1765,122 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+
+
+/* Final print page reset: zero CSS margins and the selected physical sheet size. */
+@page {
+  margin: 0;
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box !important;
+  }
+
+  html,
+  body,
+  #root,
+  .studio-shell,
+  .studio-main,
+  .print-area,
+  .document-paper-wrapper,
+  .invoice-container {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+
+  .studio-shell,
+  .studio-main,
+  .print-area,
+  .document-paper-wrapper,
+  .invoice-container {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  #document-pages {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    transform: none !important;
+    transform-origin: top left !important;
+    overflow: visible !important;
+  }
+
+  #document-pages > .paper {
+    display: flex !important;
+    width: var(--paper-width) !important;
+    max-width: none !important;
+    height: var(--paper-height) !important;
+    min-height: var(--paper-height) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    transform-origin: top left !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    break-after: page !important;
+    page-break-after: always !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    box-shadow: none !important;
+  }
+
+  #document-pages > .paper:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+
+  .paper > .document-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+  }
+
+  .paper .document-header,
+  .paper .identity-grid,
+  .paper .items-section,
+  .paper table,
+  .paper .totals,
+  .paper .closing-content,
+  .paper .document-footer {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-area,
+  #document-pages,
+  .paper,
+  .paper * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
