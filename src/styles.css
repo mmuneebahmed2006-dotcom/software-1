@@ -1606,3 +1606,99 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   background: color-mix(in oklab, var(--muted-foreground) 38%, transparent);
   background-clip: padding-box;
 }
+
+
+/* Sidebar boundary: folder controls and both searches stay above the saved-file pane. */
+.saved-sidebar:not(.collapsed) {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section .sidebar-folders-area {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(34vh, 300px);
+  padding: 0;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section .folder-toolbar {
+  flex: 0 0 auto;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section .folder-chips {
+  min-height: 0;
+  flex: 1 1 auto;
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 38%, transparent) transparent;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section > .document-search {
+  box-sizing: border-box;
+  flex: 0 0 38px;
+  width: 100%;
+  margin: 12px 0 0;
+}
+.saved-sidebar:not(.collapsed) .sidebar-files-divider {
+  box-sizing: border-box;
+  flex: 0 0 1px;
+  width: 100%;
+  margin: 12px 0;
+  border: 0;
+  background: var(--sidebar-border, var(--border));
+}
+.saved-sidebar:not(.collapsed) .sidebar-bottom-section {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .sidebar-bottom-section > .saved-list {
+  box-sizing: border-box;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 38%, transparent) transparent;
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+.saved-sidebar:not(.collapsed) .sidebar-bottom-section .saved-group {
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+.saved-sidebar:not(.collapsed) .sidebar-bottom-section .saved-item {
+  align-self: start;
+  min-height: 0;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section .folder-chips::-webkit-scrollbar,
+.saved-sidebar:not(.collapsed) .sidebar-bottom-section > .saved-list::-webkit-scrollbar {
+  width: 8px;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section .folder-chips::-webkit-scrollbar-track,
+.saved-sidebar:not(.collapsed) .sidebar-bottom-section > .saved-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section .folder-chips::-webkit-scrollbar-thumb,
+.saved-sidebar:not(.collapsed) .sidebar-bottom-section > .saved-list::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--muted-foreground) 38%, transparent);
+  background-clip: padding-box;
+}
