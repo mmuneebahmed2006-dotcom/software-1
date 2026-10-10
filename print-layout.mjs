@@ -77,10 +77,10 @@ function buildPrintHtml(options,images) {
   function pageBox(srcImg,label,bw,bh) {
     if(!srcImg) return '<div class="blank"></div>';
     const turn=rotate&&((sw>sh)!==(bw>bh)), fit=sizing==='fit'||sizing==='shrink', k=sizing==='custom'?scale:1;
-    const fitMargin=fit&&mode==='size'?(options.paperSize==='A5'?4:5):0;
-    const fitW=Math.max(1,bw-2*fitMargin), fitH=Math.max(1,bh-2*fitMargin);
-    const iw=fit?(turn?fitH:fitW)+'mm':(sw*k)+'mm';
-    const ih=fit?(turn?fitW:fitH)+'mm':(sh*k)+'mm';
+    // Fit uses the complete selected sheet. The browser/driver printable area
+    // is applied by the printer; adding a second inset here shrinks the invoice.
+    const iw=fit?(turn?bh:bw)+'mm':(sw*k)+'mm';
+    const ih=fit?(turn?bw:bh)+'mm':(sh*k)+'mm';
     return '<div class="pagebox" style="--bw:'+bw+'mm;--bh:'+bh+'mm"><img class="'+(fit?'fit ':'')+(turn?'rotated ':'')+(center?'centered':'')+'" src="'+esc(srcImg)+'" alt="" style="width:'+iw+';height:'+ih+';'+(gray?'filter:grayscale(1);':'')+'">'+(mode==='size'?'':'<span>'+esc(label)+'</span>')+'</div>';
   }
   let body='';
