@@ -191,7 +191,6 @@ function Index() {
         duplex: settings.mode === "booklet"
           ? settings.bookletSubset === "both" ? "shortEdge" : "simplex"
           : settings.sides === "double" ? "longEdge" : "simplex",
-        paperSize,
         dpi: settings.printAsImage ? settings.dpi : undefined,
         images: printCapture.images,
         autoRotate: settings.autoRotate,
