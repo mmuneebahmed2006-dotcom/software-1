@@ -125,8 +125,8 @@ export async function buildPrintPdf(
     const factor = Math.min(requestedScale, fitScale);
     const drawW = drawSourceW * factor;
     const drawH = drawSourceH * factor;
-    const x = options.autoCenter ? (pageW - drawW) / 2 : marginMm;
-    const y = options.autoCenter ? (pageH - drawH) / 2 : marginMm;
+    const x = (pageW - drawW) / 2;
+    const y = (pageH - drawH) / 2;
 
     if (outputIndex > 0) pdf.addPage([pageW, pageH], orientation);
     pdf.addImage(image, "PNG", x, y, drawW, drawH, undefined, "NONE");
