@@ -126,9 +126,9 @@ function Index() {
   }, [captureCurrent, isPrinting]);
 
   const executePrint = useCallback(async (settings: PrintSettings) => {
-    // The print preview owns all print settings. Submit one silent Electron
-    // print job directly to the selected Windows printer; never call
-    // window.print(), because that opens the browser/native print dialog.
+    // The print preview owns the print settings. Standard pages print from an
+    // in-memory PDF stream; browser fallbacks print an isolated PDF/HTML frame,
+    // never the live editor DOM.
     if (!printCapture?.images?.length) { toast.error("Nothing to print."); return; }
 
     const pageRanges = selectPageRanges(printCapture.images.length, settings);
