@@ -1654,7 +1654,7 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   box-sizing: border-box;
   flex: 0 0 1px;
   width: 100%;
-  margin: 12px 0;
+  margin: clamp(112px, 17vh, 160px) 0 12px;
   border: 0;
   background: var(--sidebar-border, var(--border));
 }
