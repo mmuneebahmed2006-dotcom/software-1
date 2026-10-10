@@ -138,10 +138,10 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
       </div>
       </div>
 
-      <label className="document-search"><Search size={16}/><input id="document-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, number, or folder" aria-label="Search saved documents"/></label>
       </div>
       <div className="sidebar-files-divider" role="separator" aria-orientation="horizontal"/>
       <div className="sidebar-bottom-section">
+      <label className="document-search"><Search size={16}/><input id="document-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search file or number" aria-label="Search saved documents"/></label>
       <div className="saved-list">
         {Object.keys(groups).length === 0 && <div className="saved-empty"><FileText size={23}/><span>{categoryDocuments.length ? "No documents found" : "No saved documents yet"}</span></div>}
         {Object.entries(groups).map(([label, entries]) => <section className="saved-group" key={label}><h3>{label}</h3>{entries.map((document) => <div key={document.id} className={`saved-item ${activeId === document.id ? "active" : ""}`}>
