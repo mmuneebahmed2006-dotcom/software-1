@@ -1704,7 +1704,10 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
 }
 
 
-/* White custom zoom slider avoids browser-native range colors entirely. */
+/* Custom zoom slider uses dark controls on the white toolbar surface. */
+.document-floating-toolbar {
+  align-items: center;
+}
 .document-floating-toolbar .document-zoom-slider {
   position: relative;
   display: block;
@@ -1730,7 +1733,7 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   height: 3px;
   transform: translateY(-50%);
   border-radius: 999px;
-  background: #fff;
+  background: var(--muted-foreground, #858b95);
 }
 .document-floating-toolbar .document-zoom-slider-thumb {
   position: absolute;
@@ -1738,14 +1741,14 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   width: 13px;
   height: 13px;
   transform: translate(-50%, -50%);
-  border: 0;
+  border: 2px solid #fff;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 0 1px #fff;
+  background: var(--primary, #202124);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 28%);
   pointer-events: none;
 }
 .document-floating-toolbar .document-zoom-slider:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--ring, #777);
   outline-offset: 3px;
 }
 .document-floating-toolbar .document-zoom-value {
@@ -1755,7 +1758,7 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   justify-content: center;
   min-width: 42px;
   height: 30px;
-  color: #fff;
+  color: var(--foreground, #202124);
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
