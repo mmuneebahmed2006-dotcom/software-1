@@ -373,7 +373,11 @@ function createSplashWindow() {
       sandbox: true
     }
   });
-  splashWin.loadFile(path.join(__dirname, 'splash.html'));
+  void splashWin.loadFile(path.join(__dirname, 'splash.html')).catch((error) => {
+    log(`Splash screen failed to load: ${error.message}`);
+    if (splashWin && !splashWin.isDestroyed()) splashWin.close();
+    splashWin = null;
+  });
 }
 
 function createWindow() {
