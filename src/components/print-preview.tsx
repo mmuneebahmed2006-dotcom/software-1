@@ -347,7 +347,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
                 {settings.mode === "size" && image && (
                   <div className="print-preview-page-frame" style={{ alignItems: settings.autoCenter ? "center" : "flex-start", justifyContent: settings.autoCenter ? "center" : "flex-start" }}>
                     <img
-                      className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated" : "")}
+                      className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated" + (settings.autoCenter ? " auto-centered" : "") : "")}
                       src={image}
                       alt={paperLabel + " preview"}
                       style={previewImageStyle}
