@@ -1372,3 +1372,123 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
 .saved-item-actions button:focus-visible { opacity: 1; outline: 2px solid var(--primary); outline-offset: 1px; }
 
 
+
+
+/* Saved documents sidebar: folders stay above a dedicated files pane. */
+.saved-sidebar:not(.collapsed) {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .sidebar-folders-area {
+  display: flex;
+  flex: 0 1 38%;
+  flex-direction: column;
+  min-height: 92px;
+  max-height: 38vh;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .folder-toolbar {
+  flex: 0 0 auto;
+}
+.saved-sidebar:not(.collapsed) .folder-chips {
+  min-height: 0;
+  flex: 1 1 auto;
+  align-content: start;
+  overflow-y: auto;
+}
+.saved-sidebar:not(.collapsed) .sidebar-files-area {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+}
+.saved-sidebar:not(.collapsed) .sidebar-files-area > .document-search {
+  flex: 0 0 38px;
+  margin-top: 10px;
+}
+.saved-sidebar:not(.collapsed) .sidebar-files-area > .saved-list {
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 0;
+  margin-top: 8px;
+  padding-bottom: 4px;
+}
+.saved-sidebar:not(.collapsed) .saved-item {
+  min-height: 46px;
+  padding: 2px 4px;
+}
+.saved-sidebar:not(.collapsed) .saved-item-main {
+  padding: 3px;
+}
+.saved-sidebar:not(.collapsed) .saved-item-main span {
+  gap: 1px;
+}
+.saved-sidebar:not(.collapsed) .saved-item-main strong {
+  line-height: 1.25;
+}
+.saved-sidebar:not(.collapsed) .saved-item-main small {
+  margin-top: 0;
+  line-height: 1.25;
+}
+.saved-sidebar:not(.collapsed) .saved-item-actions {
+  position: relative;
+  display: flex;
+  opacity: 1;
+}
+.saved-sidebar:not(.collapsed) .saved-item-actions .saved-item-menu-trigger {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  background: transparent;
+}
+.saved-document-menu {
+  position: fixed;
+  z-index: 1000;
+  width: 156px;
+  padding: 4px;
+  border: 1px solid var(--sidebar-border);
+  border-radius: var(--radius);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 8px 24px oklch(0 0 0 / .18);
+}
+.saved-document-menu button {
+  width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: calc(var(--radius) - 2px);
+  background: transparent;
+  color: inherit;
+  padding: 6px 8px;
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+.saved-document-menu button:hover,
+.saved-document-menu button:focus-visible {
+  outline: 0;
+  background: var(--sidebar-accent);
+}
+.saved-document-menu button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+.saved-document-menu button.danger {
+  color: var(--destructive);
+}
+.saved-document-menu button.danger:hover,
+.saved-document-menu button.danger:focus-visible {
+  background: var(--destructive-soft);
+}
+@media (max-height: 680px) {
+  .saved-sidebar:not(.collapsed) .sidebar-folders-area {
+    flex-basis: 32%;
+    max-height: 32vh;
+  }
+}
