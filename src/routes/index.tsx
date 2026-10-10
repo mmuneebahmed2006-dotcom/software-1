@@ -306,7 +306,6 @@ function Index() {
   }, [documents, setDocuments]);
 
   const deleteDocument = useCallback(async (entry: SavedDocument) => {
-    if (!window.confirm("Delete this saved document?")) return;
     try {
       if (window.desktop) await window.desktop.deleteDocument(entry);
       setDocuments((list) => list.filter((item) => item.id !== entry.id));
