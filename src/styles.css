@@ -403,7 +403,8 @@ body.startup-active .document-paper-wrapper {
   .document-pages { display: block !important; height: auto !important; min-height: 0 !important; }
   .paper {
     box-sizing: border-box !important;
-    width: 100% !important; max-width: 100% !important;
+    width: var(--paper-width) !important;
+    max-width: none !important;
     height: var(--paper-height) !important;
     min-height: var(--paper-height) !important;
     overflow: visible !important;
@@ -1944,33 +1945,13 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
 }
 
 
-/* PDF/print capture happens before @media print, so remove page gutters there too. */
+/* PDF capture preserves the live paper geometry. Only remove screen-only decoration. */
 .paper.exporting {
   width: var(--paper-width) !important;
   max-width: none !important;
   margin: 0 !important;
-  padding: 0 !important;
   box-sizing: border-box !important;
 }
 .paper.exporting > .document-content {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
   overflow: visible !important;
-  box-sizing: border-box !important;
-}
-.paper.exporting .document-content > div,
-.paper.exporting .document-header,
-.paper.exporting .identity-grid,
-.paper.exporting .items-section,
-.paper.exporting table,
-.paper.exporting .totals,
-.paper.exporting .closing-content,
-.paper.exporting .document-footer {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  box-sizing: border-box !important;
 }
