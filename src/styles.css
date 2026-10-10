@@ -1544,3 +1544,65 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   width: 24px;
   height: 24px;
 }
+
+
+/* Sidebar sections use separate, bounded scroll areas with one balanced divider gap. */
+.saved-sidebar:not(.collapsed) {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .sidebar-folders-area {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(34vh, 300px);
+  margin: 0;
+  padding: 0 0 12px;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .folder-chips {
+  min-height: 0;
+  flex: 1 1 auto;
+  margin-bottom: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 38%, transparent) transparent;
+}
+.saved-sidebar:not(.collapsed) .sidebar-files-area {
+  min-height: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .sidebar-files-area > .document-search {
+  flex: 0 0 38px;
+  margin: 0;
+}
+.saved-sidebar:not(.collapsed) .sidebar-files-area > .saved-list {
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 0;
+  margin-top: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 38%, transparent) transparent;
+}
+.saved-sidebar:not(.collapsed) .folder-chips::-webkit-scrollbar,
+.saved-sidebar:not(.collapsed) .sidebar-files-area > .saved-list::-webkit-scrollbar {
+  width: 8px;
+}
+.saved-sidebar:not(.collapsed) .folder-chips::-webkit-scrollbar-track,
+.saved-sidebar:not(.collapsed) .sidebar-files-area > .saved-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.saved-sidebar:not(.collapsed) .folder-chips::-webkit-scrollbar-thumb,
+.saved-sidebar:not(.collapsed) .sidebar-files-area > .saved-list::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--muted-foreground) 38%, transparent);
+  background-clip: padding-box;
+}
