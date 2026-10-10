@@ -154,6 +154,20 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   const paperRatio = PAPER_RATIOS[settings.paperSize] ?? PAPER_RATIOS["A4 21 × 29.7 cm"];
   const sheetRatio = settings.orientation === "landscape" ? 1 / paperRatio : paperRatio;
+  const fitMarginMm = settings.paperSize === "A5 14.8 × 21 cm" ? 4 : 5;
+  const fitSheetMm = ({
+    "A4 21 × 29.7 cm": [210, 297],
+    "A5 14.8 × 21 cm": [148, 210],
+    "Letter 8.5 × 11 in": [215.9, 279.4],
+    "Legal 8.5 × 14 in": [215.9, 355.6],
+  } as Record<string, [number, number]>)[settings.paperSize] ?? [210, 297];
+  const [fitSheetWidth, fitSheetHeight] = settings.orientation === "landscape"
+    ? [fitSheetMm[1], fitSheetMm[0]]
+    : fitSheetMm;
+  const safeAreaFrameStyle: React.CSSProperties | undefined = settings.mode === "size" && settings.sizing === "fit" ? {
+    width: `${((fitSheetWidth - 2 * fitMarginMm) / fitSheetWidth) * 100}%`,
+    height: `${((fitSheetHeight - 2 * fitMarginMm) / fitSheetHeight) * 100}%`,
+  } : undefined;
   const previewImageStyle = useMemo<React.CSSProperties>(() => {
     const mm: Record<string, [number, number]> = { "A4 21 × 29.7 cm": [210, 297], "A5 14.8 × 21 cm": [148, 210], "Letter 8.5 × 11 in": [215.9, 279.4], "Legal 8.5 × 14 in": [215.9, 355.6] };
     const [pw, ph] = mm[settings.paperSize] ?? [210, 297];
@@ -345,7 +359,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <div className="print-preview-paper-wrap">
               <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio), ["--sheet-ratio" as string]: String(sheetRatio) } as React.CSSProperties}>
                 {settings.mode === "size" && image && (
-                  <div className="print-preview-page-frame" style={{ alignItems: settings.autoCenter ? "center" : "flex-start", justifyContent: settings.autoCenter ? "center" : "flex-start" }}>
+                  <div className="print-preview-page-frame" style={{ ...safeAreaFrameStyle, alignItems: settings.sizing === "fit" || settings.autoCenter ? "center" : "flex-start", justifyContent: settings.sizing === "fit" || settings.autoCenter ? "center" : "flex-start" }}>
                     <img
                       className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated" + (settings.autoCenter ? " auto-centered" : "") : "")}
                       src={image}
