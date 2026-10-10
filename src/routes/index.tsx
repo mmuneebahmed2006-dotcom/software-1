@@ -174,6 +174,10 @@ function Index() {
 
     try {
       const printResult = await window.desktop.printDocument({
+        // Keep the native printer media synchronized with the paper selected
+        // in the print dialog. Without this field, main.cjs falls back to A4
+        // even when the preview is set to A5, Letter, or Legal.
+        paperSize,
         sourceSize: printCapture.size,
         silent: true,
         deviceName: settings.printerName || undefined,
