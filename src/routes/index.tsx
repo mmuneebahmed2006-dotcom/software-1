@@ -14,7 +14,7 @@ import { StartupExperience } from "@/components/startup-experience";
 import { Button } from "@/components/ui/button";
 import { useHistoryState } from "@/hooks/use-history-state";
 import { useSavedDocuments } from "@/hooks/use-saved-documents";
-import { buildPdf, capturePages, saveFile, type CapturedDocument } from "@/lib/pdf";
+import { blobToDataUrl, buildPdf, buildPrintPdf, capturePages, saveFile, type CapturedDocument } from "@/lib/pdf";
 import { CURRENCIES, DOC_LABELS, PAPER_SIZES, applyCompanyDetails, companyFromState, createBlankDocumentState, safeFileName, uid, type CompanyDetails, type CompanyScope, type DocState, type DocType, type PaperSizeKey, type SavedDocument } from "@/lib/document";
 
 const DOC_ORDER: DocType[] = ["invoice", "quotation", "dc", "tax"];
@@ -144,7 +144,81 @@ function Index() {
       "Legal 8.5 × 14 in": "Legal",
     } as Record<string, string>)[settings.paperSize] ?? "A4";
 
+    const printPdfBlob = async () => {
+      const selectedIndices = pageRangeIndices(printCapture.images.length, pageRanges);
+      if (!selectedIndices.length) throw new Error("The selected page range is empty.");
+      return buildPrintPdf(printCapture, {
+        paperSize: paperSize as PaperSizeKey,
+        landscape: settings.orientation === "landscape",
+        sizing: settings.sizing,
+        scale,
+        autoRotate: settings.autoRotate,
+        autoCenter: settings.autoCenter,
+        gray: settings.gray,
+        pageIndices: selectedIndices,
+      });
+    };
+
+    // Desktop printing consumes the same in-memory PDF page stream as export;
+    // it never asks Chromium to print the live editor DOM.
+    if (settings.mode === "size" && window.desktop?.printPdf) {
+      try {
+        const pdf = await printPdfBlob();
+        const result = await window.desktop.printPdf(await blobToDataUrl(pdf), {
+          paperSize,
+          deviceName: settings.printerName || undefined,
+          landscape: settings.orientation === "landscape",
+          copies: settings.copies,
+          duplex: settings.sides === "double" ? "longEdge" : "simplex",
+          dpi: settings.printAsImage ? settings.dpi : undefined,
+        });
+        if (result?.cancelled) return;
+        if (!result?.success) {
+          toast.error(`Print failed: ${result?.failureReason || "Windows rejected the print job."}`);
+          return;
+        }
+        toast.success("Print sent to the selected printer.");
+        setPrintOpen(false);
+      } catch (error) {
+        console.error("PDF print error:", error);
+        toast.error("Print could not be started.");
+      }
+      return;
+    }
+
     if (!window.desktop?.printDocument) {
+      if (settings.mode === "size") {
+        const blob = await printPdfBlob();
+        const blobUrl = URL.createObjectURL(blob);
+        const frame = document.createElement("iframe");
+        frame.title = "Invoice PDF print";
+        frame.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;border:0;opacity:0;pointer-events:none;z-index:-1";
+        const cleanup = () => {
+          frame.remove();
+          URL.revokeObjectURL(blobUrl);
+        };
+        frame.onload = () => {
+          window.setTimeout(() => {
+            try {
+              frame.contentWindow?.focus();
+              frame.contentWindow?.print();
+              window.setTimeout(cleanup, 60000);
+            } catch (error) {
+              cleanup();
+              console.error("PDF frame print error:", error);
+              toast.error("Print could not be started.");
+            }
+          }, 300);
+        };
+        frame.onerror = () => {
+          cleanup();
+          toast.error("The print PDF could not be loaded.");
+        };
+        frame.src = blobUrl;
+        document.body.append(frame);
+        setPrintOpen(false);
+        return;
+      }
       const indices = pageRangeIndices(printCapture.images.length, pageRanges);
       const pages = indices.map((index) => printCapture.images[index]);
       if (!pages.length) { toast.error("The selected page range is empty."); return; }
