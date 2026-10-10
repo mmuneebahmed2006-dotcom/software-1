@@ -1492,3 +1492,55 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
     max-height: 32vh;
   }
 }
+
+
+/* Compact saved-file rows and remove the excess gap between sidebar sections. */
+.saved-sidebar:not(.collapsed) .sidebar-folders-area {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: 34vh;
+  padding-bottom: 10px;
+}
+.saved-sidebar:not(.collapsed) .folder-chips {
+  flex: 0 1 auto;
+  align-content: start;
+}
+.saved-sidebar:not(.collapsed) .sidebar-files-area > .document-search {
+  margin-top: 0;
+}
+.saved-sidebar:not(.collapsed) .sidebar-files-area > .saved-list {
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+.saved-sidebar:not(.collapsed) .saved-group {
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+.saved-sidebar:not(.collapsed) .saved-item {
+  align-self: start;
+  min-height: 0;
+  border: 0;
+  border-radius: 5px;
+  padding: 3px 4px;
+  box-shadow: none;
+}
+.saved-sidebar:not(.collapsed) .saved-item.active {
+  border: 0;
+  background: var(--sidebar-accent);
+  box-shadow: inset 2px 0 var(--primary);
+}
+.saved-sidebar:not(.collapsed) .saved-item:hover {
+  background: var(--sidebar-accent);
+}
+.saved-sidebar:not(.collapsed) .saved-item-main {
+  min-height: 38px;
+  padding: 3px 4px;
+}
+.saved-sidebar:not(.collapsed) .saved-item-main > svg {
+  width: 15px;
+  height: 15px;
+}
+.saved-sidebar:not(.collapsed) .saved-item-actions .saved-item-menu-trigger {
+  width: 24px;
+  height: 24px;
+}
