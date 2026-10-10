@@ -154,20 +154,10 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   const paperRatio = PAPER_RATIOS[settings.paperSize] ?? PAPER_RATIOS["A4 21 × 29.7 cm"];
   const sheetRatio = settings.orientation === "landscape" ? 1 / paperRatio : paperRatio;
-  const fitMarginMm = settings.paperSize === "A5 14.8 × 21 cm" ? 4 : 5;
-  const fitSheetMm = ({
-    "A4 21 × 29.7 cm": [210, 297],
-    "A5 14.8 × 21 cm": [148, 210],
-    "Letter 8.5 × 11 in": [215.9, 279.4],
-    "Legal 8.5 × 14 in": [215.9, 355.6],
-  } as Record<string, [number, number]>)[settings.paperSize] ?? [210, 297];
-  const [fitSheetWidth, fitSheetHeight] = settings.orientation === "landscape"
-    ? [fitSheetMm[1], fitSheetMm[0]]
-    : fitSheetMm;
-  const safeAreaFrameStyle: React.CSSProperties | undefined = settings.mode === "size" && settings.sizing === "fit" ? {
-    width: `${((fitSheetWidth - 2 * fitMarginMm) / fitSheetWidth) * 100}%`,
-    height: `${((fitSheetHeight - 2 * fitMarginMm) / fitSheetHeight) * 100}%`,
-  } : undefined;
+  // The generated print sheet is full-size; keep its preview frame full-size too.
+  const safeAreaFrameStyle: React.CSSProperties | undefined = settings.mode === "size" && settings.sizing === "fit"
+    ? { width: "100%", height: "100%" }
+    : undefined;
   const previewImageStyle = useMemo<React.CSSProperties>(() => {
     const mm: Record<string, [number, number]> = { "A4 21 × 29.7 cm": [210, 297], "A5 14.8 × 21 cm": [148, 210], "Letter 8.5 × 11 in": [215.9, 279.4], "Legal 8.5 × 14 in": [215.9, 355.6] };
     const [pw, ph] = mm[settings.paperSize] ?? [210, 297];
