@@ -14,7 +14,7 @@ import { StartupExperience } from "@/components/startup-experience";
 import { Button } from "@/components/ui/button";
 import { useHistoryState } from "@/hooks/use-history-state";
 import { useSavedDocuments } from "@/hooks/use-saved-documents";
-import { blobToDataUrl, buildPdf, buildPrintPdf, capturePages, saveFile, type CapturedDocument } from "@/lib/pdf";
+import { buildPdf, capturePages, saveFile, type CapturedDocument } from "@/lib/pdf";
 import { CURRENCIES, DOC_LABELS, PAPER_SIZES, applyCompanyDetails, companyFromState, createBlankDocumentState, safeFileName, uid, type CompanyDetails, type CompanyScope, type DocState, type DocType, type PaperSizeKey, type SavedDocument } from "@/lib/document";
 
 const DOC_ORDER: DocType[] = ["invoice", "quotation", "dc", "tax"];
