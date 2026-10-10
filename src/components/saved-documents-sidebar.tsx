@@ -45,6 +45,7 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
   const [menuDocument, setMenuDocument] = useState<string | null>(null);
   const [documentMenuPosition, setDocumentMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [deleteFolder, setDeleteFolder] = useState<string | null>(null);
+  const [deleteFile, setDeleteFile] = useState<SavedDocument | null>(null);
   const folderMenuRef = useRef<HTMLDivElement | null>(null);
   const documentMenuRef = useRef<HTMLDivElement | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<{ from: string; value: string } | null>(null);
@@ -151,8 +152,8 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
             <Button type="button" size="icon" variant="outline" className="saved-item-menu-trigger" aria-label={`Options for ${document.title}`} aria-haspopup="menu" aria-expanded={menuDocument === document.id} onClick={(event) => { event.stopPropagation(); if (menuDocument === document.id) { setMenuDocument(null); setDocumentMenuPosition(null); } else { const rect = event.currentTarget.getBoundingClientRect(); setMenuDocument(document.id); setDocumentMenuPosition({ top: rect.bottom + 4, left: rect.right - 156 }); } }}><MoreVertical size={15}/></Button>
             {menuDocument === document.id && documentMenuPosition && <div ref={documentMenuRef} className="saved-document-menu" role="menu" style={documentMenuPosition}>
               <button type="button" role="menuitem" onClick={() => { setDraft({ id: document.id, value: document.title }); setMenuDocument(null); setDocumentMenuPosition(null); }}><Pencil size={13}/> Rename</button>
+              <button type="button" role="menuitem" className="danger" onClick={() => { setMenuDocument(null); setDocumentMenuPosition(null); setDeleteFile(document); }}><Trash2 size={13}/> Delete</button>
               <button type="button" role="menuitem" disabled={busy} onClick={() => { setMenuDocument(null); setDocumentMenuPosition(null); void onDownloadDocument(document); }}><Download size={13}/> Download</button>
-              <button type="button" role="menuitem" className="danger" onClick={() => { setMenuDocument(null); setDocumentMenuPosition(null); void onDelete(document); }}><Trash2 size={13}/> Delete</button>
             </div>}
           </div>
         </div>)}</section>)}
@@ -166,6 +167,16 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setDeleteFolder(null)}>Cancel</Button>
           <Button type="button" variant="danger" onClick={() => { const name = deleteFolder; setDeleteFolder(null); if (name) void onDeleteFolder(name) }}>Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={Boolean(deleteFile)} onOpenChange={(open) => !open && setDeleteFile(null)}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Delete file</DialogTitle><DialogDescription>Delete “{deleteFile?.title}” and remove it from this list?</DialogDescription></DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setDeleteFile(null)}>Cancel</Button>
+          <Button type="button" variant="danger" onClick={() => { const entry = deleteFile; setDeleteFile(null); if (entry) void onDelete(entry) }}>Delete</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
