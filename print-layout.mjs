@@ -63,8 +63,10 @@ function buildPrintHtml(options,images) {
   const size=PAPER_MM[options.paperSize]||PAPER_MM.A4, pw=size[0], ph=size[1];
   const W=options.landscape?ph:pw, H=options.landscape?pw:ph;
   const mode=['size','poster','multiple','booklet'].includes(options.mode)?options.mode:'size';
-  const margin=mode==='size'?8:0;
-  const pageW=W-2*margin, pageH=H-2*margin;
+  // Browser print uses the full selected sheet; do not add an app-side margin
+  // that silently reduces Actual Size or Custom Scale.
+  const margin=0;
+  const pageW=W, pageH=H;
   const pageName=options.paperSize==='A5'?'A5':options.paperSize==='Letter'?'letter':options.paperSize==='Legal'?'legal':'A4';
   const pageOrientation=options.landscape?'landscape':'portrait';
   const src=Array.isArray(options.sourceSize)?options.sourceSize.map(Number):PAPER_MM.A4;
@@ -75,8 +77,8 @@ function buildPrintHtml(options,images) {
   function pageBox(srcImg,label,bw,bh) {
     if(!srcImg) return '<div class="blank"></div>';
     const turn=rotate&&((sw>sh)!==(bw>bh)), fit=sizing==='fit'||sizing==='shrink', k=sizing==='custom'?scale:1;
-    // Fit uses the complete selected sheet. The browser/driver printable area
-    // is applied by the printer; adding a second inset here shrinks the invoice.
+    // Fit scales to the selected sheet. Actual uses captured physical size,
+    // while Custom applies its requested percentage without an implicit cap.
     const iw=fit?(turn?bh:bw)+'mm':(sw*k)+'mm';
     const ih=fit?(turn?bw:bh)+'mm':(sh*k)+'mm';
     return '<div class="pagebox" style="--bw:'+bw+'mm;--bh:'+bh+'mm"><img class="'+(fit?'fit ':'')+(turn?'rotated ':'')+(center?'centered':'')+'" src="'+esc(srcImg)+'" alt="" style="width:'+iw+';height:'+ih+';'+(gray?'filter:grayscale(1);':'')+'">'+(mode==='size'?'':'<span>'+esc(label)+'</span>')+'</div>';
