@@ -1,5 +1,5 @@
 import { memo, useMemo, useState, useEffect, type CSSProperties, type Dispatch, type SetStateAction } from "react";
-import { Globe2, Mail, MapPin, Phone, Plus, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Globe2, Mail, MapPin, Phone, Plus, Trash2, RotateCcw } from "lucide-react";
 import logoMark from "@/assets/logo-mark.png";
 import { DOC_LABELS, PAPER_SIZES, money, uid, type DocState, type DocType, type LineItem, type PaperSizeKey } from "@/lib/document";
 import { Button } from "@/components/ui/button";
@@ -208,7 +208,7 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
     <div className="document-paper-wrapper" style={{ position: "relative", width: "100%" }}>
       {/* Floating Toolbar */}
       <div
-        className="no-print"
+        className="no-print document-floating-toolbar"
         style={{
           position: "fixed",
           bottom: "24px",
@@ -248,31 +248,19 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
 
         <div style={{ width: "1px", height: "18px", backgroundColor: "#475569" }} />
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => handleZoom(zoom - 10)}
-          style={{ color: "#fff", height: "30px", width: "30px" }}
-          title="Zoom Out"
-        >
-          <ZoomOut size={16} />
-        </Button>
+        <input
+          className="document-zoom-slider"
+          type="range"
+          min={40}
+          max={160}
+          step={1}
+          value={zoom}
+          onChange={(event) => handleZoom(Number(event.currentTarget.value))}
+          aria-label="Preview zoom"
+          title="Adjust preview zoom"
+        />
 
-        <span style={{ fontSize: "13px", fontWeight: "bold", minWidth: "45px", textAlign: "center" }}>
-          {zoom}%
-        </span>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => handleZoom(zoom + 10)}
-          style={{ color: "#fff", height: "30px", width: "30px" }}
-          title="Zoom In"
-        >
-          <ZoomIn size={16} />
-        </Button>
+        <span className="document-zoom-value" aria-live="polite">{zoom}%</span>
 
         <Button
           type="button"
