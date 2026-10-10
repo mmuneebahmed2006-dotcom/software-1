@@ -303,9 +303,9 @@ function installIpc() {
       // unsupported media size.
       const [paperWidthMm, paperHeightMm] = PAPER_MM[pageSize] || PAPER_MM.A4;
       const pageSizeMicrons = { width: Math.round(paperWidthMm * 1000), height: Math.round(paperHeightMm * 1000) };
-      // Each generated HTML sheet already has the selected paper dimensions
-      // and its printable-area inset. Keep Electron and the driver on that same
-      // paper and prevent the printer's saved N-up/scaling defaults from shrinking it.
+      // Each generated HTML sheet uses the full selected paper dimensions.
+      // Keep Electron and the driver on that same paper and avoid a second app-side
+      // scaling pass; printer hardware may still enforce its own nonprintable area.
       const base = {
         // Send directly to the selected printer using its saved driver preferences.
         // Electron's portable controls are pageSize, landscape, and zero margins;
