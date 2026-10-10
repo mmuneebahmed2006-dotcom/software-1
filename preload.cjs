@@ -25,5 +25,6 @@ contextBridge.exposeInMainWorld('desktop', {
   updatePreviousCompanyDetails: (details) => ipcRenderer.invoke('company:update-previous', details),
   listPrinters: () => ipcRenderer.invoke('printers:list'),
   printDocument: (options) => ipcRenderer.invoke('print:document', options),
+  printPdf: (data, options) => ipcRenderer.invoke('print:pdf', data, options),
   openPrinterSettings: (deviceName) => ipcRenderer.invoke('printers:settings', deviceName),
 });
