@@ -1422,6 +1422,10 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
 .print-preview-white.print-preview-three-columns .print-output-preview.mode-size .print-preview-paper.auto-rotated {
   transform: rotate(90deg) !important;
 }
+.print-preview-white.print-preview-three-columns .print-output-preview.mode-size .print-preview-paper.auto-rotated:not(.auto-centered) {
+  transform: rotate(90deg) translateY(-100%) !important;
+  transform-origin: top left !important;
+}
 
 
 /* Keep saved-document actions usable on touch screens where hover is unavailable. */
