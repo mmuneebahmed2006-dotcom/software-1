@@ -1704,7 +1704,7 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
 }
 
 
-/* Floating document zoom controls use the app's toolbar theme tokens. */
+/* Floating document zoom controls use the app's neutral toolbar palette. */
 .document-floating-toolbar .document-zoom-slider {
   appearance: none;
   -webkit-appearance: none;
@@ -1714,44 +1714,41 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   padding: 0;
   background: transparent;
   cursor: pointer;
-  accent-color: var(--toolbar-foreground);
 }
 .document-floating-toolbar .document-zoom-slider::-webkit-slider-runnable-track {
   height: 3px;
   border-radius: 999px;
-  background: var(--toolbar-muted);
+  background: var(--muted-foreground, #858b95);
 }
 .document-floating-toolbar .document-zoom-slider::-moz-range-track {
   height: 3px;
   border-radius: 999px;
-  background: var(--toolbar-muted);
+  background: var(--muted-foreground, #858b95);
 }
 .document-floating-toolbar .document-zoom-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 13px;
   height: 13px;
   margin-top: -5px;
-  border: 2px solid var(--toolbar);
+  border: 2px solid var(--toolbar, #171717);
   border-radius: 50%;
-  background: var(--toolbar-foreground);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--toolbar-foreground) 80%, transparent);
+  background: var(--toolbar-foreground, #f7f7f7);
 }
 .document-floating-toolbar .document-zoom-slider::-moz-range-thumb {
   width: 10px;
   height: 10px;
-  border: 2px solid var(--toolbar);
+  border: 2px solid var(--toolbar, #171717);
   border-radius: 50%;
-  background: var(--toolbar-foreground);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--toolbar-foreground) 80%, transparent);
+  background: var(--toolbar-foreground, #f7f7f7);
 }
 .document-floating-toolbar .document-zoom-slider:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--toolbar-foreground) 75%, transparent);
+  outline: 2px solid var(--muted-foreground, #858b95);
   outline-offset: 3px;
   border-radius: 999px;
 }
 .document-floating-toolbar .document-zoom-value {
   min-width: 42px;
-  color: var(--toolbar-foreground);
+  color: var(--toolbar-foreground, #f7f7f7);
   font-size: 13px;
   font-weight: 700;
   text-align: center;
