@@ -1702,3 +1702,58 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   background: color-mix(in oklab, var(--muted-foreground) 38%, transparent);
   background-clip: padding-box;
 }
+
+
+/* Floating document zoom controls follow the dark neutral preview toolbar. */
+.document-floating-toolbar .document-zoom-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 92px;
+  height: 20px;
+  margin: 0 2px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  accent-color: #fff;
+}
+.document-floating-toolbar .document-zoom-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 48%);
+}
+.document-floating-toolbar .document-zoom-slider::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 48%);
+}
+.document-floating-toolbar .document-zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  margin-top: -5px;
+  border: 2px solid #0f172a;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 80%);
+}
+.document-floating-toolbar .document-zoom-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #0f172a;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 80%);
+}
+.document-floating-toolbar .document-zoom-slider:focus-visible {
+  outline: 2px solid rgb(255 255 255 / 75%);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+.document-floating-toolbar .document-zoom-value {
+  min-width: 42px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
