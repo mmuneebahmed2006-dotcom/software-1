@@ -154,8 +154,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   const paperRatio = PAPER_RATIOS[settings.paperSize] ?? PAPER_RATIOS["A4 21 × 29.7 cm"];
   const sheetRatio = settings.orientation === "landscape" ? 1 / paperRatio : paperRatio;
-  // Mirror the 8 mm print-safe inset used by the PDF output on all scaling modes.
-  const printMarginMm = 8;
+  // The preview uses the full paper canvas; the printer may still enforce its hardware margins.
+  const printMarginMm = 0;
   const fitSheetMm = ({
     "A4 21 × 29.7 cm": [210, 297],
     "A5 14.8 × 21 cm": [148, 210],
@@ -166,8 +166,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     ? [fitSheetMm[1], fitSheetMm[0]]
     : fitSheetMm;
   const safeAreaFrameStyle: React.CSSProperties | undefined = settings.mode === "size" ? {
-    width: `${((pageWidthMm - 2 * printMarginMm) / pageWidthMm) * 100}%`,
-    height: `${((pageHeightMm - 2 * printMarginMm) / pageHeightMm) * 100}%`,
+    width: "100%",
+    height: "100%",
   } : undefined;
   const previewImageStyle = useMemo<React.CSSProperties>(() => {
     const mm: Record<string, [number, number]> = { "A4 21 × 29.7 cm": [210, 297], "A5 14.8 × 21 cm": [148, 210], "Letter 8.5 × 11 in": [215.9, 279.4], "Legal 8.5 × 14 in": [215.9, 355.6] };
@@ -189,7 +189,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     } as React.CSSProperties;
     const requestedScale = settings.sizing === "custom" ? Math.min(400, Math.max(10, Number(settings.scale) || 100)) / 100 : 1;
     const fitScale = Math.min(usableW / pageW, usableH / pageH);
-    const k = Math.min(requestedScale, fitScale);
+    const k = settings.sizing === "custom" ? requestedScale : 1;
     return { ...base, ["--img-w" as string]: `${(pageW * k / usableW) * 100}%`, ["--img-h" as string]: `${(pageH * k / usableH) * 100}%`, objectFit: "fill" } as React.CSSProperties;
   }, [captured?.size, settings.gray, settings.orientation, settings.paperSize, settings.scale, settings.sizing]);
 
@@ -364,7 +364,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <div className="print-preview-paper-wrap">
               <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio), ["--sheet-ratio" as string]: String(sheetRatio) } as React.CSSProperties}>
                 {settings.mode === "size" && image && (
-                  <div className="print-preview-page-frame" style={{ ...safeAreaFrameStyle, alignItems: "center", justifyContent: "center" }}>
+                  <div className="print-preview-page-frame" style={{ ...safeAreaFrameStyle, alignItems: settings.sizing === "fit" || settings.autoCenter ? "center" : "flex-start", justifyContent: settings.sizing === "fit" || settings.autoCenter ? "center" : "flex-start" }}>
                     <img
                       className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated" + (settings.autoCenter ? " auto-centered" : "") : "")}
                       src={image}
