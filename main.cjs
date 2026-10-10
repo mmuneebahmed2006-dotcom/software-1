@@ -237,13 +237,10 @@ function installIpc() {
         try { const list = await printWindow.webContents.getPrintersAsync(); deviceName = (list.find((p) => p.isDefault) || list[0] || {}).name || ''; } catch {}
       }
       const duplexMode = ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex';
-      // Named sizes like 'A4' ask Electron to look up that media in the printer
-      // driver's own list. Many Windows drivers either don't expose an exact
-      // match or keep "Letter"/a different tray as their saved default, and
-      // silently shrink+center our full-bleed A4 sheet onto that other size.
-      // Sending the exact physical size in microns bypasses that driver lookup
-      // entirely, so this is tried first; the named string stays as a fallback
-      // for the few drivers that reject a microns object outright.
+      // Prefer the standard media name so Windows can match the job to the
+      // printer's real A4/A5/Letter/Legal form. A custom micron-sized form can
+      // be accepted by a driver but then silently scaled/centered as an
+      // unsupported media size.
       const [paperWidthMm, paperHeightMm] = PAPER_MM[pageSize] || PAPER_MM.A4;
       const pageSizeMicrons = { width: Math.round(paperWidthMm * 1000), height: Math.round(paperHeightMm * 1000) };
       // Each generated HTML sheet already has the selected paper dimensions
@@ -258,7 +255,7 @@ function installIpc() {
         printBackground: true,
         color: !gray,
         landscape,
-        pageSize: pageSizeMicrons,
+        pageSize,
         pagesPerSheet: 1,
         scaleFactor: 100,
         margins: { marginType: 'none' },
@@ -276,8 +273,8 @@ function installIpc() {
         result = await submit(base);
       }
       if (!result.success && result.failureReason !== 'cancelled') {
-        log('Print retry with named pageSize | reason=' + result.failureReason);
-        result = await submit({ ...base, pageSize });
+        log('Print retry with exact paper dimensions | reason=' + result.failureReason);
+        result = await submit({ ...base, pageSize: pageSizeMicrons });
       }
       log(`Print ${result.success ? 'accepted' : 'rejected'} | printer=${deviceName || '(dialog)'} | paper=${pageSize} (${pageSizeMicrons.width}x${pageSizeMicrons.height}um) | landscape=${landscape} | sizing=${sizing} | scale=${scale} | reason=${result.failureReason}`);
       if (!result.success && result.failureReason === 'cancelled') return { success: false, cancelled: true, failureReason: '' };
