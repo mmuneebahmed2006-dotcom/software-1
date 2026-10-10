@@ -91,9 +91,8 @@ test('all physical paper sizes use exact page names and full-bleed dimensions', 
     const name = paperSize === 'Letter' ? 'letter' : paperSize === 'Legal' ? 'legal' : paperSize;
     const html = buildPrintHtml({ paperSize, sourceSize: [width, height], mode: 'size', landscape: false, sizing: 'fit' }, ['data:image/png;base64,AA==']);
     assert.ok(html.includes('@page{size:' + name + ' portrait;margin:' + margin + 'mm}'), paperSize + ' @page dimensions and margin');
-    assert.ok(html.includes('width:' + width + 'mm;height:' + height + 'mm'), paperSize + ' full paper sheet dimensions');
-    assert.ok(html.includes('style="width:' + width + 'mm;height:' + height + 'mm;"'), paperSize + ' Fit image must use the complete page dimensions');
-    assert.ok(!html.includes('fitMargin'), paperSize + ' must not add a second fit inset');
+    assert.ok(html.includes('width:' + (width - margin * 2) + 'mm;height:' + (height - margin * 2) + 'mm'), paperSize + ' full paper sheet dimensions');
+    assert.ok(!html.includes('class="pagebox center"'), paperSize + ' must not center the page image');
   }
 });
 
