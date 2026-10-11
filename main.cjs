@@ -415,6 +415,13 @@ function createWindow() {
   win.webContents.on('will-navigate', (event, url) => {
     if (!url.startsWith(`http://127.0.0.1:${PORT}`)) event.preventDefault();
   });
+  // Menu.setApplicationMenu(null) removes the default menu, which also removes
+  // the default Ctrl+Shift+I / F12 devtools shortcuts. Rebind them directly on
+  // the window so the console stays reachable for diagnosing issues like this.
+  win.webContents.on('before-input-event', (_event, input) => {
+    const key = String(input.key || '').toLowerCase();
+    if (key === 'f12' || (input.control && input.shift && key === 'i')) win.webContents.toggleDevTools();
+  });
 
   waitForServer(`http://127.0.0.1:${PORT}`, () => win.loadURL(`http://127.0.0.1:${PORT}`));
 

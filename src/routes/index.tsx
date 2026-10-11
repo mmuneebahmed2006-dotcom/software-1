@@ -228,8 +228,11 @@ function Index() {
       toast.success("Print sent to the selected printer.");
       setPrintOpen(false);
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error("Print error:", error);
-      toast.error("Print could not be started.");
+      // Surface the real failure directly in the UI (not just devtools console),
+      // since this app's packaged build has no menu/shortcut to open devtools.
+      toast.error(`Print could not be started: ${message}`, { duration: 15000 });
     }
   }, [printCapture]);
 
