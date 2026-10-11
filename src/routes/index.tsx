@@ -341,12 +341,15 @@ function Index() {
   return <div className="studio-shell">
     <style>{`@media print { @page { size: ${paper.page} portrait; margin: 0; } }`}</style>
     <StartupExperience/>
-    <PrintPreview open={printOpen} captured={printCapture} paperLabel={paper.page} fileName={`${DOC_LABELS[docType].replaceAll(" ", "_")}_${state.meta.number || "Untitled"}.pdf`} onClose={() => setPrintOpen(false)} onPaperSizeChange={async (label) => {
+    <PrintPreview open={printOpen} captured={printCapture} paperLabel={paper.page} fileName={`${DOC_LABELS[docType].replaceAll(" ", "_")}_${state.meta.number || "Untitled"}.pdf`} onClose={() => setPrintOpen(false)} onPaperSizeChange={async (label, orientation) => {
               const next = ({"A4 21 × 29.7 cm":"A4","A5 14.8 × 21 cm":"A5","Letter 8.5 × 11 in":"Letter","Legal 8.5 × 14 in":"Legal"} as Record<string, PaperSizeKey>)[label];
               if (!next) return;
               setPaperSize(next);
               await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-              try { setPrintCapture(await capturePages(document.getElementById("document-pages") ?? document, next)); } catch {}
+              try { setPrintCapture(await capturePages(document.getElementById("document-pages") ?? document, next, orientation)); } catch {}
+            }} onOrientationChange={async (orientation) => {
+              await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+              try { setPrintCapture(await capturePages(document.getElementById("document-pages") ?? document, paperSize, orientation)); } catch {}
             }} onPrint={executePrint}/>
     <SaveDocumentDialog open={saveOpen} title={saveTitle} folder={saveFolder} folders={folders} onTitle={setSaveTitle} onFolder={setSaveFolder} onCancel={() => setSaveOpen(false)} onSave={() => { void saveRecord(saveTitle, saveFolder, false); setSaveOpen(false); }}/>
     <NewFolderDialog open={folderOpen} category={DOC_LABELS[docType]} onCancel={() => setFolderOpen(false)} onCreate={createFolder}/>
