@@ -166,8 +166,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     ? [fitSheetMm[1], fitSheetMm[0]]
     : fitSheetMm;
   const safeAreaFrameStyle: React.CSSProperties | undefined = settings.mode === "size" ? {
-    width: "100%",
-    height: "100%",
+    width: settings.sizing === "fit" ? `${((pageWidthMm - 8) / pageWidthMm) * 100}%` : "100%",
+    height: settings.sizing === "fit" ? `${((pageHeightMm - 8) / pageHeightMm) * 100}%` : "100%",
   } : undefined;
   const previewImageStyle = useMemo<React.CSSProperties>(() => {
     const mm: Record<string, [number, number]> = { "A4 21 × 29.7 cm": [210, 297], "A5 14.8 × 21 cm": [148, 210], "Letter 8.5 × 11 in": [215.9, 279.4], "Legal 8.5 × 14 in": [215.9, 355.6] };
@@ -364,9 +364,9 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <div className="print-preview-paper-wrap">
               <div className={"print-output-preview mode-" + settings.mode} style={{ aspectRatio: String(sheetRatio), ["--sheet-ratio" as string]: String(sheetRatio) } as React.CSSProperties}>
                 {settings.mode === "size" && image && (
-                  <div className="print-preview-page-frame" style={{ ...safeAreaFrameStyle, alignItems: settings.sizing === "fit" ? "center" : "flex-start", justifyContent: settings.sizing === "fit" ? "center" : "flex-start" }}>
+                  <div className="print-preview-page-frame" style={{ ...safeAreaFrameStyle, alignItems: settings.sizing === "fit" || settings.autoCenter ? "center" : "flex-start", justifyContent: settings.sizing === "fit" || settings.autoCenter ? "center" : "flex-start" }}>
                     <img
-                      className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated" : "")}
+                      className={"print-preview-paper " + (settings.autoRotate && captured?.size && ((captured.size[0] > captured.size[1]) !== (settings.orientation === "landscape")) ? "auto-rotated " : "") + (settings.autoCenter || settings.sizing === "fit" ? "auto-centered" : "")}
                       src={image}
                       alt={paperLabel + " preview"}
                       style={previewImageStyle}
