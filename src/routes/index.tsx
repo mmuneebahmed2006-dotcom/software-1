@@ -134,16 +134,40 @@ function Index() {
     const scale = settings.sizing === "custom"
       ? Math.min(400, Math.max(10, Number(settings.scale) || 100))
       : 100;
-    const paperSize = ({
+    const paperSize = (({
       "A4 21 × 29.7 cm": "A4",
       "A5 14.8 × 21 cm": "A5",
       "Letter 8.5 × 11 in": "Letter",
       "Legal 8.5 × 14 in": "Legal",
-    } as Record<string, string>)[settings.paperSize] ?? "A4";
+    } as Record<string, PaperSizeKey>)[settings.paperSize] ?? "A4");
+
+    // The DPI picker used to be forwarded straight to Electron's native print
+    // call, where it shrank the physical page instead of changing quality (see
+    // main.cjs). It now only controls how sharply we rasterise the page here:
+    // higher DPI re-captures the page at a higher pixel density before it's
+    // sent to the printer, so sharpness actually changes and the page size
+    // never does. 300 DPI keeps today's resolution (pixelRatio 2) unchanged.
+    let images = printCapture.images;
+    let sourceSize = printCapture.size;
+    if (settings.printAsImage) {
+      const pixelRatio = Math.min(4, Math.max(1, 2 * (settings.dpi / 300)));
+      try {
+        const recaptured = await capturePages(
+          document.getElementById("document-pages") ?? document,
+          paperSize,
+          settings.orientation === "landscape" ? "landscape" : "portrait",
+          pixelRatio,
+        );
+        images = recaptured.images;
+        sourceSize = recaptured.size;
+      } catch (error) {
+        console.error("DPI re-capture failed, printing at the previous resolution:", error);
+      }
+    }
 
     const printOptions = {
       paperSize,
-      sourceSize: printCapture.size,
+      sourceSize,
       silent: true,
       deviceName: settings.printerName || undefined,
       gray: settings.gray,
@@ -157,7 +181,7 @@ function Index() {
         ? settings.bookletSubset === "both" ? "shortEdge" : "simplex"
         : settings.sides === "double" ? "longEdge" : "simplex",
       dpi: settings.printAsImage ? settings.dpi : undefined,
-      images: printCapture.images,
+      images,
       autoRotate: settings.autoRotate,
       autoCenter: settings.autoCenter,
       mode: settings.mode,
@@ -182,12 +206,12 @@ function Index() {
           return;
         }
       } else {
-        const indices = pageRangeIndices(printCapture.images.length, pageRanges);
-        const pages = indices.map((index) => printCapture.images[index]);
+        const indices = pageRangeIndices(images.length, pageRanges);
+        const pages = indices.map((index) => images[index]);
         if (!pages.length) throw new Error("The selected page range is empty.");
         const html = buildPrintHtml({
           paperSize,
-          sourceSize: printCapture.size,
+          sourceSize,
           landscape: settings.orientation === "landscape",
           sizing: settings.sizing,
           scaleFactor: scale,

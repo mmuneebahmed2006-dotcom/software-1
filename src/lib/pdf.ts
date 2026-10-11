@@ -5,7 +5,7 @@ import { PAPER_SIZES, type PaperSizeKey } from "@/lib/document";
 export interface CapturedDocument { images: string[]; size: [number, number] }
 
 /** Rasterises document pages at print-ready resolution without excessive canvas memory use. */
-export async function capturePages(root: ParentNode, paperSize: PaperSizeKey, orientation: "portrait" | "landscape" = "portrait"): Promise<CapturedDocument> {
+export async function capturePages(root: ParentNode, paperSize: PaperSizeKey, orientation: "portrait" | "landscape" = "portrait", pixelRatio = 2): Promise<CapturedDocument> {
   const elements = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-page]"));
   if (!elements.length) throw new Error("No document pages");
   const pageContainer = elements[0].closest<HTMLElement>("#document-pages");
@@ -49,7 +49,7 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey, or
       images.push(await toPng(element, {
         width,
         height,
-        pixelRatio: 2,
+        pixelRatio,
         backgroundColor: "white",
         fontEmbedCSS,
         skipFonts: false,
