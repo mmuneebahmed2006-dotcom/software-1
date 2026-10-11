@@ -251,7 +251,16 @@ function installIpc() {
         pageSize,
         pagesPerSheet: 1,
         scaleFactor: 100,
-        margins: { marginType: 'none' },
+        // 'none' asks for true zero-margin full-bleed, which only a borderless
+        // printer can actually honour. On an ordinary printer the driver still
+        // can't print into its hardware-unprintable strip (often bigger at the
+        // bottom, near the paper feed) and silently clips/shifts the page there,
+        // which is what produced the unequal margins on each side. 'printableArea'
+        // asks Electron to fit the page within whatever area the selected printer
+        // can actually print - consistent, un-clipped margins on a normal printer,
+        // and still full-bleed edge-to-edge automatically on a true borderless one
+        // (its printable area already covers the whole sheet).
+        margins: { marginType: 'printableArea' },
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         // Do NOT forward options.dpi to webContents.print(). Our page images are
         // already rasterised at high resolution (pixelRatio 2) before they ever
