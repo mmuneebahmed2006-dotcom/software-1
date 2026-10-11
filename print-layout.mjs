@@ -75,7 +75,7 @@ function buildPrintHtml(options,images) {
   const sizing=['fit','actual','custom','shrink'].includes(options.sizing)?options.sizing:'fit';
   // Standard-size pages are already expressed in physical page units. Anchor
   // them at the print canvas origin; screen centering must not offset this stream.
-  const center=mode!=='size' && (options.autoCenter!==false || sizing==='fit'), scale=clamp(options.scaleFactor,10,400,100)/100;
+  const center=options.autoCenter!==false || sizing==='fit', scale=clamp(options.scaleFactor,10,400,100)/100;
   // Fit uses a 4mm safe inset on each side so printers with a nonprintable
   // hardware edge keep the invoice header and footer visible. Actual and
   // Custom retain their requested physical scale without an app-side inset.
@@ -87,7 +87,7 @@ function buildPrintHtml(options,images) {
     // while Custom applies its requested percentage without an implicit cap.
     const iw=fit?(turn?bh:bw)+'mm':(sw*k)+'mm';
     const ih=fit?(turn?bw:bh)+'mm':(sh*k)+'mm';
-    return '<div class="pagebox" style="--bw:'+bw+'mm;--bh:'+bh+'mm;margin:'+inset+'mm auto"><img class="'+(fit?'fit ':'')+(turn?'rotated ':'')+(center?'centered':'')+'" src="'+esc(srcImg)+'" alt="" style="width:'+iw+';height:'+ih+';'+(gray?'filter:grayscale(1);':'')+'">'+(mode==='size'?'':'<span>'+esc(label)+'</span>')+'</div>';
+    return '<div class="pagebox" style="--bw:'+bw+'mm;--bh:'+bh+'mm;margin:'+inset+'mm auto"><img class="'+(fit?'fit ':'')+(turn?'rotated ':'')+((center||turn)?'centered':'')+'" src="'+esc(srcImg)+'" alt="" style="width:'+iw+';height:'+ih+';'+(gray?'filter:grayscale(1);':'')+'">'+(mode==='size'?'':'<span>'+esc(label)+'</span>')+'</div>';
   }
   let body='';
   if(mode==='multiple') {
