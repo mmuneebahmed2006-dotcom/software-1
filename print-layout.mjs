@@ -76,14 +76,18 @@ function buildPrintHtml(options,images) {
   // Standard-size pages are already expressed in physical page units. Anchor
   // them at the print canvas origin; screen centering must not offset this stream.
   const center=mode!=='size' && (options.autoCenter!==false || sizing==='fit'), scale=clamp(options.scaleFactor,10,400,100)/100;
-  function pageBox(srcImg,label,bw,bh) {
+  // Fit uses a 4mm safe inset on each side so printers with a nonprintable
+  // hardware edge keep the invoice header and footer visible. Actual and
+  // Custom retain their requested physical scale without an app-side inset.
+  const fitInset=mode==='size' && sizing==='fit' ? 4 : 0;
+  function pageBox(srcImg,label,bw,bh,inset=0) {
     if(!srcImg) return '<div class="blank"></div>';
     const turn=rotate&&((sw>sh)!==(bw>bh)), fit=sizing==='fit'||sizing==='shrink', k=sizing==='custom'?scale:1;
     // Fit scales to the selected sheet. Actual uses captured physical size,
     // while Custom applies its requested percentage without an implicit cap.
     const iw=fit?(turn?bh:bw)+'mm':(sw*k)+'mm';
     const ih=fit?(turn?bw:bh)+'mm':(sh*k)+'mm';
-    return '<div class="pagebox" style="--bw:'+bw+'mm;--bh:'+bh+'mm"><img class="'+(fit?'fit ':'')+(turn?'rotated ':'')+(center?'centered':'')+'" src="'+esc(srcImg)+'" alt="" style="width:'+iw+';height:'+ih+';'+(gray?'filter:grayscale(1);':'')+'">'+(mode==='size'?'':'<span>'+esc(label)+'</span>')+'</div>';
+    return '<div class="pagebox" style="--bw:'+bw+'mm;--bh:'+bh+'mm;margin:'+inset+'mm auto"><img class="'+(fit?'fit ':'')+(turn?'rotated ':'')+(center?'centered':'')+'" src="'+esc(srcImg)+'" alt="" style="width:'+iw+';height:'+ih+';'+(gray?'filter:grayscale(1);':'')+'">'+(mode==='size'?'':'<span>'+esc(label)+'</span>')+'</div>';
   }
   let body='';
   if(mode==='multiple') {
@@ -118,7 +122,8 @@ function buildPrintHtml(options,images) {
       }
     });
   } else {
-    images.forEach((im,i)=>{body+='<section class="sheet single">'+pageBox(im,'Page '+(i+1),pageW,pageH)+'</section>';});
+    const contentW=pageW-2*fitInset, contentH=pageH-2*fitInset;
+    images.forEach((im,i)=>{body+='<section class="sheet single">'+pageBox(im,'Page '+(i+1),contentW,contentH,fitInset)+'</section>';});
   }
   const css='@page{size:'+W+'mm '+H+'mm;margin:'+margin+'mm}*{box-sizing:border-box}html,body{display:block!important;width:'+pageW+'mm!important;min-width:'+pageW+'mm!important;height:auto!important;min-height:0!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff}.sheet{position:relative;display:block;box-sizing:border-box;width:'+pageW+'mm;min-width:'+pageW+'mm;height:'+pageH+'mm;min-height:'+pageH+'mm;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;transform:none!important;overflow:hidden;page-break-after:always;break-after:page;background:#fff}.sheet:last-child{page-break-after:auto;break-after:auto}.pagebox{position:relative;display:block;width:var(--bw);height:var(--bh);max-width:100%;max-height:100%;margin:0;padding:0;overflow:hidden}.pagebox img{display:block;max-width:none;max-height:none;object-fit:contain;flex:none}.pagebox img.centered{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);transform-origin:center center}.pagebox img.centered.rotated{transform:translate(-50%,-50%) rotate(90deg)}.pagebox img.fit{object-fit:contain}.pagebox img.rotated{transform:rotate(90deg) translateY(-100%);transform-origin:top left;max-width:none!important;max-height:none!important}.pagebox span{position:absolute;right:1mm;bottom:1mm;font:6pt Arial;color:#555}.grid{display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);padding:0;gap:0}.cell{min-width:0;min-height:0;overflow:hidden;display:block;margin:0;padding:0}.cell .pagebox{width:100%;height:100%}.spread{padding:0}.spread>div{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr}.spread .pagebox{width:100%;height:100%}.spread small{position:absolute;right:2mm;bottom:2mm}.clip{position:absolute;inset:0;overflow:hidden}.clip img{position:absolute;max-width:none;max-height:none;object-fit:fill}.marks{position:absolute;inset:3mm;border:.2mm solid #111;pointer-events:none}.label{position:absolute;left:5mm;bottom:5mm;background:#fff;padding:1mm 2mm;font:8pt Arial}';
   return '<!doctype html><html><head><meta charset="utf-8"><style>'+css+'</style></head><body>'+body+'</body></html>';
