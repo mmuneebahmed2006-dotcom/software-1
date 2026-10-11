@@ -253,7 +253,15 @@ function installIpc() {
         scaleFactor: 100,
         margins: { marginType: 'none' },
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-        ...(options.dpi ? { dpi: { horizontal: Number(options.dpi), vertical: Number(options.dpi) } } : {}),
+        // Do NOT forward options.dpi to webContents.print(). Our page images are
+        // already rasterised at high resolution (pixelRatio 2) before they ever
+        // reach this HTML, so this only has to tell the OS "print this physical
+        // page". Passing an explicit dpi here made several Windows drivers
+        // recompute the page's pixel canvas at that DPI instead of the browser's
+        // reference DPI, which shrank the physical output to roughly dpi/150 of
+        // the intended size (confirmed: 300 DPI printed at about half size).
+        // The "Print as image" / DPI picker stays in the UI for the preview's
+        // own rendering quality, it just no longer reaches the native print call.
       };
       const full = { ...base, duplexMode };
       const submit = (settings) => new Promise((resolve) => {
