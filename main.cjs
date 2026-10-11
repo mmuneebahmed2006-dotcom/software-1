@@ -380,7 +380,7 @@ function installIpc() {
         result = await submit(full);
         if (!result.success && result.failureReason !== 'cancelled') result = await submit(base);
       }
-      log(`Print ${result.success ? 'accepted' : 'rejected'} | printer=${deviceName || '(dialog)'} | paper=${pageSize} (${pageSizeMicrons.width}x${pageSizeMicrons.height}um) | landscape=${landscape} | sizing=${sizing} | scale=${scale} | reason=${result.failureReason}`);
+      log(`Print ${result.success ? 'accepted' : 'rejected'} | printer=${deviceName || '(default)'} | paper=${pageSize} | landscape=${landscape} | sizing=${sizing} | scale=${scale} | engine=${process.platform === 'win32' ? 'Sumatra PDF' : 'Electron'} | reason=${result.failureReason}`);
       if (!result.success && result.failureReason === 'cancelled') return { success: false, cancelled: true, failureReason: '' };
       return { success: result.success, printer: deviceName, failureReason: result.success ? '' : (result.failureReason || 'Windows rejected the print job.') };
     } catch (error) {
