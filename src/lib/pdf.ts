@@ -5,19 +5,26 @@ import { PAPER_SIZES, type PaperSizeKey } from "@/lib/document";
 export interface CapturedDocument { images: string[]; size: [number, number] }
 
 /** Rasterises document pages at print-ready resolution without excessive canvas memory use. */
-export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): Promise<CapturedDocument> {
+export async function capturePages(root: ParentNode, paperSize: PaperSizeKey, orientation: "portrait" | "landscape" = "portrait"): Promise<CapturedDocument> {
   const elements = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-page]"));
   if (!elements.length) throw new Error("No document pages");
   const pageContainer = elements[0].closest<HTMLElement>("#document-pages");
   const previousTransform = pageContainer?.style.transform ?? "";
   const previousTransition = pageContainer?.style.transition ?? "";
   const previousPaddingBottom = pageContainer?.style.paddingBottom ?? "";
+  const [portraitWidth, portraitHeight] = PAPER_SIZES[paperSize].pdf;
+  const pageWidth = orientation === "landscape" ? portraitHeight : portraitWidth;
+  const pageHeight = orientation === "landscape" ? portraitWidth : portraitHeight;
   const previousPageStyles = elements.map((element) => ({
     height: element.style.height,
     minHeight: element.style.minHeight,
     overflow: element.style.overflow,
+    paperWidth: element.style.getPropertyValue("--paper-width"),
+    paperHeight: element.style.getPropertyValue("--paper-height"),
   }));
   elements.forEach((element) => {
+    element.style.setProperty("--paper-width", `${pageWidth}mm`);
+    element.style.setProperty("--paper-height", `${pageHeight}mm`);
     element.classList.add("exporting");
     element.style.height = "";
     element.style.minHeight = "";
@@ -61,13 +68,17 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey): P
       }));
       await new Promise((resolve) => requestAnimationFrame(resolve));
     }
-    return { images, size: PAPER_SIZES[paperSize].pdf };
+    return { images, size: [pageWidth, pageHeight] };
   } finally {
     elements.forEach((element, index) => {
       element.classList.remove("exporting");
       element.style.height = previousPageStyles[index].height;
       element.style.minHeight = previousPageStyles[index].minHeight;
       element.style.overflow = previousPageStyles[index].overflow;
+      if (previousPageStyles[index].paperWidth) element.style.setProperty("--paper-width", previousPageStyles[index].paperWidth);
+      else element.style.removeProperty("--paper-width");
+      if (previousPageStyles[index].paperHeight) element.style.setProperty("--paper-height", previousPageStyles[index].paperHeight);
+      else element.style.removeProperty("--paper-height");
     });
     if (pageContainer) {
       pageContainer.style.transform = previousTransform;
