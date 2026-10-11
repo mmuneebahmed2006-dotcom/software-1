@@ -231,6 +231,9 @@ function installIpc() {
     const cleanup = () => { try { if (!printWindow.isDestroyed()) printWindow.close(); } catch {} try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {} };
     try {
       await printWindow.loadFile(file);
+      // A hidden print BrowserWindow must not inherit or retain any display zoom.
+      // Pin its page zoom to 100% before Chromium paginates the physical-size HTML.
+      printWindow.webContents.setZoomFactor(1);
       await printWindow.webContents.executeJavaScript('Promise.all(Array.from(document.images, image => image.decode().catch(() => undefined)))');
       let deviceName = options.deviceName ? String(options.deviceName) : '';
       if (!deviceName) {
