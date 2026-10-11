@@ -43,7 +43,8 @@ type Props = {
   fileName: string;
   onClose: () => void;
   onPrint: (settings: PrintSettings) => void | Promise<void>;
-  onPaperSizeChange?: (paperLabel: string) => void | Promise<void>;
+  onPaperSizeChange?: (paperLabel: string, orientation: PrintSettings["orientation"]) => void | Promise<void>;
+  onOrientationChange?: (orientation: PrintSettings["orientation"]) => void | Promise<void>;
 };
 
 const PAPER_OPTIONS = [
@@ -89,7 +90,7 @@ function orderedIndices(count: number, order: PrintSettings["multiplePageOrder"]
   });
 }
 
-export function PrintPreview({ open, captured, paperLabel, fileName, onClose, onPrint, onPaperSizeChange }: Props) {
+export function PrintPreview({ open, captured, paperLabel, fileName, onClose, onPrint, onPaperSizeChange, onOrientationChange }: Props) {
   const [settings, setSettings] = useState<PrintSettings>({
     gray: false, printDocument: true, printComment: true, printForm: true,
     sides: "single", copies: 1, paperSize: normalizePaperLabel(paperLabel || "A4"),
@@ -204,7 +205,12 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
 
   const handlePaperChange = async (value: string) => {
     patch("paperSize", value);
-    await onPaperSizeChange?.(value);
+    await onPaperSizeChange?.(value, settings.orientation);
+  };
+
+  const handleOrientationChange = (orientation: PrintSettings["orientation"]) => {
+    patch("orientation", orientation);
+    void onOrientationChange?.(orientation);
   };
 
   const handlePrint = async () => {
@@ -338,8 +344,8 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
             <section className="print-setting-group print-group-orientation">
               <h3>Orientation</h3>
               <div className="print-orientation">
-                <button type="button" className={settings.orientation === "portrait" ? "active" : ""} onClick={() => patch("orientation","portrait")}><span className="orientation-icon portrait-icon" /></button>
-                <button type="button" className={settings.orientation === "landscape" ? "active" : ""} onClick={() => patch("orientation","landscape")}><span className="orientation-icon landscape-icon" /></button>
+                <button type="button" className={settings.orientation === "portrait" ? "active" : ""} onClick={() => handleOrientationChange("portrait")}><span className="orientation-icon portrait-icon" /></button>
+                <button type="button" className={settings.orientation === "landscape" ? "active" : ""} onClick={() => handleOrientationChange("landscape")}><span className="orientation-icon landscape-icon" /></button>
               </div>
             </section>
 
