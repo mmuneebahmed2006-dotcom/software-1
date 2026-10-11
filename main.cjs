@@ -242,6 +242,20 @@ function installIpc() {
       const duplexMode = ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex';
       // The HTML print document has already applied Fit/Actual/Custom geometry.
       // Keep Electron at 100% so the printer receives that layout only once.
+      // Margin behaviour is intentionally different per sizing mode:
+      // - 'fit'/'shrink' should always keep a small, even margin on every side,
+      //   even on a non-borderless printer - so they use 'printableArea', which
+      //   fits the page within whatever area the selected printer can actually
+      //   print (consistent on a normal printer, and still edge-to-edge on a
+      //   true borderless one, since its printable area already covers the
+      //   whole sheet).
+      // - 'actual'/'custom' are meant to print true 1:1 or a user-chosen scale
+      //   with nothing imposed by us, including going edge-to-edge - so they
+      //   request 'none' (true zero-margin). On a non-borderless printer the
+      //   driver's own hardware limit still applies and may clip/shift slightly;
+      //   that is inherent to asking for borderless on hardware that can't do it,
+      //   not something this app can work around.
+      const marginType = (sizing === 'actual' || sizing === 'custom') ? 'none' : 'printableArea';
       const base = {
         silent: true,
         ...(deviceName ? { deviceName } : {}),
@@ -251,16 +265,7 @@ function installIpc() {
         pageSize,
         pagesPerSheet: 1,
         scaleFactor: 100,
-        // 'none' asks for true zero-margin full-bleed, which only a borderless
-        // printer can actually honour. On an ordinary printer the driver still
-        // can't print into its hardware-unprintable strip (often bigger at the
-        // bottom, near the paper feed) and silently clips/shifts the page there,
-        // which is what produced the unequal margins on each side. 'printableArea'
-        // asks Electron to fit the page within whatever area the selected printer
-        // can actually print - consistent, un-clipped margins on a normal printer,
-        // and still full-bleed edge-to-edge automatically on a true borderless one
-        // (its printable area already covers the whole sheet).
-        margins: { marginType: 'printableArea' },
+        margins: { marginType },
         copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
         // Do NOT forward options.dpi to webContents.print(). Our page images are
         // already rasterised at high resolution (pixelRatio 2) before they ever
