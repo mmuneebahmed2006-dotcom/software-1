@@ -221,51 +221,80 @@ function installIpc() {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'docstudio-print-pdf-'));
     const file = path.join(tempDir, 'document.pdf');
     fs.writeFileSync(file, bytes);
-    const printWindow = new BrowserWindow({
-      show: false,
-      webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
-    });
     const cleanup = () => {
-      try { if (!printWindow.isDestroyed()) printWindow.close(); } catch {}
       try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
     };
+    const deviceName = options.deviceName ? String(options.deviceName) : '';
+    const paperSize = ['A4', 'A5', 'Letter', 'Legal'].includes(options.paperSize) ? options.paperSize : 'A4';
+    const copies = Math.min(999, Math.max(1, Number(options.copies) || 1));
     try {
-      await printWindow.loadFile(file);
-      // Chromium's built-in PDF viewer finishes painting shortly after the file
-      // load event. Wait before handing the PDF page to the printer pipeline.
-      await printWindow.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 700))');
-      const deviceName = options.deviceName ? String(options.deviceName) : '';
-      const paperSize = ['A4', 'A5', 'Letter', 'Legal'].includes(options.paperSize) ? options.paperSize : 'A4';
-      const settings = {
-        silent: true,
-        ...(deviceName ? { deviceName } : {}),
-        printBackground: true,
-        color: !Boolean(options.gray),
-        landscape: Boolean(options.landscape),
-        pageSize: paperSize,
-        pagesPerSheet: 1,
-        scaleFactor: 100,
-        margins: { marginType: 'none' },
-        copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-        duplexMode: ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex',
-        ...(options.dpi ? { dpi: { horizontal: Number(options.dpi), vertical: Number(options.dpi) } } : {}),
-      };
-      const result = await new Promise((resolve) => {
-        try {
-          printWindow.webContents.print(settings, (success, failureReason) => {
-            resolve({ success, failureReason: String(failureReason || '') });
-          });
-        } catch (error) {
-          resolve({ success: false, failureReason: String(error?.message || error) });
-        }
+      if (process.platform === 'win32') {
+        // The PDF is already laid out at the chosen paper size and has the
+        // selected Fit/Actual/Custom scaling baked into its page content.
+        // Sumatra's noscale option preserves that PDF page 1:1 instead of
+        // applying a second scaling pass in Chromium or the print driver.
+        const pdfPrinter = await import('pdf-to-printer');
+        const printPdfFile = pdfPrinter.print || pdfPrinter.default?.print || pdfPrinter.default;
+        if (typeof printPdfFile !== 'function') throw new Error('The PDF printing engine could not be loaded.');
+        await printPdfFile(file, {
+          ...(deviceName ? { printer: deviceName } : {}),
+          paperSize,
+          orientation: options.landscape ? 'landscape' : 'portrait',
+          scale: 'noscale',
+          copies,
+          side: options.duplex === 'shortEdge' ? 'duplexshort'
+            : options.duplex === 'longEdge' ? 'duplexlong'
+              : 'simplex',
+          monochrome: Boolean(options.gray),
+          silent: true,
+          printDialog: false,
+        });
+        log(`Sumatra PDF print accepted | printer=${deviceName || '(default)'} | paper=${paperSize} | orientation=${options.landscape ? 'landscape' : 'portrait'} | scaling=noscale | copies=${copies}`);
+        return { success: true, printer: deviceName };
+      }
+
+      // Keep the native Electron fallback on non-Windows platforms, where
+      // pdf-to-printer/Sumatra is not supported.
+      const printWindow = new BrowserWindow({
+        show: false,
+        webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
       });
-      log(`PDF print ${result.success ? 'accepted' : 'rejected'} | printer=${deviceName || '(default)'} | paper=${paperSize} | landscape=${Boolean(options.landscape)} | reason=${result.failureReason}`);
-      return { ...result, printer: deviceName, failureReason: result.success ? '' : (result.failureReason || 'Windows rejected the PDF print job.') };
+      try {
+        await printWindow.loadFile(file);
+        await printWindow.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 700))');
+        const settings = {
+          silent: true,
+          ...(deviceName ? { deviceName } : {}),
+          printBackground: true,
+          color: !Boolean(options.gray),
+          landscape: Boolean(options.landscape),
+          pageSize: paperSize,
+          pagesPerSheet: 1,
+          scaleFactor: 100,
+          margins: { marginType: 'none' },
+          copies,
+          duplexMode: ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex',
+          ...(options.dpi ? { dpi: { horizontal: Number(options.dpi), vertical: Number(options.dpi) } } : {}),
+        };
+        const result = await new Promise((resolve) => {
+          try {
+            printWindow.webContents.print(settings, (success, failureReason) => {
+              resolve({ success, failureReason: String(failureReason || '') });
+            });
+          } catch (error) {
+            resolve({ success: false, failureReason: String(error?.message || error) });
+          }
+        });
+        log(`Electron PDF print ${result.success ? 'accepted' : 'rejected'} | printer=${deviceName || '(default)'} | paper=${paperSize} | reason=${result.failureReason}`);
+        return { ...result, printer: deviceName, failureReason: result.success ? '' : (result.failureReason || 'The PDF print job was rejected.') };
+      } finally {
+        try { if (!printWindow.isDestroyed()) printWindow.close(); } catch {}
+      }
     } catch (error) {
       log('PDF print failed: ' + error.message);
       return { success: false, failureReason: String(error.message || error) };
     } finally {
-      setTimeout(cleanup, 1500);
+      cleanup();
     }
   });
   ipcMain.handle('print:document', async (_event, options = {}) => {
