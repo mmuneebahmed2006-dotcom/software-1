@@ -76,10 +76,10 @@ function buildPrintHtml(options,images) {
   // Standard-size pages are already expressed in physical page units. Anchor
   // them at the print canvas origin; screen centering must not offset this stream.
   const center=options.autoCenter!==false || sizing==='fit', scale=clamp(options.scaleFactor,10,400,100)/100;
-  // Fit uses a 4mm safe inset on each side so printers with a nonprintable
+  // Fit uses a 3mm safe inset on each side so printers with a nonprintable
   // hardware edge keep the invoice header and footer visible. Actual and
   // Custom retain their requested physical scale without an app-side inset.
-  const fitInset=mode==='size' && sizing==='fit' ? 4 : 0;
+  const fitInset=mode==='size' && sizing==='fit' ? 3 : 0;
   function pageBox(srcImg,label,bw,bh,inset=0) {
     if(!srcImg) return '<div class="blank"></div>';
     const turn=rotate&&((sw>sh)!==(bw>bh)), fit=sizing==='fit'||sizing==='shrink', k=sizing==='custom'?scale:1;
