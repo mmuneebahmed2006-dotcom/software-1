@@ -126,17 +126,14 @@ function Index() {
   }, [captureCurrent, isPrinting]);
 
   const executePrint = useCallback(async (settings: PrintSettings) => {
-    // The print preview owns the print settings. Standard pages print from an
-    // in-memory PDF stream; browser fallbacks print an isolated PDF/HTML frame,
-    // never the live editor DOM.
+    // The preview captures the invoice once. Desktop print sends those
+    // page images through the isolated HTML print document, then Electron
+    // sends that document directly to the selected printer.
     if (!printCapture?.images?.length) { toast.error("Nothing to print."); return; }
-
     const pageRanges = selectPageRanges(printCapture.images.length, settings);
-
     const scale = settings.sizing === "custom"
       ? Math.min(400, Math.max(10, Number(settings.scale) || 100))
       : 100;
-
     const paperSize = ({
       "A4 21 × 29.7 cm": "A4",
       "A5 14.8 × 21 cm": "A5",
@@ -144,148 +141,88 @@ function Index() {
       "Legal 8.5 × 14 in": "Legal",
     } as Record<string, string>)[settings.paperSize] ?? "A4";
 
-    const printPdfBlob = async () => {
-      const selectedIndices = pageRangeIndices(printCapture.images.length, pageRanges);
-      if (!selectedIndices.length) throw new Error("The selected page range is empty.");
-      return buildPrintPdf(printCapture, {
-        paperSize: paperSize as PaperSizeKey,
-        landscape: settings.orientation === "landscape",
-        sizing: settings.sizing,
-        scale,
-        autoRotate: settings.autoRotate,
-        autoCenter: settings.autoCenter,
-        gray: settings.gray,
-        pageIndices: selectedIndices,
-      });
+    const printOptions = {
+      paperSize,
+      sourceSize: printCapture.size,
+      silent: true,
+      deviceName: settings.printerName || undefined,
+      gray: settings.gray,
+      landscape: settings.orientation === "landscape",
+      sizing: settings.sizing,
+      scaleFactor: scale,
+      pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
+      copies: settings.copies,
+      pageRanges,
+      duplex: settings.mode === "booklet"
+        ? settings.bookletSubset === "both" ? "shortEdge" : "simplex"
+        : settings.sides === "double" ? "longEdge" : "simplex",
+      dpi: settings.printAsImage ? settings.dpi : undefined,
+      images: printCapture.images,
+      autoRotate: settings.autoRotate,
+      autoCenter: settings.autoCenter,
+      mode: settings.mode,
+      posterTiles: Math.min(4, Math.max(2, Math.ceil(settings.posterScale / 100))) as 2 | 3 | 4,
+      posterScale: settings.posterScale,
+      posterOverlap: settings.posterOverlap,
+      posterCutMarks: settings.posterCutMarks,
+      posterLabels: settings.posterLabels,
+      multiplePageOrder: settings.multiplePageOrder,
+      bookletSubset: settings.bookletSubset,
+      bookletFrom: settings.bookletFrom,
+      bookletTo: settings.bookletTo,
+      bookletBinding: settings.bookletBinding,
     };
 
-    // Desktop printing consumes the same in-memory PDF page stream as export;
-    // it never asks Chromium to print the live editor DOM.
-    if (settings.mode === "size" && window.desktop?.printPdf) {
-      try {
-        const pdf = await printPdfBlob();
-        const result = await window.desktop.printPdf(await blobToDataUrl(pdf), {
-          paperSize,
-          deviceName: settings.printerName || undefined,
-          landscape: settings.orientation === "landscape",
-          copies: settings.copies,
-          duplex: settings.sides === "double" ? "longEdge" : "simplex",
-          dpi: settings.printAsImage ? settings.dpi : undefined,
-        });
+    try {
+      if (window.desktop?.printDocument) {
+        const result = await window.desktop.printDocument(printOptions);
         if (result?.cancelled) return;
         if (!result?.success) {
           toast.error(`Print failed: ${result?.failureReason || "Windows rejected the print job."}`);
           return;
         }
-        toast.success("Print sent to the selected printer.");
-        setPrintOpen(false);
-      } catch (error) {
-        console.error("PDF print error:", error);
-        toast.error("Print could not be started.");
-      }
-      return;
-    }
-
-    if (!window.desktop?.printDocument) {
-      if (settings.mode === "size") {
-        const blob = await printPdfBlob();
-        const blobUrl = URL.createObjectURL(blob);
+      } else {
+        const indices = pageRangeIndices(printCapture.images.length, pageRanges);
+        const pages = indices.map((index) => printCapture.images[index]);
+        if (!pages.length) throw new Error("The selected page range is empty.");
+        const html = buildPrintHtml({
+          paperSize,
+          sourceSize: printCapture.size,
+          landscape: settings.orientation === "landscape",
+          sizing: settings.sizing,
+          scaleFactor: scale,
+          autoRotate: settings.autoRotate,
+          autoCenter: settings.autoCenter,
+          mode: settings.mode,
+          posterScale: settings.posterScale,
+          posterOverlap: settings.posterOverlap,
+          posterCutMarks: settings.posterCutMarks,
+          posterLabels: settings.posterLabels,
+          pagesPerSheet: settings.pagesPerSheet,
+          multiplePageOrder: settings.multiplePageOrder,
+          bookletSubset: settings.bookletSubset,
+          bookletFrom: settings.bookletFrom,
+          bookletTo: settings.bookletTo,
+          bookletBinding: settings.bookletBinding,
+          gray: settings.gray,
+        }, pages);
         const frame = document.createElement("iframe");
-        frame.title = "Invoice PDF print";
-        frame.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;border:0;opacity:0;pointer-events:none;z-index:-1";
-        const cleanup = () => {
-          frame.remove();
-          URL.revokeObjectURL(blobUrl);
-        };
-        frame.onload = () => {
-          window.setTimeout(() => {
-            try {
-              frame.contentWindow?.focus();
-              frame.contentWindow?.print();
-              window.setTimeout(cleanup, 60000);
-            } catch (error) {
-              cleanup();
-              console.error("PDF frame print error:", error);
-              toast.error("Print could not be started.");
-            }
-          }, 300);
-        };
-        frame.onerror = () => {
-          cleanup();
-          toast.error("The print PDF could not be loaded.");
-        };
-        frame.src = blobUrl;
+        frame.title = "Invoice print";
+        frame.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0";
         document.body.append(frame);
-        setPrintOpen(false);
-        return;
-      }
-      const indices = pageRangeIndices(printCapture.images.length, pageRanges);
-      const pages = indices.map((index) => printCapture.images[index]);
-      if (!pages.length) { toast.error("The selected page range is empty."); return; }
-      const html = buildPrintHtml({
-        paperSize, sourceSize: printCapture.size,
-        landscape: settings.orientation === "landscape",
-        sizing: settings.sizing, scaleFactor: scale,
-        autoRotate: settings.autoRotate, autoCenter: settings.autoCenter,
-        mode: settings.mode, posterScale: settings.posterScale, posterOverlap: settings.posterOverlap,
-        posterCutMarks: settings.posterCutMarks, posterLabels: settings.posterLabels,
-        pagesPerSheet: settings.pagesPerSheet, multiplePageOrder: settings.multiplePageOrder,
-        bookletSubset: settings.bookletSubset, bookletFrom: settings.bookletFrom,
-        bookletTo: settings.bookletTo, bookletBinding: settings.bookletBinding, gray: settings.gray,
-      }, pages);
-      const frame = document.createElement("iframe");
-      frame.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0";
-      document.body.append(frame);
-      const doc = frame.contentDocument!;
-      doc.open(); doc.write(html); doc.close();
-      await Promise.all(Array.from(doc.images).map((im) => im.complete ? null : new Promise((r) => { im.onload = im.onerror = r; })));
-      frame.contentWindow!.focus();
-      frame.contentWindow!.print();
-      window.setTimeout(() => frame.remove(), 2000);
-      setPrintOpen(false);
-      return;
-    }
-
-    try {
-      const printResult = await window.desktop.printDocument({
-        // Keep the native printer media synchronized with the paper selected
-        // in the print dialog. Without this field, main.cjs falls back to A4
-        // even when the preview is set to A5, Letter, or Legal.
-        paperSize,
-        sourceSize: printCapture.size,
-        silent: true,
-        deviceName: settings.printerName || undefined,
-        gray: settings.gray,
-        landscape: settings.orientation === "landscape",
-        sizing: settings.sizing,
-        scaleFactor: scale,
-        pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
-        copies: settings.copies,
-        pageRanges,
-        duplex: settings.mode === "booklet"
-          ? settings.bookletSubset === "both" ? "shortEdge" : "simplex"
-          : settings.sides === "double" ? "longEdge" : "simplex",
-        dpi: settings.printAsImage ? settings.dpi : undefined,
-        images: printCapture.images,
-        autoRotate: settings.autoRotate,
-        autoCenter: settings.autoCenter,
-        mode: settings.mode,
-        posterTiles: Math.min(4, Math.max(2, Math.ceil(settings.posterScale / 100))) as 2 | 3 | 4,
-        posterScale: settings.posterScale,
-        posterOverlap: settings.posterOverlap,
-        posterCutMarks: settings.posterCutMarks,
-        posterLabels: settings.posterLabels,
-        multiplePageOrder: settings.multiplePageOrder,
-        bookletSubset: settings.bookletSubset,
-        bookletFrom: settings.bookletFrom,
-        bookletTo: settings.bookletTo,
-        bookletBinding: settings.bookletBinding,
-      });
-
-      if (printResult?.cancelled) return;
-      if (!printResult?.success) {
-        toast.error(`Print failed: ${printResult?.failureReason || "Windows rejected the print job."}`);
-        return;
+        const doc = frame.contentDocument;
+        if (!doc) throw new Error("Could not prepare the print document.");
+        doc.open();
+        doc.write(html);
+        doc.close();
+        await Promise.all(Array.from(doc.images).map((image) =>
+          image.complete ? Promise.resolve() : new Promise<void>((resolve) => {
+            image.onload = image.onerror = () => resolve();
+          }),
+        ));
+        frame.contentWindow?.focus();
+        frame.contentWindow?.print();
+        window.setTimeout(() => frame.remove(), 2000);
       }
 
       toast.success("Print sent to the selected printer.");
