@@ -325,45 +325,60 @@ function installIpc() {
       if (!deviceName) {
         try { const list = await printWindow.webContents.getPrintersAsync(); deviceName = (list.find((p) => p.isDefault) || list[0] || {}).name || ''; } catch {}
       }
-      const duplexMode = ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex';
-      // Prefer the standard media name so Windows can match the job to the
-      // printer's real A4/A5/Letter/Legal form. A custom micron-sized form can
-      // be accepted by a driver but then silently scaled/centered as an
-      // unsupported media size.
-      const [paperWidthMm, paperHeightMm] = PAPER_MM[pageSize] || PAPER_MM.A4;
-      const pageSizeMicrons = { width: Math.round(paperWidthMm * 1000), height: Math.round(paperHeightMm * 1000) };
-      // Each generated HTML sheet uses the full selected paper dimensions.
-      // Keep Electron and the driver on that same paper and avoid a second app-side
-      // scaling pass; printer hardware may still enforce its own nonprintable area.
-      const base = {
-        // Send directly to the selected printer using its saved driver preferences.
-        // Electron's portable controls are pageSize, landscape, and zero margins;
-        // borderless media must be enabled in the printer driver's saved defaults.
-        silent: true,
-        ...(deviceName ? { deviceName } : {}),
-        printBackground: true,
-        color: !gray,
-        landscape,
-        pageSize,
-        pagesPerSheet: 1,
-        scaleFactor: 100,
-        margins: { marginType: 'none' },
-        copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-        ...(options.dpi ? { dpi: { horizontal: Number(options.dpi), vertical: Number(options.dpi) } } : {}),
-      };
-      const full = { ...base, duplexMode };
-      const submit = (settings) => new Promise((resolve) => {
-        try { printWindow.webContents.print(settings, (success, failureReason) => resolve({ success, failureReason: String(failureReason || '') })); }
-        catch (error) { resolve({ success: false, failureReason: String(error && error.message ? error.message : error) }); }
-      });
-      let result = await submit(full);
-      if (!result.success && result.failureReason !== 'cancelled') {
-        log('Print retry with minimal options | reason=' + result.failureReason);
-        result = await submit(base);
-      }
-      if (!result.success && result.failureReason !== 'cancelled') {
-        log('Print retry with exact paper dimensions | reason=' + result.failureReason);
-        result = await submit({ ...base, pageSize: pageSizeMicrons });
+      let result;
+      if (process.platform === 'win32') {
+        // Render the prepared print HTML to PDF once, then let Sumatra send that
+        // exact page stream to the selected Windows printer without a second
+        // scaling pass. Fit/Actual/Custom sizing is already encoded in html.
+        const pdfBytes = await printWindow.webContents.printToPDF({
+          landscape,
+          printBackground: true,
+          pageSize,
+          margins: { top: 0, bottom: 0, left: 0, right: 0 },
+          preferCSSPageSize: false,
+          displayHeaderFooter: false,
+          scale: 1,
+        });
+        const pdfFile = path.join(tempDir, 'print.pdf');
+        await fs.promises.writeFile(pdfFile, pdfBytes);
+        const pdfPrinter = await import('pdf-to-printer');
+        const printPdfFile = pdfPrinter.print || pdfPrinter.default?.print || pdfPrinter.default;
+        if (typeof printPdfFile !== 'function') throw new Error('The PDF printing engine could not be loaded.');
+        await printPdfFile(pdfFile, {
+          ...(deviceName ? { printer: deviceName } : {}),
+          paperSize: pageSize,
+          orientation: landscape ? 'landscape' : 'portrait',
+          scale: 'noscale',
+          copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+          side: options.duplex === 'shortEdge' ? 'duplexshort'
+            : options.duplex === 'longEdge' ? 'duplexlong'
+              : 'simplex',
+          monochrome: gray,
+          silent: true,
+          printDialog: false,
+        });
+        result = { success: true, failureReason: '' };
+      } else {
+        const base = {
+          silent: true,
+          ...(deviceName ? { deviceName } : {}),
+          printBackground: true,
+          color: !gray,
+          landscape,
+          pageSize,
+          pagesPerSheet: 1,
+          scaleFactor: 100,
+          margins: { marginType: 'none' },
+          copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+          ...(options.dpi ? { dpi: { horizontal: Number(options.dpi), vertical: Number(options.dpi) } } : {}),
+        };
+        const full = { ...base, duplexMode: ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex' };
+        const submit = (settings) => new Promise((resolve) => {
+          try { printWindow.webContents.print(settings, (success, failureReason) => resolve({ success, failureReason: String(failureReason || '') })); }
+          catch (error) { resolve({ success: false, failureReason: String(error?.message || error) }); }
+        });
+        result = await submit(full);
+        if (!result.success && result.failureReason !== 'cancelled') result = await submit(base);
       }
       log(`Print ${result.success ? 'accepted' : 'rejected'} | printer=${deviceName || '(dialog)'} | paper=${pageSize} (${pageSizeMicrons.width}x${pageSizeMicrons.height}um) | landscape=${landscape} | sizing=${sizing} | scale=${scale} | reason=${result.failureReason}`);
       if (!result.success && result.failureReason === 'cancelled') return { success: false, cancelled: true, failureReason: '' };
