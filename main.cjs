@@ -208,95 +208,6 @@ function installIpc() {
       return true;
     } catch (error) { log('Printer settings failed: ' + error.message); return false; }
   });
-  ipcMain.handle('print:pdf', async (_event, data, options = {}) => {
-    const payload = String(data || '');
-    if (!payload.startsWith('data:application/pdf;base64,')) {
-      return { success: false, failureReason: 'The print PDF is invalid.' };
-    }
-    const bytes = decodeData(payload);
-    if (!bytes.subarray(0, 5).equals(Buffer.from('%PDF-'))) {
-      return { success: false, failureReason: 'The print PDF is invalid.' };
-    }
-    const os = require('os');
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'docstudio-print-pdf-'));
-    const file = path.join(tempDir, 'document.pdf');
-    fs.writeFileSync(file, bytes);
-    const cleanup = () => {
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
-    };
-    const deviceName = options.deviceName ? String(options.deviceName) : '';
-    const paperSize = ['A4', 'A5', 'Letter', 'Legal'].includes(options.paperSize) ? options.paperSize : 'A4';
-    const copies = Math.min(999, Math.max(1, Number(options.copies) || 1));
-    try {
-      if (process.platform === 'win32') {
-        // The PDF is already laid out at the chosen paper size and has the
-        // selected Fit/Actual/Custom scaling baked into its page content.
-        // Sumatra's noscale option preserves that PDF page 1:1 instead of
-        // applying a second scaling pass in Chromium or the print driver.
-        const pdfPrinter = await import('pdf-to-printer');
-        const printPdfFile = pdfPrinter.print || pdfPrinter.default?.print || pdfPrinter.default;
-        if (typeof printPdfFile !== 'function') throw new Error('The PDF printing engine could not be loaded.');
-        await printPdfFile(file, {
-          ...(deviceName ? { printer: deviceName } : {}),
-          paperSize,
-          orientation: options.landscape ? 'landscape' : 'portrait',
-          scale: 'noscale',
-          copies,
-          side: options.duplex === 'shortEdge' ? 'duplexshort'
-            : options.duplex === 'longEdge' ? 'duplexlong'
-              : 'simplex',
-          monochrome: Boolean(options.gray),
-          silent: true,
-          printDialog: false,
-        });
-        log(`Sumatra PDF print accepted | printer=${deviceName || '(default)'} | paper=${paperSize} | orientation=${options.landscape ? 'landscape' : 'portrait'} | scaling=noscale | copies=${copies}`);
-        return { success: true, printer: deviceName };
-      }
-
-      // Keep the native Electron fallback on non-Windows platforms, where
-      // pdf-to-printer/Sumatra is not supported.
-      const printWindow = new BrowserWindow({
-        show: false,
-        webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
-      });
-      try {
-        await printWindow.loadFile(file);
-        await printWindow.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 700))');
-        const settings = {
-          silent: true,
-          ...(deviceName ? { deviceName } : {}),
-          printBackground: true,
-          color: !Boolean(options.gray),
-          landscape: Boolean(options.landscape),
-          pageSize: paperSize,
-          pagesPerSheet: 1,
-          scaleFactor: 100,
-          margins: { marginType: 'none' },
-          copies,
-          duplexMode: ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex',
-          ...(options.dpi ? { dpi: { horizontal: Number(options.dpi), vertical: Number(options.dpi) } } : {}),
-        };
-        const result = await new Promise((resolve) => {
-          try {
-            printWindow.webContents.print(settings, (success, failureReason) => {
-              resolve({ success, failureReason: String(failureReason || '') });
-            });
-          } catch (error) {
-            resolve({ success: false, failureReason: String(error?.message || error) });
-          }
-        });
-        log(`Electron PDF print ${result.success ? 'accepted' : 'rejected'} | printer=${deviceName || '(default)'} | paper=${paperSize} | reason=${result.failureReason}`);
-        return { ...result, printer: deviceName, failureReason: result.success ? '' : (result.failureReason || 'The PDF print job was rejected.') };
-      } finally {
-        try { if (!printWindow.isDestroyed()) printWindow.close(); } catch {}
-      }
-    } catch (error) {
-      log('PDF print failed: ' + error.message);
-      return { success: false, failureReason: String(error.message || error) };
-    } finally {
-      cleanup();
-    }
-  });
   ipcMain.handle('print:document', async (_event, options = {}) => {
     const { pageRangeIndices, buildPrintHtml } = await import('./print-layout.mjs');
     const PAPER_MM = { A4: [210, 297], A5: [148, 210], Letter: [215.9, 279.4], Legal: [215.9, 355.6] };
@@ -325,62 +236,38 @@ function installIpc() {
       if (!deviceName) {
         try { const list = await printWindow.webContents.getPrintersAsync(); deviceName = (list.find((p) => p.isDefault) || list[0] || {}).name || ''; } catch {}
       }
-      let result;
-      if (process.platform === 'win32') {
-        // Render the prepared print HTML to PDF once, then let Sumatra send that
-        // exact page stream to the selected Windows printer without a second
-        // scaling pass. Fit/Actual/Custom sizing is already encoded in html.
-        const pdfBytes = await printWindow.webContents.printToPDF({
-          landscape,
-          printBackground: true,
-          pageSize,
-          margins: { top: 0, bottom: 0, left: 0, right: 0 },
-          preferCSSPageSize: false,
-          displayHeaderFooter: false,
-          scale: 1,
-        });
-        const pdfFile = path.join(tempDir, 'print.pdf');
-        await fs.promises.writeFile(pdfFile, pdfBytes);
-        const pdfPrinter = await import('pdf-to-printer');
-        const printPdfFile = pdfPrinter.print || pdfPrinter.default?.print || pdfPrinter.default;
-        if (typeof printPdfFile !== 'function') throw new Error('The PDF printing engine could not be loaded.');
-        await printPdfFile(pdfFile, {
-          ...(deviceName ? { printer: deviceName } : {}),
-          paperSize: pageSize,
-          orientation: landscape ? 'landscape' : 'portrait',
-          scale: 'noscale',
-          copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-          side: options.duplex === 'shortEdge' ? 'duplexshort'
-            : options.duplex === 'longEdge' ? 'duplexlong'
-              : 'simplex',
-          monochrome: gray,
-          silent: true,
-          printDialog: false,
-        });
-        result = { success: true, failureReason: '' };
-      } else {
-        const base = {
-          silent: true,
-          ...(deviceName ? { deviceName } : {}),
-          printBackground: true,
-          color: !gray,
-          landscape,
-          pageSize,
-          pagesPerSheet: 1,
-          scaleFactor: 100,
-          margins: { marginType: 'none' },
-          copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
-          ...(options.dpi ? { dpi: { horizontal: Number(options.dpi), vertical: Number(options.dpi) } } : {}),
-        };
-        const full = { ...base, duplexMode: ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex' };
-        const submit = (settings) => new Promise((resolve) => {
-          try { printWindow.webContents.print(settings, (success, failureReason) => resolve({ success, failureReason: String(failureReason || '') })); }
-          catch (error) { resolve({ success: false, failureReason: String(error?.message || error) }); }
-        });
-        result = await submit(full);
-        if (!result.success && result.failureReason !== 'cancelled') result = await submit(base);
+      const duplexMode = ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex';
+      // The HTML print document has already applied Fit/Actual/Custom geometry.
+      // Keep Electron at 100% so the printer receives that layout only once.
+      const base = {
+        silent: true,
+        ...(deviceName ? { deviceName } : {}),
+        printBackground: true,
+        color: !gray,
+        landscape,
+        pageSize,
+        pagesPerSheet: 1,
+        scaleFactor: 100,
+        margins: { marginType: 'none' },
+        copies: Math.min(999, Math.max(1, Number(options.copies) || 1)),
+        ...(options.dpi ? { dpi: { horizontal: Number(options.dpi), vertical: Number(options.dpi) } } : {}),
+      };
+      const full = { ...base, duplexMode };
+      const submit = (settings) => new Promise((resolve) => {
+        try {
+          printWindow.webContents.print(settings, (success, failureReason) => {
+            resolve({ success, failureReason: String(failureReason || '') });
+          });
+        } catch (error) {
+          resolve({ success: false, failureReason: String(error?.message || error) });
+        }
+      });
+      let result = await submit(full);
+      if (!result.success && result.failureReason !== 'cancelled') {
+        log('Native print retry with minimal options | reason=' + result.failureReason);
+        result = await submit(base);
       }
-      log(`Print ${result.success ? 'accepted' : 'rejected'} | printer=${deviceName || '(default)'} | paper=${pageSize} | landscape=${landscape} | sizing=${sizing} | scale=${scale} | engine=${process.platform === 'win32' ? 'Sumatra PDF' : 'Electron'} | reason=${result.failureReason}`);
+      log(`Native print ${result.success ? 'accepted' : 'rejected'} | printer=${deviceName || '(default)'} | paper=${pageSize} | landscape=${landscape} | sizing=${sizing} | scale=${scale} | reason=${result.failureReason}`);
       if (!result.success && result.failureReason === 'cancelled') return { success: false, cancelled: true, failureReason: '' };
       return { success: result.success, printer: deviceName, failureReason: result.success ? '' : (result.failureReason || 'Windows rejected the print job.') };
     } catch (error) {
