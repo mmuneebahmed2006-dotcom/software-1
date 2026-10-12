@@ -86,7 +86,7 @@ export function StartupExperience() {
     }
   };
 
-  if (phase === "done") return null;
+  if (phase === "done" || (window.desktop && (phase === "splash" || phase === "expanding"))) return null;
   if (phase === "splash" || phase === "expanding") {
     return (
       <div className={`startup-overlay startup-splash${phase === "expanding" ? " startup-splash-expanding" : ""}`} role="status" aria-label="Document Studio is starting">
