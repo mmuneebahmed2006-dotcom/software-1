@@ -350,19 +350,29 @@ body.startup-active .document-paper-wrapper {
 }
 .startup-overlay {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  width: 20cm;
-  height: 20cm;
-  inset: auto;
-  transform: translate(-50%, -50%);
+  inset: 0;
   z-index: 10000;
   overflow: hidden;
   background: #0b0b0b;
   color: #f7f7f7;
 }
-.startup-overlay.startup-splash { display: block; }
-.startup-splash .splash-mark {
+.startup-overlay.startup-splash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+.startup-splash-panel {
+  position: relative;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: min(20cm, calc(100vw - 24px), calc(100vh - 24px));
+  height: min(20cm, calc(100vw - 24px), calc(100vh - 24px));
+  overflow: hidden;
+  background: #0b0b0b;
+  color: #f7f7f7;
+}
+.startup-splash-panel .splash-mark {
   position: absolute;
   top: 13.5%;
   left: 50%;
@@ -374,7 +384,7 @@ body.startup-active .document-paper-wrapper {
   border: 1px solid rgb(255 255 255 / 28%);
 }
 .startup-splash .splash-mark svg { width: 28px; height: 28px; }
-.startup-splash h1 {
+.startup-splash-panel h1 {
   position: absolute;
   top: 55%;
   left: 50%;
@@ -389,7 +399,7 @@ body.startup-active .document-paper-wrapper {
   line-height: 1;
   text-transform: uppercase;
 }
-.startup-splash p {
+.startup-splash-panel p {
   position: absolute;
   right: 16px;
   bottom: 9.5%;
@@ -409,8 +419,8 @@ body.startup-active .document-paper-wrapper {
 .setup-actions button { width: 100%; }
 @media (max-height: 500px) {
   .startup-splash .splash-mark { top: 8%; }
-  .startup-splash h1 { top: 52%; }
-  .startup-splash p { bottom: 5%; }
+  .startup-splash-panel h1 { top: 52%; }
+  .startup-splash-panel p { bottom: 5%; }
 }
 .management-check { display: flex; align-items: center; gap: 9px; font-size: 13px; }.management-list { max-height: 330px; display: grid; gap: 16px; overflow-y: auto; border-block: 1px solid var(--border); padding-block: 14px; }.management-list section { display: grid; gap: 8px; }.management-list h3 { margin: 0; font-size: 11px; text-transform: uppercase; }.management-list p { color: var(--muted-foreground); font-size: 13px; }.backup-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.backup-dates label { display: grid; gap: 6px; }.backup-dates span { font-size: 12px; font-weight: 700; }
 .dialog-field { display: grid; gap: 6px; }.dialog-field > span { font-size: 12px; font-weight: 700; }.dialog-field select { height: 36px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--background); padding: 0 10px; }.dialog-grid,.scope-options { display: grid; gap: 10px; }.scope-options button { min-height: 42px; justify-content: flex-start; }
