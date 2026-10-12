@@ -23,7 +23,7 @@ export function StartupExperience() {
     let timer: number | undefined;
     const splashStartedAt = performance.now();
     const transitionAfterSplash = (nextPhase: StartupPhase) => {
-      const remaining = Math.max(0, 1500 - (performance.now() - splashStartedAt));
+      const remaining = Math.max(0, 2500 - (performance.now() - splashStartedAt));
       timer = window.setTimeout(() => {
         if (!mounted) return;
         if (nextPhase === "done") {

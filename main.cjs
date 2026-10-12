@@ -385,7 +385,7 @@ function startServer() { serverProcess = fork(getServerEntry(), [], { env: { ...
 function waitForServer(url, callback, attempts = 60) { http.get(url, callback).on('error', () => attempts > 0 ? setTimeout(() => waitForServer(url, callback, attempts - 1), 250) : log('Server did not respond')); }
 let splashWin;
 let splashStartedAt = 0;
-const SPLASH_HOLD_MS = 1500;
+const SPLASH_HOLD_MS = 2500;
 const SPLASH_EXPAND_MS = 450;
 
 function createSplashWindow() {
