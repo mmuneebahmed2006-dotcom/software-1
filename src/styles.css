@@ -371,6 +371,11 @@ body.startup-active .document-paper-wrapper {
   overflow: hidden;
   background: #0b0b0b;
   color: #f7f7f7;
+  transition: width 450ms ease, height 450ms ease;
+}
+.startup-splash-expanding .startup-splash-panel {
+  width: 100vw;
+  height: 100vh;
 }
 .startup-splash-panel .splash-mark {
   position: absolute;
