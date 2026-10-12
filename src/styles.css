@@ -220,7 +220,7 @@
 .meta-row input { font-size: calc(9pt * var(--paper-scale)); }
 .document-title { width: 100%; margin: calc(12px * var(--paper-scale)) 0 0; overflow: hidden; font-family: var(--font-display); font-size: calc(50pt * var(--paper-scale)); font-weight: 400; line-height: 1; text-align: right; text-transform: uppercase; white-space: nowrap; letter-spacing: 0; }
 /* Keep quotation labels, values, and title in one bounded right-hand column. */
-.identity-grid.quotation-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 46%); }
+.identity-grid.quotation-layout { grid-template-columns: minmax(0, 45%) minmax(0, 55%); }
 .document-meta.quotation-meta { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }
 .quotation-meta .meta-grid { width: 100%; grid-template-columns: minmax(0, 1fr) max-content; }
 .quotation-meta .meta-row > div { min-width: 0; }
@@ -232,7 +232,7 @@
   overflow: hidden !important;
   font-size: calc(50pt * var(--paper-scale, 1)) !important;
   line-height: 1 !important;
-  text-align: right !important;
+  text-align: left !important;
   white-space: nowrap !important;
 }
 
