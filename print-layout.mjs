@@ -31,8 +31,26 @@ function selectPageRanges(total,settings) {
     return [{from:first-1,to:Math.min(n,last)-1}];
   });
 }
-function gridOrder(count,order) {
-  const n=Math.max(1,Math.min(16,Math.floor(Number(count)||1))), cols=Math.ceil(Math.sqrt(n)), rows=Math.ceil(n/cols), positions=[];
+function gridOrder(count,order,sourceAspect,sheetAspect) {
+  const n=Math.max(1,Math.min(16,Math.floor(Number(count)||1)));
+  const a=Math.ceil(Math.sqrt(n)), b=Math.ceil(n/a);
+  let cols=a, rows=b;
+  // A plain ceil(sqrt(n)) grid assumes roughly square cells/pages. For n=2 that
+  // is 2 cols x 1 row - each cell already gets auto-rotated to match the page's
+  // own orientation (see the "turn" check in pageBox below), so what actually
+  // determines how much of the cell a page fills is the MAGNITUDE of the
+  // mismatch between the cell's long:short side ratio and the page's long:short
+  // side ratio, not which side happens to be longer. Compare both candidate
+  // grids (a,b) and (b,a) using that orientation-independent ratio and keep
+  // whichever lets each page fill its cell more fully.
+  if (sourceAspect > 0 && sheetAspect > 0 && a !== b) {
+    const norm = (v) => v >= 1 ? v : 1 / v;
+    const target = Math.log(norm(sourceAspect));
+    const fitAB = Math.abs(Math.log(norm(sheetAspect * (b / a))) - target);
+    const fitBA = Math.abs(Math.log(norm(sheetAspect * (a / b))) - target);
+    if (fitBA < fitAB) { cols = b; rows = a; }
+  }
+  const positions=[];
   for(let i=0;i<n;i++) {
     if(order==='vertical'||order==='vertical-reversed') {
       const row=i%rows, col=Math.floor(i/rows);
@@ -91,7 +109,7 @@ function buildPrintHtml(options,images) {
   }
   let body='';
   if(mode==='multiple') {
-    const n=Math.max(1,Math.min(16,Math.floor(Number(options.pagesPerSheet)||1))), spec=gridOrder(n,options.multiplePageOrder);
+    const n=Math.max(1,Math.min(16,Math.floor(Number(options.pagesPerSheet)||1))), spec=gridOrder(n,options.multiplePageOrder,sw/sh,pageW/pageH);
     for(let start=0;start<images.length;start+=n) {
       let cells='';
       for(let slot=0;slot<n;slot++) {
