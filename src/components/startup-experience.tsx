@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ArchiveRestore, FolderOpen, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type StartupPhase = "splash" | "setup" | "done";
+type StartupPhase = "splash" | "expanding" | "setup" | "done";
 
 export function StartupExperience() {
   const [phase, setPhase] = useState<StartupPhase>("splash");
@@ -22,24 +22,30 @@ export function StartupExperience() {
     let mounted = true;
     let timer: number | undefined;
     const splashStartedAt = performance.now();
-    const advanceAfterSplash = (nextPhase: StartupPhase) => {
-      const remaining = Math.max(0, 1200 - (performance.now() - splashStartedAt));
+    const transitionAfterSplash = (nextPhase: StartupPhase) => {
+      const remaining = Math.max(0, 1500 - (performance.now() - splashStartedAt));
       timer = window.setTimeout(() => {
-        if (mounted) setPhase(nextPhase);
+        if (!mounted) return;
+        if (nextPhase === "done") {
+          setPhase("expanding");
+          timer = window.setTimeout(() => {
+            if (mounted) setPhase("done");
+          }, 450);
+        } else {
+          setPhase(nextPhase);
+        }
       }, remaining);
     };
 
     if (window.desktop) {
       void window.desktop.getSettings()
-        .then((settings) => advanceAfterSplash(settings.initialized ? "done" : "setup"))
+        .then((settings) => transitionAfterSplash(settings.initialized ? "done" : "setup"))
         .catch((error: unknown) => {
           console.error("Could not read desktop startup settings:", error);
-          advanceAfterSplash("setup");
+          transitionAfterSplash("setup");
         });
     } else {
-      timer = window.setTimeout(() => {
-        if (mounted) setPhase("done");
-      }, 3000);
+      transitionAfterSplash("done");
     }
 
     return () => {
@@ -81,9 +87,9 @@ export function StartupExperience() {
   };
 
   if (phase === "done") return null;
-  if (phase === "splash") {
+  if (phase === "splash" || phase === "expanding") {
     return (
-      <div className="startup-overlay startup-splash" role="status" aria-label="Document Studio is starting">
+      <div className={`startup-overlay startup-splash${phase === "expanding" ? " startup-splash-expanding" : ""}`} role="status" aria-label="Document Studio is starting">
         <div className="startup-splash-panel">
           <div className="splash-mark" aria-hidden="true"><Sparkles size={28} /></div>
           <h1>DOCUMENT STUDIO</h1>
