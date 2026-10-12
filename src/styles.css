@@ -2012,3 +2012,49 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   transform: none !important;
   font-size: calc(49.5pt * var(--paper-scale, 1)) !important;
 }
+
+
+/* Keep sidebar header and file area anchored; only the folder chips scroll. */
+.saved-sidebar:not(.collapsed) {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section {
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 min(34vh, 300px);
+  flex-direction: column;
+  height: min(34vh, 300px);
+  min-height: 0;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section .sidebar-folders-area {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .sidebar-top-section .folder-chips {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.saved-sidebar:not(.collapsed) .sidebar-files-divider {
+  flex: 0 0 1px;
+  margin: 12px 0 0;
+}
+.saved-sidebar:not(.collapsed) .sidebar-bottom-section {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
