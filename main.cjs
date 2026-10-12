@@ -379,9 +379,13 @@ function installIpc() {
 function startServer() { serverProcess = fork(getServerEntry(), [], { env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1' }, stdio: 'pipe' }); serverProcess.stderr?.on('data', (data) => log(data.toString())); }
 function waitForServer(url, callback, attempts = 60) { http.get(url, callback).on('error', () => attempts > 0 ? setTimeout(() => waitForServer(url, callback, attempts - 1), 250) : log('Server did not respond')); }
 let splashWin;
+let splashStartedAt = 0;
+const SPLASH_HOLD_MS = 1500;
+const SPLASH_EXPAND_MS = 450;
 
 function createSplashWindow() {
   const { width: displayWidth, height: displayHeight } = screen.getPrimaryDisplay().workAreaSize;
+  splashStartedAt = Date.now();
   splashWin = new BrowserWindow({
     width: Math.min(1440, displayWidth),
     height: Math.min(900, displayHeight),
@@ -392,7 +396,8 @@ function createSplashWindow() {
     movable: false,
     alwaysOnTop: true,
     show: true,
-    backgroundColor: '#0b0b0b',
+    transparent: true,
+    backgroundColor: '#00000000',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -448,10 +453,16 @@ function createWindow() {
   waitForServer(`http://127.0.0.1:${PORT}`, () => win.loadURL(`http://127.0.0.1:${PORT}`));
 
   win.once('ready-to-show', () => {
-    if (!win || win.isDestroyed()) return;
-    win.show();
-    if (splashWin && !splashWin.isDestroyed()) splashWin.close();
-    splashWin = null;
+    const revealMainWindow = () => {
+      if (!win || win.isDestroyed()) return;
+      win.show();
+      if (splashWin && !splashWin.isDestroyed()) splashWin.close();
+      splashWin = null;
+    };
+    const elapsed = Date.now() - splashStartedAt;
+    const remaining = Math.max(0, SPLASH_HOLD_MS + SPLASH_EXPAND_MS - elapsed);
+    if (remaining > 0) setTimeout(revealMainWindow, remaining);
+    else revealMainWindow();
   });
 }
 function scheduleAutomaticBackup() {
