@@ -2003,7 +2003,7 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   margin-left: 0 !important;
   margin-right: 0 !important;
   padding-left: 0 !important;
-  text-align: left !important;
+  text-align: right !important;
   transform: none !important;
   font-size: calc(50pt * var(--paper-scale, 1)) !important;
 }
