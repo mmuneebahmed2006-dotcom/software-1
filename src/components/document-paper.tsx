@@ -35,7 +35,7 @@ const numericFieldStyle = (value: number): CSSProperties => {
 };
 
 export const DocumentPaper = memo(function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(140);
   const [currentPage, setCurrentPage] = useState(1);
   const pagesContentRef = useRef<HTMLDivElement | null>(null);
   // transform:scale enlarges what's painted without changing layout size, so
