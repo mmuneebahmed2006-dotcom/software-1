@@ -448,14 +448,10 @@ function createWindow() {
   waitForServer(`http://127.0.0.1:${PORT}`, () => win.loadURL(`http://127.0.0.1:${PORT}`));
 
   win.once('ready-to-show', () => {
-    // Keep the real application window hidden while the frameless black
-    // splash is visible. The Windows title bar appears only after startup.
-    setTimeout(() => {
-      if (!win || win.isDestroyed()) return;
-      win.show();
-      if (splashWin && !splashWin.isDestroyed()) splashWin.close();
-      splashWin = null;
-    }, 3100);
+    if (!win || win.isDestroyed()) return;
+    win.show();
+    if (splashWin && !splashWin.isDestroyed()) splashWin.close();
+    splashWin = null;
   });
 }
 function scheduleAutomaticBackup() {
