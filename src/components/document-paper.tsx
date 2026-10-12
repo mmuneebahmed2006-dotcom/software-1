@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useEffect, type CSSProperties, type Dispatch, type SetStateAction } from "react";
+import { memo, useMemo, useState, useEffect, useRef, type CSSProperties, type Dispatch, type SetStateAction } from "react";
 import { Globe2, Mail, MapPin, Phone, Plus, Trash2, RotateCcw } from "lucide-react";
 import logoMark from "@/assets/logo-mark.png";
 import { DOC_LABELS, PAPER_SIZES, money, uid, type DocState, type DocType, type LineItem, type PaperSizeKey } from "@/lib/document";
@@ -37,6 +37,22 @@ const numericFieldStyle = (value: number): CSSProperties => {
 export const DocumentPaper = memo(function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
+  const pagesContentRef = useRef<HTMLDivElement | null>(null);
+  // transform:scale enlarges what's painted without changing layout size, so
+  // the scroll area around #document-pages doesn't grow past 100% zoom and
+  // the bottom of the page becomes unreachable by scrolling. Measure the
+  // content's natural (unscaled) height and reserve exactly the extra space
+  // the zoom adds below it.
+  const [extraZoomPad, setExtraZoomPad] = useState(0);
+  useEffect(() => {
+    const el = pagesContentRef.current;
+    if (!el) return;
+    const recompute = () => setExtraZoomPad(Math.max(0, el.scrollHeight * (zoom / 100 - 1)));
+    recompute();
+    const observer = new ResizeObserver(recompute);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [zoom]);
   const baseRows = PAPER_SIZES[paperSize].rows || 15;
   const isA4 = String(paperSize).toLowerCase() === "a4";
   const firstRows = isA4 ? A4_FIRST_PAGE_ROWS : baseRows;
@@ -303,33 +319,35 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
         id="document-pages"
         className="document-pages"
         style={{
+          display: "block",
           transform: `scale(${zoom / 100})`,
           transformOrigin: "top center",
           transition: "transform 0.15s ease-out",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "32px",
-          paddingBottom: "100px"
+          paddingBottom: `${100 + extraZoomPad}px`
         }}
       >
-        {pages.map((items, pageIndex) => (
-          <DocumentPage
-            key={`paper-page-key-${pageIndex}`}
-            docType={docType}
-            state={state}
-            setState={setState}
-            items={items}
-            itemOffset={pageStart(pageIndex)}
-            pageIndex={pageIndex}
-            pageCount={pages.length}
-            paperStyle={paperStyle}
-            paperSize={paperSize}
-            updateItem={updateItem}
-            removeItem={removeItem}
-            addItemToPage={addItemToPage}
-          />
-        ))}
+        <div
+          ref={pagesContentRef}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "32px" }}
+        >
+          {pages.map((items, pageIndex) => (
+            <DocumentPage
+              key={`paper-page-key-${pageIndex}`}
+              docType={docType}
+              state={state}
+              setState={setState}
+              items={items}
+              itemOffset={pageStart(pageIndex)}
+              pageIndex={pageIndex}
+              pageCount={pages.length}
+              paperStyle={paperStyle}
+              paperSize={paperSize}
+              updateItem={updateItem}
+              removeItem={removeItem}
+              addItemToPage={addItemToPage}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
