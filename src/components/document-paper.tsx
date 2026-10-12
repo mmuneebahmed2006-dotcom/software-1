@@ -35,7 +35,7 @@ const numericFieldStyle = (value: number): CSSProperties => {
 };
 
 export const DocumentPaper = memo(function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
-  const [zoom, setZoom] = useState(140);
+  const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
   const pagesContentRef = useRef<HTMLDivElement | null>(null);
   // transform:scale enlarges what's painted without changing layout size, so
@@ -208,7 +208,7 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
     return newId;
   };
   const handleZoom = (newZoom: number) => {
-    const clamped = Math.min(Math.max(newZoom, 40), 160);
+    const clamped = Math.min(Math.max(newZoom, 40), 140);
     setZoom(clamped);
   };
 
@@ -270,24 +270,24 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
           tabIndex={0}
           aria-label="Preview zoom"
           aria-valuemin={40}
-          aria-valuemax={160}
+          aria-valuemax={140}
           aria-valuenow={zoom}
           aria-valuetext={`${zoom}%`}
           title="Adjust preview zoom"
           onPointerDown={(event) => {
             event.currentTarget.setPointerCapture(event.pointerId);
             const bounds = event.currentTarget.getBoundingClientRect();
-            handleZoom(40 + Math.round(((event.clientX - bounds.left) / bounds.width) * 120));
+            handleZoom(40 + Math.round(((event.clientX - bounds.left) / bounds.width) * 100));
           }}
           onPointerMove={(event) => {
             if (event.buttons !== 1) return;
             const bounds = event.currentTarget.getBoundingClientRect();
-            handleZoom(40 + Math.round(((event.clientX - bounds.left) / bounds.width) * 120));
+            handleZoom(40 + Math.round(((event.clientX - bounds.left) / bounds.width) * 100));
           }}
           onKeyDown={(event) => {
             const changes: Record<string, number> = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -10, PageUp: 10 };
             if (event.key === "Home") { event.preventDefault(); handleZoom(40); return; }
-            if (event.key === "End") { event.preventDefault(); handleZoom(160); return; }
+            if (event.key === "End") { event.preventDefault(); handleZoom(140); return; }
             const change = changes[event.key];
             if (change !== undefined) { event.preventDefault(); handleZoom(zoom + change); }
           }}
@@ -296,7 +296,7 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
           <span
             className="document-zoom-slider-thumb"
             aria-hidden="true"
-            style={{ left: `${((zoom - 40) / 120) * 100}%` }}
+            style={{ left: `${((zoom - 40) / 100) * 100}%` }}
           />
         </div>
 
