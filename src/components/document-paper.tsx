@@ -383,9 +383,13 @@ const DocumentPage = memo(function DocumentPage({
   const isQuotation = docType === "quotation";
   const showAmounts = !isChallan;
 
-  // Calculate totals from THIS PAGE'S line items only.
+  // Running totals: every page's totals include this page's items PLUS every
+  // item on the pages before it, so each page's "Total" is the amount due if
+  // the document ended there - and the last page always shows the full
+  // grand total across every page, not just its own items.
   // Page 1 = max 12 rows; every continuation page = max 20 rows.
-  const subtotal = items.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0);
+  const itemsSoFar = state.items.slice(0, itemOffset + items.length);
+  const subtotal = itemsSoFar.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0);
   const taxAmount = showAmounts ? subtotal * ((state.taxRate || 0) / 100) : 0;
   const total = subtotal + taxAmount;
 
