@@ -2058,3 +2058,32 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   min-height: 0;
   overflow: hidden;
 }
+
+
+/* Reduce folder pane height and keep long folder names from hiding their menu. */
+.saved-sidebar:not(.collapsed) .sidebar-top-section {
+  flex: 0 0 min(24vh, 220px);
+  height: min(24vh, 220px);
+}
+.saved-sidebar:not(.collapsed) .folder-chip {
+  min-width: 0;
+  max-width: 100%;
+}
+.saved-sidebar:not(.collapsed) .folder-chip-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.saved-sidebar:not(.collapsed) .folder-chip-main > svg,
+.saved-sidebar:not(.collapsed) .folder-chip-main > small,
+.saved-sidebar:not(.collapsed) .folder-chip-menu {
+  flex: 0 0 auto;
+}
+.saved-sidebar:not(.collapsed) .folder-chip-name {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
