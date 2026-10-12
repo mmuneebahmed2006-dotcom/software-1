@@ -242,20 +242,25 @@ function installIpc() {
       const duplexMode = ['simplex', 'shortEdge', 'longEdge'].includes(options.duplex) ? options.duplex : 'simplex';
       // The HTML print document has already applied Fit/Actual/Custom geometry.
       // Keep Electron at 100% so the printer receives that layout only once.
-      // Margin behaviour is intentionally different per sizing mode:
-      // - 'fit'/'shrink' should always keep a small, even margin on every side,
-      //   even on a non-borderless printer - so they use 'printableArea', which
-      //   fits the page within whatever area the selected printer can actually
-      //   print (consistent on a normal printer, and still edge-to-edge on a
-      //   true borderless one, since its printable area already covers the
-      //   whole sheet).
-      // - 'actual'/'custom' are meant to print true 1:1 or a user-chosen scale
-      //   with nothing imposed by us, including going edge-to-edge - so they
-      //   request 'none' (true zero-margin). On a non-borderless printer the
-      //   driver's own hardware limit still applies and may clip/shift slightly;
-      //   that is inherent to asking for borderless on hardware that can't do it,
-      //   not something this app can work around.
-      const marginType = (sizing === 'actual' || sizing === 'custom') ? 'none' : 'printableArea';
+      // Margin behaviour: always use 'printableArea'. This asks the driver to
+      // fit the page within whatever area the selected printer can actually
+      // print, which is both safe on a normal (non-borderless) printer and
+      // still edge-to-edge on a printer whose own hardware "borderless"
+      // setting is turned on - because once that hardware setting is on, the
+      // driver reports its printable area as the full sheet, so fitting
+      // within it is the same as zero margin.
+      //
+      // 'none' (true forced zero-margin) was tried for 'actual'/'custom' and
+      // confirmed, on real hardware, to clip content at the top and bottom
+      // even with the printer's own borderless setting turned on: 'none'
+      // tells the driver to ignore its printable-area limits rather than
+      // shift/scale to respect them, so on a driver that cannot actually
+      // image the full sheet it just drops whatever falls outside - the top
+      // edge never gets painted and the bottom gets cut. 'printableArea' does
+      // not have that failure mode, so it is used for every sizing mode; true
+      // edge-to-edge output for Actual/Custom now depends on the printer's
+      // own hardware borderless toggle being on, exactly like Fit already did.
+      const marginType = 'printableArea';
       const base = {
         silent: true,
         ...(deviceName ? { deviceName } : {}),
