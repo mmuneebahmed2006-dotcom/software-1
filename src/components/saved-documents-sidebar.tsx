@@ -126,7 +126,7 @@ function SavedDocumentsSidebarComponent({ documents, docType, activeId, folders 
       </div>
       <div className="folder-chips">
         {visibleFolders.map((name) => <span key={name} className={`folder-chip ${folder === name ? "active" : ""} ${activeFolder === name ? "current" : ""}`}>
-          <button type="button" className="folder-chip-main" onClick={() => { setFolder(name); onSelectFolder(name) }}><Folder size={13}/> {name} <small>{counts[name] ?? 0}</small></button>
+          <button type="button" className="folder-chip-main" onClick={() => { setFolder(name); onSelectFolder(name) }}><Folder size={13}/> <span className="folder-chip-name">{name}</span> <small>{counts[name] ?? 0}</small></button>
           <button type="button" className="folder-chip-menu" aria-label={`Options for ${name}`} onClick={(event) => { if (menuFolder === name) { setMenuFolder(null); setMenuPosition(null); } else { const rect = event.currentTarget.getBoundingClientRect(); setMenuFolder(name); setMenuPosition({ top: rect.bottom + 6, left: rect.left }); } }}><MoreVertical size={13}/></button>
           {menuFolder === name && <div ref={folderMenuRef} className="folder-menu" role="menu" style={menuPosition ?? undefined}>
             <button type="button" onClick={() => { setRenamingFolder({ from: name, value: name }); setMenuFolder(null) }}><Pencil size={13}/> Rename</button>
