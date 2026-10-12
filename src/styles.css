@@ -207,7 +207,7 @@
 .document-logo { display: block; width: auto; max-width: calc(300px * var(--paper-scale)); height: calc(92px * var(--paper-scale)); margin: 0 auto; object-fit: contain; image-rendering: -webkit-optimize-contrast; }
 .identity-grid { display: grid; grid-template-columns: minmax(0, 1fr) max-content; align-items: start; justify-content: space-between; gap: 24px; width: 100%; }
 .bill-to h2 { margin: 0 0 3px; font-family: var(--font-display); font-size: calc(28pt * var(--paper-scale)); font-weight: 400; line-height: 1; letter-spacing: 0; padding-left: calc(24px * var(--paper-scale)); text-transform: uppercase; }
-.client-name { font-size: calc(14pt * var(--paper-scale)); font-weight: 600; padding-left: calc(24px * var(--paper-scale)); }
+.client-name { font-size: calc(12pt * var(--paper-scale)); font-weight: 600; padding-left: calc(24px * var(--paper-scale)); }
 .contact-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 6px; margin-top: 3px; font-size: calc(9pt * var(--paper-scale)); font-weight: 400; }
 .contact-row .editable, .contact-row input { font-size: calc(9pt * var(--paper-scale)); }
 .contact-row svg { margin-top: 3px; }
@@ -508,10 +508,10 @@ body.startup-active .document-paper-wrapper {
   font-size: calc(28pt * var(--paper-scale, 1)) !important;
 }
 
-/* Client name = 14 */
+/* Client name = 12 */
 .paper .client-name,
 .paper .client-name * {
-  font-size: calc(14pt * var(--paper-scale, 1)) !important;
+  font-size: calc(12pt * var(--paper-scale, 1)) !important;
 }
 
 /* Phone, email, address, website = 9 */
