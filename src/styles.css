@@ -222,7 +222,7 @@
 /* Keep quotation labels, values, and title in one bounded right-hand column. */
 .identity-grid.quotation-layout { grid-template-columns: minmax(0, 45%) minmax(0, 55%); }
 .document-meta.quotation-meta { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }
-.quotation-meta .meta-grid { width: 100%; grid-template-columns: minmax(0, 1fr) max-content; }
+.quotation-meta .meta-grid { width: max-content; max-width: 100%; margin-left: auto; grid-template-columns: auto auto; justify-content: start; }
 .quotation-meta .meta-row > div { min-width: 0; }
 .paper .document-meta.quotation-meta .document-title.document-title-quotation,
 .paper .document-meta.quotation-meta .document-title.document-title-quotation * {
