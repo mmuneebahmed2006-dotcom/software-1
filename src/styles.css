@@ -350,7 +350,12 @@ body.startup-active .document-paper-wrapper {
 }
 .startup-overlay {
   position: fixed;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  width: 20cm;
+  height: 20cm;
+  inset: auto;
+  transform: translate(-50%, -50%);
   z-index: 10000;
   overflow: hidden;
   background: #0b0b0b;
