@@ -21,15 +21,20 @@ export function StartupExperience() {
   useEffect(() => {
     let mounted = true;
     let timer: number | undefined;
+    const splashStartedAt = performance.now();
+    const advanceAfterSplash = (nextPhase: StartupPhase) => {
+      const remaining = Math.max(0, 1200 - (performance.now() - splashStartedAt));
+      timer = window.setTimeout(() => {
+        if (mounted) setPhase(nextPhase);
+      }, remaining);
+    };
 
     if (window.desktop) {
       void window.desktop.getSettings()
-        .then((settings) => {
-          if (mounted) setPhase(settings.initialized ? "done" : "setup");
-        })
+        .then((settings) => advanceAfterSplash(settings.initialized ? "done" : "setup"))
         .catch((error: unknown) => {
           console.error("Could not read desktop startup settings:", error);
-          if (mounted) setPhase("setup");
+          advanceAfterSplash("setup");
         });
     } else {
       timer = window.setTimeout(() => {
