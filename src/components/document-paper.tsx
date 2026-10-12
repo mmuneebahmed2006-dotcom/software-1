@@ -412,7 +412,7 @@ const DocumentPage = memo(function DocumentPage({
                         </header>
               
                         {/* Identity Grid */}
-                        <section className="identity-grid" style={{ marginBottom: "2px", gap: "8px" }}>
+                        <section className={`identity-grid${isQuotation ? " quotation-layout" : ""}`} style={{ marginBottom: "2px", gap: "8px" }}>
                           <div className="bill-to">
                             {/* BILL TO - Bada */}
                             <h2 style={{ fontSize: "24px", fontWeight: 400, marginBottom: "2px" }}>BILL TO</h2>
@@ -463,7 +463,7 @@ const DocumentPage = memo(function DocumentPage({
                             </ContactRow>
                           </div>
               
-                          <div className="document-meta">
+                          <div className={`document-meta${isQuotation ? " quotation-meta" : ""}`}>
                             {/* Invoice details */}
                             <div className="meta-grid" style={{ fontSize: "9px", gap: "1px" }}>
                               <MetaRow label={isTax ? "STI #" : isQuotation ? "Quotation #" : isChallan ? "Challan #" : "Invoice #"}>
