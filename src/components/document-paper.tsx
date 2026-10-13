@@ -15,7 +15,6 @@ interface Props {
 
 interface PaginationMeasurements {
   rowHeights: Record<string, number>;
-  baselineRowHeight: number;
   firstPageAvailableHeight: number;
   continuationAvailableHeight: number;
   signature: string;
@@ -29,45 +28,6 @@ function cssPixels(value: string) {
 function pageZoom(page: HTMLElement) {
   const container = page.closest<HTMLElement>("#document-pages");
   return Math.max(0.1, cssPixels(container?.style.zoom || "1") || 1);
-}
-
-/** Measure an ordinary one-line row using the real table, columns, and styles. */
-function measureBaselineRowHeight(page: HTMLElement) {
-  const sourceRow = page.querySelector<HTMLTableRowElement>("tr.line-item-row");
-  if (!sourceRow) return 28 * pageZoom(page);
-
-  const samplePage = page.cloneNode(true) as HTMLElement;
-  samplePage.style.position = "fixed";
-  samplePage.style.left = "-100000px";
-  samplePage.style.top = "0";
-  samplePage.style.margin = "0";
-  samplePage.style.visibility = "hidden";
-  samplePage.style.pointerEvents = "none";
-  samplePage.style.boxShadow = "none";
-  samplePage.style.overflow = "visible";
-  samplePage.style.zoom = String(pageZoom(page));
-
-  const rows = Array.from(samplePage.querySelectorAll<HTMLTableRowElement>("tr.line-item-row"));
-  const sampleRow = rows[0];
-  rows.slice(1).forEach((row) => row.remove());
-  if (!sampleRow) return 28 * pageZoom(page);
-
-  sampleRow.querySelectorAll("button").forEach((button) => button.remove());
-  sampleRow.querySelectorAll<HTMLInputElement>("input").forEach((input) => {
-    input.value = "1";
-  });
-  sampleRow.querySelectorAll<HTMLTextAreaElement>("textarea").forEach((textarea) => {
-    textarea.value = "M";
-    textarea.rows = 1;
-    textarea.style.setProperty("height", "auto", "important");
-    textarea.style.setProperty("min-height", "0", "important");
-    textarea.style.setProperty("max-height", "none", "important");
-  });
-
-  document.body.appendChild(samplePage);
-  const measured = sampleRow.getBoundingClientRect().height;
-  samplePage.remove();
-  return Math.max(1, measured);
 }
 
 function measureAvailableRowHeight(page: HTMLElement, reserveFirstPageContent: boolean) {
@@ -116,18 +76,16 @@ function measurePagination(pageItems: LineItem[]) {
     });
   }
 
-  const baselineRowHeight = measureBaselineRowHeight(firstPage);
   const firstPageAvailableHeight = measureAvailableRowHeight(firstPage, true);
   const continuationPage = pageElements[1] ?? firstPage;
   const continuationAvailableHeight = measureAvailableRowHeight(continuationPage, false);
   const signature = JSON.stringify({
-    rows: pageItems.map((item) => [item.id, Math.round((rowHeights[item.id] ?? baselineRowHeight) * 10) / 10]),
-    baseline: Math.round(baselineRowHeight * 10) / 10,
+    rows: pageItems.map((item) => [item.id, Math.round((rowHeights[item.id] ?? 0) * 10) / 10]),
     first: Math.round(firstPageAvailableHeight * 10) / 10,
     continuation: Math.round(continuationAvailableHeight * 10) / 10,
   });
 
-  return { rowHeights, baselineRowHeight, firstPageAvailableHeight, continuationAvailableHeight, signature };
+  return { rowHeights, firstPageAvailableHeight, continuationAvailableHeight, signature };
 }
 
 function rowLimitForPage(pageIndex: number, paperSize: PaperSizeKey) {
@@ -150,28 +108,26 @@ function paginateRows(
   let pageIndex = 0;
 
   while (start < items.length) {
-    const baseline = metrics?.baselineRowHeight || 1;
-    const maxEquivalentRows = rowLimitForPage(pageIndex, paperSize);
+    const maxRows = rowLimitForPage(pageIndex, paperSize);
     const maxHeight = pageIndex === 0
       ? metrics?.firstPageAvailableHeight ?? Infinity
       : metrics?.continuationAvailableHeight ?? Infinity;
     let end = start;
     let usedHeight = 0;
-    let usedEquivalentRows = 0;
+    let usedRows = 0;
 
     while (end < items.length) {
       if (end > start && manualBreakSet.has(end)) break;
-      const height = Math.max(1, metrics?.rowHeights[items[end]!.id] ?? baseline);
-      const equivalentRows = Math.max(1, Math.ceil(height / baseline - 0.15));
+      const height = Math.max(1, metrics?.rowHeights[items[end]!.id] ?? 28);
       const exceedsHeight = usedHeight + height > maxHeight + 0.5;
-      const exceedsRowLimit = usedEquivalentRows + equivalentRows > maxEquivalentRows + 0.01;
+      const exceedsRowLimit = usedRows + 1 > maxRows;
 
       if (end > start && (exceedsHeight || exceedsRowLimit)) break;
 
       // An individual row taller than a whole page cannot be split safely.
       // Keep it intact on its own page so pagination always makes progress.
       usedHeight += height;
-      usedEquivalentRows += equivalentRows;
+      usedRows++;
       end++;
       if (exceedsHeight || exceedsRowLimit) break;
     }
@@ -201,8 +157,8 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
   const [currentPage, setCurrentPage] = useState(1);
   const [paginationMetrics, setPaginationMetrics] = useState<PaginationMeasurements | null>(null);
 
-  // Pack complete rows into each fixed-size page, enforcing both the
-  // single-line-equivalent limit and measured printable row area.
+  // Pack complete rows into each fixed-size page, enforcing the configured
+  // item-row count and measured printable row area.
   const pageStarts = useMemo(() => {
     const manualBreaks = (state.pageBreaks ?? [])
       .filter((n) => Number.isInteger(n) && n > 0 && n < state.items.length)
