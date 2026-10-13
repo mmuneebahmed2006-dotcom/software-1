@@ -24,6 +24,44 @@ export function TextField({ value, onChange, placeholder, className, ariaLabel, 
   );
 }
 
+export function AutoGrowTextField({ value, onChange, placeholder, className, ariaLabel, style }: Omit<TextFieldProps, "align"> & { style?: CSSProperties }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  const syncHeight = () => {
+    const element = ref.current;
+    if (!element) return;
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
+  };
+
+  useLayoutEffect(syncHeight, [value]);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", syncHeight);
+      return () => window.removeEventListener("resize", syncHeight);
+    }
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      value={value}
+      aria-label={ariaLabel}
+      placeholder={placeholder}
+      onChange={(event) => onChange(event.target.value)}
+      className={cn("editable w-full resize-none overflow-hidden border-0 bg-transparent p-0.5", className)}
+      style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", lineHeight: "normal", ...style }}
+    />
+  );
+}
+
 export function AreaField({ value, onChange, placeholder, className, ariaLabel }: Omit<TextFieldProps, "align">) {
   const ref = useRef<HTMLTextAreaElement>(null);
   useLayoutEffect(() => {
