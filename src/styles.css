@@ -197,7 +197,16 @@
 .select-control span { color: oklch(1 0 0 / 0.58); font-size: 11px; }
 .select-control select,.select-control input { min-width: 0; cursor: pointer; border: 0; outline: 0; background: transparent; color: inherit; font-size: 12px; font-weight: 700; }.select-control input { width: 42px; }
 .select-control option { color: var(--foreground); background: var(--paper); }
-.print-area { padding: 40px 24px 64px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+/* overflow-y is set explicitly (not left as the default "visible") because the
+   CSS overflow spec silently upgrades a "visible" axis to "auto" whenever the
+   other axis is anything but "visible" - so overflow-x: auto alone was quietly
+   making this element scroll vertically too, as its OWN separate (invisible,
+   scrollbar-width: none) scroll container, fighting with the real page/window
+   scroll: the mouse wheel would scroll this hidden inner container while the
+   visible scrollbar (which tracks the window, not this element) never moved,
+   and the document could end up showing a stale/offset inner scroll position
+   even while the window itself was scrolled to the very top. */
+.print-area { padding: 40px 24px 64px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; }
 .print-area::-webkit-scrollbar { display: none; }
 .document-pages { display: grid; gap: 30px; }
 .paper { -webkit-font-smoothing: auto; text-rendering: geometricPrecision; position: relative; width: var(--paper-width); height: var(--paper-height); min-height: 0; margin: 0 auto; display: flex; flex-direction: column; overflow: hidden; background: var(--paper); color: var(--foreground); box-shadow: 0 24px 70px oklch(0 0 0 / 0.22); print-color-adjust: exact; }
