@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 
 interface TextFieldProps {
@@ -24,15 +24,75 @@ export function TextField({ value, onChange, placeholder, className, ariaLabel, 
   );
 }
 
+function measureTextLayout(element: HTMLTextAreaElement, text: string) {
+  const computed = getComputedStyle(element);
+  const mirror = document.createElement("div");
+  Object.assign(mirror.style, {
+    position: "fixed",
+    left: "-100000px",
+    top: "0",
+    visibility: "hidden",
+    pointerEvents: "none",
+    boxSizing: "border-box",
+    width: `${element.clientWidth}px`,
+    margin: "0",
+    border: "0",
+    padding: computed.padding,
+    font: computed.font,
+    letterSpacing: computed.letterSpacing,
+    wordSpacing: computed.wordSpacing,
+    lineHeight: computed.lineHeight,
+    textIndent: computed.textIndent,
+    whiteSpace: "pre-wrap",
+    overflowWrap: "anywhere",
+    wordBreak: computed.wordBreak,
+    tabSize: computed.tabSize,
+  });
+
+  const materializeTrailingLine = (value: string) => value.endsWith("\\n") ? `${value}\\u200b` : value || "\\u200b";
+  mirror.textContent = "M";
+  document.body.appendChild(mirror);
+  const paddingHeight = parseFloat(computed.paddingTop) + parseFloat(computed.paddingBottom);
+  const oneLineHeight = Math.max(1, mirror.getBoundingClientRect().height - paddingHeight);
+  mirror.textContent = materializeTrailingLine(text);
+  const contentHeight = Math.max(oneLineHeight, mirror.getBoundingClientRect().height - paddingHeight);
+  mirror.remove();
+
+  return {
+    lines: Math.max(1, Math.round(contentHeight / oneLineHeight)),
+    lineHeight: oneLineHeight,
+    paddingHeight,
+  };
+}
+
 export function AutoGrowTextField({ value, onChange, placeholder, className, ariaLabel, style }: Omit<TextFieldProps, "align"> & { style?: CSSProperties }) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
   const syncHeight = useCallback(() => {
     const element = ref.current;
     if (!element) return;
+    const { lines, lineHeight, paddingHeight } = measureTextLayout(element, element.value);
+    const maxHeight = lineHeight * 2 + paddingHeight;
+    element.style.maxHeight = `${maxHeight}px`;
     element.style.height = "auto";
-    element.style.height = `${element.scrollHeight}px`;
+    element.style.height = `${Math.min(element.scrollHeight, maxHeight)}px`;
+    element.style.overflowY = lines > 2 ? "auto" : "hidden";
   }, []);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter" || event.isComposing) return;
+    const element = event.currentTarget;
+    const start = element.selectionStart;
+    const end = element.selectionEnd;
+    const prefix = element.value.slice(0, start);
+    const nextValue = `${prefix}\\n${element.value.slice(end)}`;
+
+    // Enter is allowed only from visual line one, and only if the inserted
+    // newline leaves the complete value within the two-line display limit.
+    if (measureTextLayout(element, prefix).lines > 1 || measureTextLayout(element, nextValue).lines > 2) {
+      event.preventDefault();
+    }
+  };
 
   useLayoutEffect(syncHeight, [syncHeight, value]);
 
@@ -54,10 +114,13 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
       rows={1}
       value={value}
       aria-label={ariaLabel}
+      aria-describedby={`${ariaLabel.replace(/\\s+/g, "-").toLowerCase()}-limit`}
       placeholder={placeholder}
+      title={value || undefined}
       onChange={(event) => onChange(event.target.value)}
+      onKeyDown={handleKeyDown}
       className={cn("editable w-full resize-none overflow-hidden border-0 bg-transparent p-0.5", className)}
-      style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", lineHeight: "normal", ...style }}
+      style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", overflowX: "hidden", lineHeight: "normal", ...style }}
     />
   );
 }
