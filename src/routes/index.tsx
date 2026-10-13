@@ -176,7 +176,7 @@ function Index() {
       scaleFactor: scale,
       pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
       copies: settings.copies,
-      pageRanges,
+      pageRanges: pageRanges ?? [],
       duplex: settings.mode === "booklet"
         ? settings.bookletSubset === "both" ? "shortEdge" : "simplex"
         : settings.sides === "double" ? "longEdge" : "simplex",
@@ -207,7 +207,7 @@ function Index() {
         }
       } else {
         const indices = pageRangeIndices(images.length, pageRanges);
-        const pages = indices.map((index) => images[index]);
+        const pages = indices.map((index) => images[index]).filter((page): page is string => typeof page === "string");
         if (!pages.length) throw new Error("The selected page range is empty.");
         const html = buildPrintHtml({
           paperSize,
@@ -386,7 +386,7 @@ function Index() {
         <div className="studio-brand"><FileText size={19}/><span>Document Studio</span></div>
         <div className="toolbar-actions">
           <label className="select-control"><span>Choose Document</span><select value={docType} onChange={(event) => { setDocType(event.target.value as DocType); setActiveFolder("") }} aria-label="Document type">{DOC_ORDER.map((dt) => <option key={dt} value={dt}>{DOC_LABELS[dt]}</option>)}</select></label>
-          <label className="select-control"><span>Currency</span><select value={state.currency} onChange={(event) => setState((current) => ({ ...current, currency: event.target.value }))} aria-label="Currency">{CURRENCIES.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <label className="select-control"><span>Currency</span><select value={state.currency} onChange={(event) => setState((current) => ({ ...current, currency: event.target.value }))} aria-label="Currency">{CURRENCIES.map((value) => <option key={value} value={value}>{value.trim()}</option>)}</select></label>
           <label className="select-control"><span>Paper</span><select value={paperSize} onChange={(event) => setPaperSize(event.target.value as PaperSizeKey)} aria-label="Paper size">{PAPER_ORDER.map((size) => { const spec = PAPER_SIZES[size]; return <option key={size} value={size}>{spec.page}</option> })}</select></label>
           <label className="select-control"><span>Add Custom Pages</span><input type="number" min={1} max={99} value={state.minimumPages} onChange={(event) => setState((current) => ({ ...current, minimumPages: Math.max(1, Number(event.target.value) || 1) }))} aria-label="Minimum pages"/></label>
           <Button type="button" variant="secondary" onClick={() => void persist(false)}><Save size={16}/> Save Document</Button>

@@ -8,9 +8,10 @@ interface TextFieldProps {
   className?: string;
   ariaLabel: string;
   align?: "left" | "right" | "center";
+  style?: CSSProperties;
 }
 
-export function TextField({ value, onChange, placeholder, className, ariaLabel, align = "left" }: TextFieldProps) {
+export function TextField({ value, onChange, placeholder, className, ariaLabel, align = "left", style }: TextFieldProps) {
   return (
     <input
       type="text"
@@ -19,7 +20,7 @@ export function TextField({ value, onChange, placeholder, className, ariaLabel, 
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
       className={cn("editable w-full border-0 bg-transparent p-0.5", className)}
-      style={{ textAlign: align }}
+      style={{ textAlign: align, ...style }}
     />
   );
 }
@@ -194,7 +195,7 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== "Enter" || event.isComposing) return;
+    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
     const element = event.currentTarget;
     const candidate = insertAtSelection(element, "\n");
     rejectedSelection.current = {

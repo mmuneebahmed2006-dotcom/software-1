@@ -8,7 +8,7 @@ export interface CapturedDocument { images: string[]; size: [number, number] }
 export async function capturePages(root: ParentNode, paperSize: PaperSizeKey, orientation: "portrait" | "landscape" = "portrait", pixelRatio = 2): Promise<CapturedDocument> {
   const elements = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-page]"));
   if (!elements.length) throw new Error("No document pages");
-  const pageContainer = elements[0].closest<HTMLElement>("#document-pages");
+  const pageContainer = elements[0]!.closest<HTMLElement>("#document-pages");
   const previousTransform = pageContainer?.style.transform ?? "";
   const previousZoom = pageContainer?.style.zoom ?? "";
   const previousTransition = pageContainer?.style.transition ?? "";
@@ -43,7 +43,7 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey, or
     const images: string[] = [];
     // Keep exported typography identical to the live preview by embedding the same font CSS.
     if (typeof document !== "undefined" && "fonts" in document) await document.fonts.ready;
-    const fontEmbedCSS = await getFontEmbedCSS(elements[0]);
+    const fontEmbedCSS = await getFontEmbedCSS(elements[0]!);
     for (const element of elements) {
       const rect = element.getBoundingClientRect();
       const width = Math.round(element.offsetWidth || rect.width);
@@ -74,12 +74,13 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey, or
   } finally {
     elements.forEach((element, index) => {
       element.classList.remove("exporting");
-      element.style.height = previousPageStyles[index].height;
-      element.style.minHeight = previousPageStyles[index].minHeight;
-      element.style.overflow = previousPageStyles[index].overflow;
-      if (previousPageStyles[index].paperWidth) element.style.setProperty("--paper-width", previousPageStyles[index].paperWidth);
+      const prev = previousPageStyles[index]!;
+      element.style.height = prev.height;
+      element.style.minHeight = prev.minHeight;
+      element.style.overflow = prev.overflow;
+      if (prev.paperWidth) element.style.setProperty("--paper-width", prev.paperWidth);
       else element.style.removeProperty("--paper-width");
-      if (previousPageStyles[index].paperHeight) element.style.setProperty("--paper-height", previousPageStyles[index].paperHeight);
+      if (prev.paperHeight) element.style.setProperty("--paper-height", prev.paperHeight);
       else element.style.removeProperty("--paper-height");
     });
     if (pageContainer) {

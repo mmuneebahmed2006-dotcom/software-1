@@ -153,7 +153,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
     if (paperLabel) setSettings((s) => ({ ...s, paperSize: normalizePaperLabel(paperLabel) }));
   }, [paperLabel]);
 
-  const paperRatio = PAPER_RATIOS[settings.paperSize] ?? PAPER_RATIOS["A4 21 × 29.7 cm"];
+  const paperRatio = PAPER_RATIOS[settings.paperSize] ?? PAPER_RATIOS["A4 21 × 29.7 cm"] ?? 297 / 210;
   const sheetRatio = settings.orientation === "landscape" ? 1 / paperRatio : paperRatio;
   // The preview uses the full paper canvas; the printer may still enforce its hardware margins.
   const printMarginMm = 0;
@@ -422,7 +422,7 @@ export function PrintPreview({ open, captured, paperLabel, fileName, onClose, on
         </div>
 
         <footer className="print-preview-footer print-preview-white-footer">
-          <span>{settings.paperSize} · {total} page{total === 1 ? "" : "s"} · {settings.mode[0].toUpperCase() + settings.mode.slice(1)}</span>
+          <span>{settings.paperSize} · {total} page{total === 1 ? "" : "s"} · {settings.mode.charAt(0).toUpperCase() + settings.mode.slice(1)}</span>
           <div>
             <Button variant="secondary" type="button" disabled={printing} onClick={onClose}>Cancel</Button>
             <Button type="button" disabled={printing || !total} onClick={handlePrint}>
