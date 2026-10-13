@@ -177,9 +177,9 @@ function Index() {
       pagesPerSheet: settings.mode === "size" ? 1 : settings.pagesPerSheet,
       copies: settings.copies,
       pageRanges: pageRanges ?? [],
-      duplex: settings.mode === "booklet"
+      duplex: (settings.mode === "booklet"
         ? settings.bookletSubset === "both" ? "shortEdge" : "simplex"
-        : settings.sides === "double" ? "longEdge" : "simplex",
+        : settings.sides === "double" ? "longEdge" : "simplex") as "simplex" | "shortEdge" | "longEdge",
       dpi: settings.printAsImage ? settings.dpi : undefined,
       images,
       autoRotate: settings.autoRotate,
