@@ -10,6 +10,7 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey, or
   if (!elements.length) throw new Error("No document pages");
   const pageContainer = elements[0].closest<HTMLElement>("#document-pages");
   const previousTransform = pageContainer?.style.transform ?? "";
+  const previousZoom = pageContainer?.style.zoom ?? "";
   const previousTransition = pageContainer?.style.transition ?? "";
   const previousPaddingBottom = pageContainer?.style.paddingBottom ?? "";
   const [portraitWidth, portraitHeight] = PAPER_SIZES[paperSize].pdf;
@@ -34,6 +35,7 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey, or
   // transformed rectangle and can capture only part of the paper.
   if (pageContainer) {
     pageContainer.style.transform = "none";
+    pageContainer.style.zoom = "1";
     pageContainer.style.transition = "none";
     pageContainer.style.paddingBottom = "0";
   }
@@ -82,6 +84,7 @@ export async function capturePages(root: ParentNode, paperSize: PaperSizeKey, or
     });
     if (pageContainer) {
       pageContainer.style.transform = previousTransform;
+      pageContainer.style.zoom = previousZoom;
       pageContainer.style.transition = previousTransition;
       pageContainer.style.paddingBottom = previousPaddingBottom;
     }
