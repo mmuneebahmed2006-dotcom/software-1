@@ -95,9 +95,16 @@ function buildPrintHtml(options,images) {
   // them at the print canvas origin; screen centering must not offset this stream.
   const center=options.autoCenter!==false || sizing==='fit', scale=clamp(options.scaleFactor,10,400,100)/100;
   // Fit uses a 3mm safe inset on each side so printers with a nonprintable
-  // hardware edge keep the invoice header and footer visible. Actual and
-  // Custom retain their requested physical scale without an app-side inset.
-  const fitInset=mode==='size' && sizing==='fit' ? 3 : 0;
+  // hardware edge keep the invoice header and footer visible. Actual/Custom
+  // used to request a literal 0mm inset (true edge-to-edge) - but real-world
+  // testing on a non-true-borderless printer showed that even with the
+  // printer's own "borderless" option ticked, 0mm still lands inside the
+  // printer's unprintable hardware fringe and the driver clips it there
+  // (the top accent bar disappearing entirely, the bottom border cut off),
+  // regardless of the margin type requested from the OS. A 1mm inset is
+  // small enough to still read as edge-to-edge while staying just clear of
+  // that fringe, so Actual/Custom no longer loses content on that hardware.
+  const fitInset=mode!=='size'?0:sizing==='fit'?3:1;
   function pageBox(srcImg,label,bw,bh,inset=0) {
     if(!srcImg) return '<div class="blank"></div>';
     const turn=rotate&&((sw>sh)!==(bw>bh)), fit=sizing==='fit'||sizing==='shrink', k=sizing==='custom'?scale:1;
