@@ -93,6 +93,7 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
   const acceptedValue = useRef(value);
   const mounted = useRef(false);
   const rejectedSelection = useRef<{ start: number; end: number; direction: "forward" | "backward" | "none" | null } | null>(null);
+  const deletingInput = useRef(false);
 
   const fits = useCallback((element: HTMLTextAreaElement, candidate: string) =>
     measureTextLayout(element, candidate).lines <= 2, []);
@@ -126,9 +127,11 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
     const native = event.nativeEvent as InputEvent;
     const element = event.currentTarget;
     if (native.inputType.startsWith("delete")) {
+      deletingInput.current = true;
       rejectedSelection.current = null;
       return;
     }
+    deletingInput.current = false;
     if (!native.inputType.startsWith("insert")) return;
     const candidate = insertAtSelection(element, eventInsertion(native));
     rejectedSelection.current = {
@@ -175,7 +178,9 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
   const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const element = event.currentTarget;
     const nextValue = element.value;
-    if (fits(element, nextValue) || nextValue.length < acceptedValue.current.length) {
+    const isDeletion = deletingInput.current && nextValue.length < acceptedValue.current.length;
+    deletingInput.current = false;
+    if (fits(element, nextValue) || isDeletion) {
       acceptedValue.current = nextValue;
       rejectedSelection.current = null;
       onChange(nextValue);
