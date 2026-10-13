@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type FormEvent, type ClipboardEvent, type DragEvent, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 
 interface TextFieldProps {
@@ -60,6 +60,7 @@ function measureTextLayout(element: HTMLTextAreaElement, text: string) {
     resize: "none",
   });
 
+  mirror.rows = 1;
   document.body.appendChild(mirror);
   const paddingHeight = parseFloat(computed.paddingTop) + parseFloat(computed.paddingBottom);
   const oneLineHeight = Math.max(1, mirror.scrollHeight - paddingHeight);
@@ -100,7 +101,8 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
     const element = ref.current;
     if (!element) return;
     const { lineHeight, paddingHeight } = measureTextLayout(element, element.value);
-    const twoLineHeight = lineHeight * 2 + paddingHeight;
+    const borderHeight = parseFloat(getComputedStyle(element).borderTopWidth) + parseFloat(getComputedStyle(element).borderBottomWidth);
+    const twoLineHeight = lineHeight * 2 + paddingHeight + borderHeight;
     element.style.height = \`${twoLineHeight}px\`;
     element.style.minHeight = \`${twoLineHeight}px\`;
     element.style.maxHeight = \`${twoLineHeight}px\`;
@@ -237,7 +239,7 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       className={cn("editable w-full resize-none overflow-hidden border-0 bg-transparent p-0.5", className)}
-      style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word", overflowX: "hidden", overflowY: "hidden", lineHeight: "normal", resize: "none", ...style }}
+      style={{ boxSizing: "border-box", whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word", overflowX: "hidden", overflowY: "hidden", lineHeight: "normal", resize: "none", ...style }}
     />
   );
 }
