@@ -434,12 +434,12 @@ const DocumentPage = memo(function DocumentPage({
                               />
                             </ContactRow>
                             <ContactRow icon={MapPin}>
-                              <AreaField
+                              <AutoGrowTextField
                                 value={state.client.address}
                                 onChange={(value) => set("client", { ...state.client, address: value })}
                                 placeholder="Client address"
                                 ariaLabel="Client address"
-                                style={{ fontSize: "9px" }}
+                                style={{ fontSize: "9px", lineHeight: "1.375" }}
                               />
                             </ContactRow>
                             <ContactRow icon={Globe2}>
