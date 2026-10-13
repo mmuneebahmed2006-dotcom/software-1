@@ -38,19 +38,46 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
   const pagesContentRef = useRef<HTMLDivElement | null>(null);
+  const paperWrapperRef = useRef<HTMLDivElement | null>(null);
   // transform:scale enlarges what's painted without changing layout size, so
   // the scroll area around #document-pages doesn't grow past 100% zoom and
-  // the bottom of the page becomes unreachable by scrolling. Measure the
-  // content's natural (unscaled) height and reserve exactly the extra space
-  // the zoom adds below it.
+  // the bottom/sides of the page become unreachable by scrolling.
+  // Vertically we always reserve the extra height below the page (nothing
+  // else is down there to lose). Horizontally, a center origin looks right
+  // and stays fully reachable as long as the zoomed page still fits inside
+  // the container - but once it's wider than the container, a center origin
+  // pushes half the overflow to the LEFT of x=0, which can never be
+  // scrolled to (scrollLeft can't go negative) and permanently hides that
+  // half. So once it stops fitting, switch to a left origin plus a
+  // padding-right reservation sized to the real overflow: still grows from
+  // the left edge rather than the center, but nothing is ever unreachable.
   const [extraZoomPad, setExtraZoomPad] = useState(0);
+  const [zoomOverflowX, setZoomOverflowX] = useState(0);
+  const [zoomFitsWidth, setZoomFitsWidth] = useState(true);
   useEffect(() => {
-    const el = pagesContentRef.current;
-    if (!el) return;
-    const recompute = () => setExtraZoomPad(Math.max(0, el.scrollHeight * (zoom / 100 - 1)));
+    const contentEl = pagesContentRef.current;
+    // Measure available width from the outer wrapper, not #document-pages
+    // itself - #document-pages is the element we add padding-right to below,
+    // and measuring an element whose own size changes because of a value
+    // computed from its own size would oscillate (add padding -> width grows
+    // -> looks like it "fits" -> padding removed -> width shrinks -> no
+    // longer fits -> repeat). The wrapper's width depends only on the page
+    // layout (sidebar, window size), never on this component's own padding.
+    const wrapperEl = paperWrapperRef.current;
+    if (!contentEl || !wrapperEl) return;
+    const recompute = () => {
+      const scale = zoom / 100;
+      setExtraZoomPad(Math.max(0, contentEl.scrollHeight * (scale - 1)));
+      const scaledWidth = contentEl.scrollWidth * scale;
+      const containerWidth = wrapperEl.clientWidth;
+      const fits = scaledWidth <= containerWidth + 1;
+      setZoomFitsWidth(fits);
+      setZoomOverflowX(fits ? 0 : scaledWidth - containerWidth);
+    };
     recompute();
     const observer = new ResizeObserver(recompute);
-    observer.observe(el);
+    observer.observe(contentEl);
+    observer.observe(wrapperEl);
     return () => observer.disconnect();
   }, [zoom]);
   const baseRows = PAPER_SIZES[paperSize].rows || 15;
@@ -221,7 +248,7 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
   };
 
   return (
-    <div className="document-paper-wrapper" style={{ position: "relative", width: "100%" }}>
+    <div ref={paperWrapperRef} className="document-paper-wrapper" style={{ position: "relative", width: "100%" }}>
       {/* Floating Toolbar */}
       <div
         className="no-print document-floating-toolbar"
@@ -321,27 +348,15 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
         style={{
           display: "block",
           transform: `scale(${zoom / 100})`,
-          // "top left" (not "top center") is required above 100%: with a
-          // center origin, zooming in pushes half the extra width to the
-          // LEFT of x=0, which html/body (overflow-x: hidden) can never
-          // scroll to - that half of the document becomes permanently
-          // invisible, however far you scroll. "top left" only ever grows
-          // the page to the right/down, both of which are reachable (the
-          // .print-area parent scrolls horizontally, and extraZoomPad below
-          // already reserves the vertical space).
-          transformOrigin: "top left",
+          transformOrigin: zoomFitsWidth ? "top center" : "top left",
           transition: "transform 0.15s ease-out",
+          ...(zoomFitsWidth ? {} : { paddingRight: `${zoomOverflowX}px` }),
           paddingBottom: `${100 + extraZoomPad}px`
         }}
       >
         <div
           ref={pagesContentRef}
-          // Centering (alignItems: center) only makes sense while the page
-          // fits inside the container. Above 100% zoom it leaves a left gap
-          // that itself gets scaled by the "top left" transform above,
-          // pushing the page further right the more you zoom in. Flush-left
-          // above 100% keeps the growth predictable and reachable.
-          style={{ display: "flex", flexDirection: "column", alignItems: zoom > 100 ? "flex-start" : "center", gap: "32px" }}
+          style={{ display: "flex", flexDirection: "column", alignItems: zoomFitsWidth ? "center" : "flex-start", gap: "32px" }}
         >
           {pages.map((items, pageIndex) => (
             <DocumentPage
