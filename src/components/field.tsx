@@ -61,8 +61,10 @@ function measureTextLayout(element: HTMLTextAreaElement, text: string) {
   });
 
   mirror.rows = 1;
+  mirror.wrap = "soft";
   document.body.appendChild(mirror);
   const paddingHeight = parseFloat(computed.paddingTop) + parseFloat(computed.paddingBottom);
+  mirror.value = "M";
   const oneLineHeight = Math.max(1, mirror.scrollHeight - paddingHeight);
   // Keep a trailing newline as a visible second line during measurement.
   mirror.value = text.endsWith("\n") ? `${text}\u200b` : text || "\u200b";
@@ -101,12 +103,13 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
   const syncHeight = useCallback(() => {
     const element = ref.current;
     if (!element) return;
-    const { lineHeight, paddingHeight } = measureTextLayout(element, element.value);
+    const { lines, lineHeight, paddingHeight } = measureTextLayout(element, element.value);
     const borderHeight = parseFloat(getComputedStyle(element).borderTopWidth) + parseFloat(getComputedStyle(element).borderBottomWidth);
-    const twoLineHeight = lineHeight * 2 + paddingHeight + borderHeight;
-    element.style.height = `${twoLineHeight}px`;
-    element.style.minHeight = `${twoLineHeight}px`;
-    element.style.maxHeight = `${twoLineHeight}px`;
+    const visualLines = Math.min(2, Math.max(1, lines));
+    const contentHeight = lineHeight * visualLines + paddingHeight + borderHeight;
+    element.style.height = `${contentHeight}px`;
+    element.style.minHeight = `${contentHeight}px`;
+    element.style.maxHeight = `${contentHeight}px`;
     element.style.overflowY = "hidden";
     element.style.overflowX = "hidden";
     element.scrollTop = 0;
@@ -233,7 +236,8 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
   return (
     <textarea
       ref={ref}
-      rows={2}
+      rows={1}
+      wrap="soft"
       value={value}
       aria-label={ariaLabel}
       placeholder={placeholder}
