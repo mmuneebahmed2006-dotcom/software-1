@@ -321,14 +321,27 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
         style={{
           display: "block",
           transform: `scale(${zoom / 100})`,
-          transformOrigin: "top center",
+          // "top left" (not "top center") is required above 100%: with a
+          // center origin, zooming in pushes half the extra width to the
+          // LEFT of x=0, which html/body (overflow-x: hidden) can never
+          // scroll to - that half of the document becomes permanently
+          // invisible, however far you scroll. "top left" only ever grows
+          // the page to the right/down, both of which are reachable (the
+          // .print-area parent scrolls horizontally, and extraZoomPad below
+          // already reserves the vertical space).
+          transformOrigin: "top left",
           transition: "transform 0.15s ease-out",
           paddingBottom: `${100 + extraZoomPad}px`
         }}
       >
         <div
           ref={pagesContentRef}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "32px" }}
+          // Centering (alignItems: center) only makes sense while the page
+          // fits inside the container. Above 100% zoom it leaves a left gap
+          // that itself gets scaled by the "top left" transform above,
+          // pushing the page further right the more you zoom in. Flush-left
+          // above 100% keeps the growth predictable and reachable.
+          style={{ display: "flex", flexDirection: "column", alignItems: zoom > 100 ? "flex-start" : "center", gap: "32px" }}
         >
           {pages.map((items, pageIndex) => (
             <DocumentPage
