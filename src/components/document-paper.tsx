@@ -393,7 +393,7 @@ const DocumentPage = memo(function DocumentPage({
       <div className="top-accent" />
       <div className="document-content" style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", flex: "1 1 auto", minHeight: 0, height: "auto", paddingBottom: "10px" }}>
         
-        <div>
+        <div style={{ display: "flex", flexDirection: "column", flex: "1 1 auto", minHeight: 0 }}>
           {(
             <>
                         {/* Header & Logo - Bada Logo */}
@@ -632,7 +632,7 @@ const DocumentPage = memo(function DocumentPage({
 
         {/* Closing Content */}
         {isFirstPage && (
-          <section className="closing-content" style={{ marginTop: "auto", paddingTop: "4px" }}>
+          <section className="closing-content" style={{ marginTop: "auto", paddingTop: "4px", flex: "0 0 auto" }}>
             <div className="terms-block">
               <h3>Terms &amp; Conditions</h3>
               <TermsField value={state.terms} onChange={(value) => set("terms", value)} placeholder="Payment terms" ariaLabel="Terms and conditions" />
