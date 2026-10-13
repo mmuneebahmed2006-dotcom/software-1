@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useEffect, type CSSProperties, type Dispatch, type SetStateAction } from "react";
+import { memo, useMemo, useState, useEffect, useLayoutEffect, type CSSProperties, type Dispatch, type SetStateAction } from "react";
 import { Globe2, Mail, MapPin, Phone, Plus, Trash2, RotateCcw } from "lucide-react";
 import logoMark from "@/assets/logo-mark.png";
 import { DOC_LABELS, PAPER_SIZES, money, uid, type DocState, type DocType, type LineItem, type PaperSizeKey } from "@/lib/document";
@@ -17,22 +17,175 @@ interface Props {
 const A4_FIRST_PAGE_ROWS = 12;
 const A4_NEXT_PAGE_ROWS = 20;
 
-const numericTextSize = (length: number) => {
-  const px = Math.max(7, Math.min(11, (11 * 12) / Math.max(12, length)));
-  return `calc(${px}px * var(--paper-scale, 1))`;
-};
+interface PaginationMeasurements {
+  rowHeights: Record<string, number>;
+  baselineRowHeight: number;
+  firstPageAvailableHeight: number;
+  continuationAvailableHeight: number;
+  signature: string;
+}
 
-const numericFieldStyle = (value: number): CSSProperties => {
-  const length = Number.isFinite(value) ? String(value).length : 1;
-  return {
-    boxSizing: "border-box",
-    width: `${Math.max(3, length + 1)}ch`,
-    maxWidth: "100%",
-    marginInline: "auto",
-    textAlign: "center",
-    fontSize: numericTextSize(length),
-  };
-};
+function cssPixels(value: string) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function pageZoom(page: HTMLElement) {
+  const container = page.closest<HTMLElement>("#document-pages");
+  return Math.max(0.1, cssPixels(container?.style.zoom || "1") || 1);
+}
+
+/** Measure an ordinary one-line row using the real table, columns, and styles. */
+function measureBaselineRowHeight(page: HTMLElement) {
+  const sourceRow = page.querySelector<HTMLTableRowElement>("tr.line-item-row");
+  if (!sourceRow) return 28 * pageZoom(page);
+
+  const samplePage = page.cloneNode(true) as HTMLElement;
+  samplePage.style.position = "fixed";
+  samplePage.style.left = "-100000px";
+  samplePage.style.top = "0";
+  samplePage.style.margin = "0";
+  samplePage.style.visibility = "hidden";
+  samplePage.style.pointerEvents = "none";
+  samplePage.style.boxShadow = "none";
+  samplePage.style.overflow = "visible";
+  samplePage.style.zoom = String(pageZoom(page));
+
+  const rows = Array.from(samplePage.querySelectorAll<HTMLTableRowElement>("tr.line-item-row"));
+  const sampleRow = rows[0];
+  rows.slice(1).forEach((row) => row.remove());
+  if (!sampleRow) return 28 * pageZoom(page);
+
+  sampleRow.querySelectorAll("button").forEach((button) => button.remove());
+  sampleRow.querySelectorAll<HTMLInputElement>("input").forEach((input) => {
+    input.value = "1";
+  });
+  sampleRow.querySelectorAll<HTMLTextAreaElement>("textarea").forEach((textarea) => {
+    textarea.value = "M";
+    textarea.rows = 1;
+    textarea.style.setProperty("height", "auto", "important");
+    textarea.style.setProperty("min-height", "0", "important");
+    textarea.style.setProperty("max-height", "none", "important");
+  });
+
+  document.body.appendChild(samplePage);
+  const measured = sampleRow.getBoundingClientRect().height;
+  samplePage.remove();
+  return Math.max(1, measured);
+}
+
+function measureAvailableRowHeight(page: HTMLElement, reserveFirstPageContent: boolean) {
+  const paper = page.getBoundingClientRect();
+  const tableHead = page.querySelector("table thead")?.getBoundingClientRect();
+  const content = page.querySelector<HTMLElement>(".document-content");
+  if (!tableHead || !content) return 0;
+
+  const zoom = pageZoom(page);
+  const pageStyle = getComputedStyle(page);
+  const contentStyle = getComputedStyle(content);
+  let bottom = paper.bottom - cssPixels(pageStyle.borderBottomWidth) * zoom;
+
+  if (reserveFirstPageContent) {
+    const footer = page.querySelector<HTMLElement>(".document-footer");
+    const closing = page.querySelector<HTMLElement>(".closing-content");
+    if (footer) bottom = footer.getBoundingClientRect().top;
+    if (closing) bottom -= closing.getBoundingClientRect().height;
+  }
+
+  bottom -= cssPixels(contentStyle.paddingBottom) * zoom;
+
+  const totals = page.querySelector<HTMLElement>(".totals");
+  if (totals) {
+    const totalsStyle = getComputedStyle(totals);
+    bottom -= totals.getBoundingClientRect().height;
+    bottom -= (cssPixels(totalsStyle.marginTop) + cssPixels(totalsStyle.marginBottom)) * zoom;
+  }
+
+  // Keep a small safety pixel for table borders and fractional device scaling.
+  return Math.max(0, bottom - tableHead.bottom - 1);
+}
+
+function measurePagination(pageItems: LineItem[]) {
+  const pageElements = Array.from(document.querySelectorAll<HTMLElement>("#document-pages [data-pdf-page]"));
+  const firstPage = pageElements[0];
+  if (!firstPage) return null;
+
+  const rowHeights: Record<string, number> = {};
+  for (const page of pageElements) {
+    page.querySelectorAll<HTMLTableRowElement>("tr.line-item-row[data-item-id]").forEach((row) => {
+      const id = row.dataset.itemId;
+      if (id) rowHeights[id] = row.getBoundingClientRect().height;
+    });
+  }
+
+  const baselineRowHeight = measureBaselineRowHeight(firstPage);
+  const firstPageAvailableHeight = measureAvailableRowHeight(firstPage, true);
+  const continuationPage = pageElements[1] ?? firstPage;
+  const continuationAvailableHeight = measureAvailableRowHeight(continuationPage, false);
+  const signature = JSON.stringify({
+    rows: pageItems.map((item) => [item.id, Math.round((rowHeights[item.id] ?? baselineRowHeight) * 10) / 10]),
+    baseline: Math.round(baselineRowHeight * 10) / 10,
+    first: Math.round(firstPageAvailableHeight * 10) / 10,
+    continuation: Math.round(continuationAvailableHeight * 10) / 10,
+  });
+
+  return { rowHeights, baselineRowHeight, firstPageAvailableHeight, continuationAvailableHeight, signature };
+}
+
+function rowLimitForPage(pageIndex: number, paperSize: PaperSizeKey) {
+  if (pageIndex === 0) return 12;
+  if (pageIndex === 1) return 20;
+  return PAPER_SIZES[paperSize].contRows || PAPER_SIZES[paperSize].rows || 20;
+}
+
+function paginateRows(
+  items: LineItem[],
+  paperSize: PaperSizeKey,
+  manualBreaks: number[],
+  metrics: PaginationMeasurements | null
+) {
+  const starts = [0];
+  if (items.length === 0) return starts;
+
+  const manualBreakSet = new Set(manualBreaks);
+  let start = 0;
+  let pageIndex = 0;
+
+  while (start < items.length) {
+    const baseline = metrics?.baselineRowHeight || 1;
+    const maxEquivalentRows = rowLimitForPage(pageIndex, paperSize);
+    const maxHeight = pageIndex === 0
+      ? metrics?.firstPageAvailableHeight ?? Infinity
+      : metrics?.continuationAvailableHeight ?? Infinity;
+    let end = start;
+    let usedHeight = 0;
+    let usedEquivalentRows = 0;
+
+    while (end < items.length) {
+      if (end > start && manualBreakSet.has(end)) break;
+      const height = Math.max(1, metrics?.rowHeights[items[end].id] ?? baseline);
+      const equivalentRows = height / baseline;
+      const exceedsHeight = usedHeight + height > maxHeight + 0.5;
+      const exceedsRowLimit = usedEquivalentRows + equivalentRows > maxEquivalentRows + 0.01;
+
+      if (end > start && (exceedsHeight || exceedsRowLimit)) break;
+
+      // An individual row taller than a whole page cannot be split safely.
+      // Keep it intact on its own page so pagination always makes progress.
+      usedHeight += height;
+      usedEquivalentRows += equivalentRows;
+      end++;
+      if (exceedsHeight || exceedsRowLimit) break;
+    }
+
+    if (end <= start) end = start + 1;
+    if (end < items.length) starts.push(end);
+    start = end;
+    pageIndex++;
+  }
+
+  return starts;
+}
 
 export const DocumentPaper = memo(function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
