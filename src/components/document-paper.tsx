@@ -41,28 +41,30 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
   const paperWrapperRef = useRef<HTMLDivElement | null>(null);
   // transform:scale enlarges what's painted without changing layout size, so
   // the scroll area around #document-pages doesn't grow past 100% zoom and
-  // the bottom/sides of the page become unreachable by scrolling.
-  // Vertically we always reserve the extra height below the page (nothing
-  // else is down there to lose). Horizontally, a center origin looks right
-  // and stays fully reachable as long as the zoomed page still fits inside
-  // the container - but once it's wider than the container, a center origin
-  // pushes half the overflow to the LEFT of x=0, which can never be
-  // scrolled to (scrollLeft can't go negative) and permanently hides that
-  // half. So once it stops fitting, switch to a left origin plus a
-  // padding-right reservation sized to the real overflow: still grows from
-  // the left edge rather than the center, but nothing is ever unreachable.
+  // the bottom/right of the page become unreachable by scrolling. Reserve
+  // the extra space with one continuous formula (never a fits/doesn't-fit
+  // switch between two different layouts): an earlier version toggled
+  // between a centered layout and a left-anchored one at the point the
+  // zoomed page stopped fitting, and that toggle - plus the animated
+  // "transition: transform" - visibly jumped back and forth ("shaking")
+  // whenever the measurement landed right on that boundary. A plain
+  // max(0, …) formula has no boundary to land on, so it can't oscillate:
+  // marginLeft centers the page when there's room and smoothly clamps to 0
+  // once there isn't (nothing jumps), and marginRight reserves exactly the
+  // real overflow so the right edge stays scrollable instead of clipped.
+  // Both are plain margin, which sits outside the scaled box, so neither
+  // value is itself affected by the transform.
   const [extraZoomPad, setExtraZoomPad] = useState(0);
-  const [zoomOverflowX, setZoomOverflowX] = useState(0);
-  const [zoomFitsWidth, setZoomFitsWidth] = useState(true);
+  const [zoomMarginLeft, setZoomMarginLeft] = useState(0);
+  const [zoomMarginRight, setZoomMarginRight] = useState(0);
   useEffect(() => {
     const contentEl = pagesContentRef.current;
     // Measure available width from the outer wrapper, not #document-pages
-    // itself - #document-pages is the element we add padding-right to below,
+    // itself - #document-pages is the element these margins are applied to,
     // and measuring an element whose own size changes because of a value
-    // computed from its own size would oscillate (add padding -> width grows
-    // -> looks like it "fits" -> padding removed -> width shrinks -> no
-    // longer fits -> repeat). The wrapper's width depends only on the page
-    // layout (sidebar, window size), never on this component's own padding.
+    // computed from its own size can oscillate. The wrapper's width depends
+    // only on the page layout (sidebar, window size), never on this
+    // component's own margin.
     const wrapperEl = paperWrapperRef.current;
     if (!contentEl || !wrapperEl) return;
     const recompute = () => {
@@ -70,9 +72,8 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
       setExtraZoomPad(Math.max(0, contentEl.scrollHeight * (scale - 1)));
       const scaledWidth = contentEl.scrollWidth * scale;
       const containerWidth = wrapperEl.clientWidth;
-      const fits = scaledWidth <= containerWidth + 1;
-      setZoomFitsWidth(fits);
-      setZoomOverflowX(fits ? 0 : scaledWidth - containerWidth);
+      setZoomMarginLeft(Math.max(0, (containerWidth - scaledWidth) / 2));
+      setZoomMarginRight(Math.max(0, scaledWidth - containerWidth));
     };
     recompute();
     const observer = new ResizeObserver(recompute);
@@ -346,17 +347,24 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
         id="document-pages"
         className="document-pages"
         style={{
+          // Explicit max-content (not the default "auto") keeps this box's
+          // own width locked to its actual content, so adding marginLeft/
+          // marginRight below only ever shifts/reserves space around it -
+          // with width:auto a block's content width shrinks to absorb
+          // whatever margin is added, which would fight the centering math.
           display: "block",
+          width: "max-content",
           transform: `scale(${zoom / 100})`,
-          transformOrigin: zoomFitsWidth ? "top center" : "top left",
+          transformOrigin: "top left",
           transition: "transform 0.15s ease-out",
-          ...(zoomFitsWidth ? {} : { paddingRight: `${zoomOverflowX}px` }),
+          marginLeft: `${zoomMarginLeft}px`,
+          marginRight: `${zoomMarginRight}px`,
           paddingBottom: `${100 + extraZoomPad}px`
         }}
       >
         <div
           ref={pagesContentRef}
-          style={{ display: "flex", flexDirection: "column", alignItems: zoomFitsWidth ? "center" : "flex-start", gap: "32px" }}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "32px" }}
         >
           {pages.map((items, pageIndex) => (
             <DocumentPage
