@@ -96,6 +96,8 @@ function measureAvailableRowHeight(page: HTMLElement, reserveFirstPageContent: b
     bottom -= totals.getBoundingClientRect().height;
     bottom -= (cssPixels(totalsStyle.marginTop) + cssPixels(totalsStyle.marginBottom)) * zoom;
   }
+  const itemsSection = page.querySelector<HTMLElement>(".items-section");
+  if (itemsSection) bottom -= cssPixels(getComputedStyle(itemsSection).marginBottom) * zoom;
 
   // Keep a small safety pixel for table borders and fractional device scaling.
   return Math.max(0, bottom - tableHead.bottom - 1);
@@ -160,7 +162,7 @@ function paginateRows(
     while (end < items.length) {
       if (end > start && manualBreakSet.has(end)) break;
       const height = Math.max(1, metrics?.rowHeights[items[end].id] ?? baseline);
-      const equivalentRows = height / baseline;
+      const equivalentRows = Math.max(1, Math.ceil(height / baseline - 0.15));
       const exceedsHeight = usedHeight + height > maxHeight + 0.5;
       const exceedsRowLimit = usedEquivalentRows + equivalentRows > maxEquivalentRows + 0.01;
 
