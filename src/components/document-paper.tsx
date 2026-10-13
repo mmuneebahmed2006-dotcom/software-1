@@ -185,6 +185,13 @@ function paginateRows(
   return starts;
 }
 
+/** Slightly shrinks long numbers so they stay inside the Qty / Unit Price cells. */
+function numericFieldStyle(value: number): CSSProperties {
+  const length = String(Number.isFinite(value) ? value : 0).length;
+  if (length <= 7) return {};
+  return { fontSize: `${Math.max(0.72, 1 - (length - 7) * 0.06)}em` };
+}
+
 export const DocumentPaper = memo(function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
