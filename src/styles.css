@@ -2129,6 +2129,12 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   min-width: 0 !important;
 }
 
+/* Let only the email value use a little of the open header gap. */
+.paper .bill-to .contact-row .client-email {
+  width: calc(100% + 24px * var(--paper-scale, 1)) !important;
+  max-width: none !important;
+}
+
 
 /* Preview zoom is screen-only; physical printing always uses the paper dimensions. */
 @media print {
