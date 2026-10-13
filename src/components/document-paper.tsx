@@ -627,7 +627,7 @@ const DocumentPage = memo(function DocumentPage({
               <tbody>
                 {items.length > 0 ? (
                   items.map((item, index) => (
-                    <tr key={item.id} className="line-item-row" style={{ height: "18px" }}>
+                    <tr key={item.id} data-item-id={item.id} className="line-item-row" style={{ height: "18px" }}>
                       <td className="number-col">
                         {item.id === items[items.length - 1]?.id && (
                           <Button
