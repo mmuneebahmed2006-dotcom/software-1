@@ -2113,11 +2113,14 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
 }
 
 
-/* Keep all BILL TO client fields within the left header column. */
+/* Shared client-details width for Invoice, Quotation, DC, and Sales Tax Invoice.
+   All document types use the same DocumentPage/BILL TO structure; keeping the
+   width here preserves the Quotation proportions while constraining the others. */
 .paper .bill-to {
+  --client-details-width: 235px;
   box-sizing: border-box;
-  width: min(100%, calc(235px * var(--paper-scale, 1)));
-  max-width: calc(235px * var(--paper-scale, 1));
+  width: min(100%, calc(var(--client-details-width) * var(--paper-scale, 1)));
+  max-width: calc(var(--client-details-width) * var(--paper-scale, 1));
   min-width: 0;
 }
 .paper .bill-to .contact-row {
