@@ -111,7 +111,7 @@ function measurePagination(pageItems: LineItem[]) {
   const rowHeights: Record<string, number> = {};
   for (const page of pageElements) {
     page.querySelectorAll<HTMLTableRowElement>("tr.line-item-row[data-item-id]").forEach((row) => {
-      const id = row.dataset.itemId;
+      const id = row.dataset["itemId"];
       if (id) rowHeights[id] = row.getBoundingClientRect().height;
     });
   }
@@ -161,7 +161,7 @@ function paginateRows(
 
     while (end < items.length) {
       if (end > start && manualBreakSet.has(end)) break;
-      const height = Math.max(1, metrics?.rowHeights[items[end].id] ?? baseline);
+      const height = Math.max(1, metrics?.rowHeights[items[end]!.id] ?? baseline);
       const equivalentRows = Math.max(1, Math.ceil(height / baseline - 0.15));
       const exceedsHeight = usedHeight + height > maxHeight + 0.5;
       const exceedsRowLimit = usedEquivalentRows + equivalentRows > maxEquivalentRows + 0.01;
@@ -183,6 +183,17 @@ function paginateRows(
   }
 
   return starts;
+}
+
+function numericTextSizeFor(length: number) {
+  return length <= 14 ? undefined : `${Math.max(0.72, 1 - (length - 14) * 0.05)}em`;
+}
+
+/** Slightly shrinks long numbers so they stay inside the Qty / Unit Price cells. */
+function numericFieldStyle(value: number): CSSProperties {
+  const length = String(Number.isFinite(value) ? value : 0).length;
+  if (length <= 7) return {};
+  return { fontSize: `${Math.max(0.72, 1 - (length - 7) * 0.06)}em` };
 }
 
 export const DocumentPaper = memo(function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
@@ -675,7 +686,7 @@ const DocumentPage = memo(function DocumentPage({
                           </div>
                         </td>
                       )}
-                      {showAmounts && <td className="amount-col line-total" style={{ fontSize: numericTextSize(money((item.qty || 0) * (item.rate || 0), state.currency).length), textAlign: "center" }}>{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
+                      {showAmounts && <td className="amount-col line-total" style={{ fontSize: numericTextSizeFor(money((item.qty || 0) * (item.rate || 0), state.currency).length), textAlign: "center" }}>{money((item.qty || 0) * (item.rate || 0), state.currency)}</td>}
                       <td className="no-print action-col">
                         <Button type="button" size="icon" variant="danger" onClick={() => removeItem(item.id)} aria-label="Remove row">
                           <Trash2 size={14} />
