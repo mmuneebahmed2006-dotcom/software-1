@@ -26,36 +26,46 @@ export function TextField({ value, onChange, placeholder, className, ariaLabel, 
 
 function measureTextLayout(element: HTMLTextAreaElement, text: string) {
   const computed = getComputedStyle(element);
-  const mirror = document.createElement("div");
+  const mirror = document.createElement("textarea");
+  const width = element.getBoundingClientRect().width;
   Object.assign(mirror.style, {
     position: "fixed",
     left: "-100000px",
     top: "0",
     visibility: "hidden",
     pointerEvents: "none",
-    boxSizing: "border-box",
-    width: `${element.clientWidth}px`,
+    boxSizing: computed.boxSizing,
+    width: \`${width}px\`,
+    minWidth: \`${width}px\`,
+    maxWidth: \`${width}px\`,
+    height: "auto",
+    minHeight: "0",
+    maxHeight: "none",
     margin: "0",
-    border: "0",
+    border: computed.border,
     padding: computed.padding,
     font: computed.font,
     letterSpacing: computed.letterSpacing,
     wordSpacing: computed.wordSpacing,
     lineHeight: computed.lineHeight,
     textIndent: computed.textIndent,
+    textTransform: computed.textTransform,
+    textAlign: computed.textAlign,
+    direction: computed.direction,
     whiteSpace: "pre-wrap",
-    overflowWrap: "anywhere",
+    overflowWrap: computed.overflowWrap,
     wordBreak: computed.wordBreak,
     tabSize: computed.tabSize,
+    overflow: "hidden",
+    resize: "none",
   });
 
-  const materializeTrailingLine = (value: string) => value.endsWith("\n") ? `${value}\u200b` : value || "\u200b";
-  mirror.textContent = "M";
   document.body.appendChild(mirror);
   const paddingHeight = parseFloat(computed.paddingTop) + parseFloat(computed.paddingBottom);
-  const oneLineHeight = Math.max(1, mirror.getBoundingClientRect().height - paddingHeight);
-  mirror.textContent = materializeTrailingLine(text);
-  const contentHeight = Math.max(oneLineHeight, mirror.getBoundingClientRect().height - paddingHeight);
+  const oneLineHeight = Math.max(1, mirror.scrollHeight - paddingHeight);
+  // Keep a trailing newline as a visible second line during measurement.
+  mirror.value = text.endsWith("\n") ? \`${text}\u200b\` : text || "\u200b";
+  const contentHeight = Math.max(oneLineHeight, mirror.scrollHeight - paddingHeight);
   mirror.remove();
 
   return {
@@ -65,36 +75,141 @@ function measureTextLayout(element: HTMLTextAreaElement, text: string) {
   };
 }
 
+function insertAtSelection(element: HTMLTextAreaElement, insertedText: string) {
+  return element.value.slice(0, element.selectionStart) + insertedText + element.value.slice(element.selectionEnd);
+}
+
+function eventInsertion(event: InputEvent) {
+  if (event.inputType === "insertLineBreak" || event.inputType === "insertParagraph") return "\n";
+  if (event.inputType === "insertFromPaste" || event.inputType === "insertFromDrop") {
+    return event.dataTransfer?.getData("text/plain") ?? event.data ?? "";
+  }
+  return event.data ?? "";
+}
+
 export function AutoGrowTextField({ value, onChange, placeholder, className, ariaLabel, style }: Omit<TextFieldProps, "align"> & { style?: CSSProperties }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const acceptedValue = useRef(value);
+  const mounted = useRef(false);
+  const rejectedSelection = useRef<{ start: number; end: number; direction: "forward" | "backward" | "none" | null } | null>(null);
+
+  const fits = useCallback((element: HTMLTextAreaElement, candidate: string) =>
+    measureTextLayout(element, candidate).lines <= 2, []);
 
   const syncHeight = useCallback(() => {
     const element = ref.current;
     if (!element) return;
-    const { lines, lineHeight, paddingHeight } = measureTextLayout(element, element.value);
-    const maxHeight = lineHeight * 2 + paddingHeight;
-    element.style.maxHeight = `${maxHeight}px`;
-    element.style.height = "auto";
-    element.style.height = `${Math.min(element.scrollHeight, maxHeight)}px`;
-    element.style.overflowY = lines > 2 ? "auto" : "hidden";
+    const { lineHeight, paddingHeight } = measureTextLayout(element, element.value);
+    const twoLineHeight = lineHeight * 2 + paddingHeight;
+    element.style.height = \`${twoLineHeight}px\`;
+    element.style.minHeight = \`${twoLineHeight}px\`;
+    element.style.maxHeight = \`${twoLineHeight}px\`;
+    element.style.overflowY = "hidden";
+    element.style.overflowX = "hidden";
+    element.scrollTop = 0;
   }, []);
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== "Enter" || event.isComposing) return;
-    const element = event.currentTarget;
-    const start = element.selectionStart;
-    const end = element.selectionEnd;
-    const prefix = element.value.slice(0, start);
-    const nextValue = `${prefix}\n${element.value.slice(end)}`;
+  const rejectEdit = useCallback((element: HTMLTextAreaElement) => {
+    const previous = acceptedValue.current;
+    const selection = rejectedSelection.current;
+    element.value = previous;
+    requestAnimationFrame(() => {
+      if (ref.current !== element) return;
+      const position = Math.min(selection?.start ?? previous.length, previous.length);
+      element.setSelectionRange(position, Math.min(selection?.end ?? position, previous.length), selection?.direction ?? "none");
+    });
+  }, []);
 
-    // Enter is allowed only from visual line one, and only if the inserted
-    // newline leaves the complete value within the two-line display limit.
-    if (measureTextLayout(element, prefix).lines > 1 || measureTextLayout(element, nextValue).lines > 2) {
+  const handleBeforeInput = (event: FormEvent<HTMLTextAreaElement>) => {
+    const native = event.nativeEvent as InputEvent;
+    const element = event.currentTarget;
+    if (native.inputType.startsWith("delete")) {
+      rejectedSelection.current = null;
+      return;
+    }
+    if (!native.inputType.startsWith("insert")) return;
+    const candidate = insertAtSelection(element, eventInsertion(native));
+    rejectedSelection.current = {
+      start: element.selectionStart,
+      end: element.selectionEnd,
+      direction: element.selectionDirection,
+    };
+    if (!fits(element, candidate)) event.preventDefault();
+  };
+
+  const handlePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const element = event.currentTarget;
+    const candidate = insertAtSelection(element, event.clipboardData.getData("text/plain"));
+    if (!fits(element, candidate)) {
+      rejectedSelection.current = {
+        start: element.selectionStart,
+        end: element.selectionEnd,
+        direction: element.selectionDirection,
+      };
       event.preventDefault();
     }
   };
 
-  useLayoutEffect(syncHeight, [syncHeight, value]);
+  const handleDrop = (event: DragEvent<HTMLTextAreaElement>) => {
+    const element = event.currentTarget;
+    const text = event.dataTransfer.getData("text/plain");
+    if (!text) return;
+    const candidate = insertAtSelection(element, text);
+    if (!fits(element, candidate)) {
+      event.preventDefault();
+      rejectedSelection.current = {
+        start: element.selectionStart,
+        end: element.selectionEnd,
+        direction: element.selectionDirection,
+      };
+      return;
+    }
+    event.preventDefault();
+    element.setRangeText(text, element.selectionStart, element.selectionEnd, "end");
+    acceptedValue.current = element.value;
+    onChange(element.value);
+  };
+
+  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const element = event.currentTarget;
+    const nextValue = element.value;
+    if (fits(element, nextValue) || nextValue.length < acceptedValue.current.length) {
+      acceptedValue.current = nextValue;
+      rejectedSelection.current = null;
+      onChange(nextValue);
+      return;
+    }
+    // Fallback for non-cancelable beforeinput events and scripted DOM edits.
+    rejectEdit(element);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter" || event.isComposing) return;
+    const element = event.currentTarget;
+    const candidate = insertAtSelection(element, "\n");
+    rejectedSelection.current = {
+      start: element.selectionStart,
+      end: element.selectionEnd,
+      direction: element.selectionDirection,
+    };
+    if (!fits(element, candidate)) event.preventDefault();
+  };
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    // Existing saved names are preserved on load, even if a changed font or
+    // width makes them overflow. New external updates are capacity-checked.
+    if (!mounted.current) {
+      mounted.current = true;
+      acceptedValue.current = value;
+    } else if (value !== acceptedValue.current) {
+      if (fits(element, value)) acceptedValue.current = value;
+      else onChange(acceptedValue.current);
+    }
+    syncHeight();
+  }, [fits, onChange, syncHeight, value]);
 
   useEffect(() => {
     const element = ref.current;
@@ -111,15 +226,18 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
   return (
     <textarea
       ref={ref}
-      rows={1}
+      rows={2}
       value={value}
       aria-label={ariaLabel}
       placeholder={placeholder}
       title={value || undefined}
-      onChange={(event) => onChange(event.target.value)}
+      onBeforeInput={handleBeforeInput}
+      onPaste={handlePaste}
+      onDrop={handleDrop}
+      onChange={handleChange}
       onKeyDown={handleKeyDown}
       className={cn("editable w-full resize-none overflow-hidden border-0 bg-transparent p-0.5", className)}
-      style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", overflowX: "hidden", lineHeight: "normal", ...style }}
+      style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word", overflowX: "hidden", overflowY: "hidden", lineHeight: "normal", resize: "none", ...style }}
     />
   );
 }
