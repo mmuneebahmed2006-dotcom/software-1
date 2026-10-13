@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 interface TextFieldProps {
@@ -27,14 +27,14 @@ export function TextField({ value, onChange, placeholder, className, ariaLabel, 
 export function AutoGrowTextField({ value, onChange, placeholder, className, ariaLabel, style }: Omit<TextFieldProps, "align"> & { style?: CSSProperties }) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  const syncHeight = () => {
+  const syncHeight = useCallback(() => {
     const element = ref.current;
     if (!element) return;
     element.style.height = "auto";
     element.style.height = `${element.scrollHeight}px`;
-  };
+  }, []);
 
-  useLayoutEffect(syncHeight, [value]);
+  useLayoutEffect(syncHeight, [syncHeight, value]);
 
   useEffect(() => {
     const element = ref.current;
@@ -46,7 +46,7 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
     const observer = new ResizeObserver(syncHeight);
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [syncHeight]);
 
   return (
     <textarea
