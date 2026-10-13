@@ -642,11 +642,12 @@ const DocumentPage = memo(function DocumentPage({
             <div className="payment-info">
               <div className="payment-details">
                 <strong>Payment Info</strong>
-                <AreaField
+                <AutoGrowTextField
                   value={state.paymentInfo}
                   onChange={(value) => set("paymentInfo", value)}
                   placeholder="Bank, account, or payment instructions"
                   ariaLabel="Payment information"
+                  style={{ lineHeight: "1.15" }}
                 />
               </div>
               <div className="signature-block">Authorized Signature</div>
