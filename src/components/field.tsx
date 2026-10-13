@@ -49,7 +49,7 @@ function measureTextLayout(element: HTMLTextAreaElement, text: string) {
     tabSize: computed.tabSize,
   });
 
-  const materializeTrailingLine = (value: string) => value.endsWith("\\n") ? `${value}\\u200b` : value || "\\u200b";
+  const materializeTrailingLine = (value: string) => value.endsWith("\n") ? `${value}\u200b` : value || "\u200b";
   mirror.textContent = "M";
   document.body.appendChild(mirror);
   const paddingHeight = parseFloat(computed.paddingTop) + parseFloat(computed.paddingBottom);
@@ -85,7 +85,7 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
     const start = element.selectionStart;
     const end = element.selectionEnd;
     const prefix = element.value.slice(0, start);
-    const nextValue = `${prefix}\\n${element.value.slice(end)}`;
+    const nextValue = `${prefix}\n${element.value.slice(end)}`;
 
     // Enter is allowed only from visual line one, and only if the inserted
     // newline leaves the complete value within the two-line display limit.
@@ -114,7 +114,6 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
       rows={1}
       value={value}
       aria-label={ariaLabel}
-      aria-describedby={`${ariaLabel.replace(/\\s+/g, "-").toLowerCase()}-limit`}
       placeholder={placeholder}
       title={value || undefined}
       onChange={(event) => onChange(event.target.value)}
