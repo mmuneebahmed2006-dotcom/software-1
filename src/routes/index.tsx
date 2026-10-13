@@ -180,7 +180,7 @@ function Index() {
       duplex: (settings.mode === "booklet"
         ? settings.bookletSubset === "both" ? "shortEdge" : "simplex"
         : settings.sides === "double" ? "longEdge" : "simplex") as "simplex" | "shortEdge" | "longEdge",
-      dpi: settings.printAsImage ? settings.dpi : undefined,
+      ...(settings.printAsImage ? { dpi: settings.dpi } : {}),
       images,
       autoRotate: settings.autoRotate,
       autoCenter: settings.autoCenter,
