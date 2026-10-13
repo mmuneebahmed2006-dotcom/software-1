@@ -430,6 +430,7 @@ const DocumentPage = memo(function DocumentPage({
                                 onChange={(value) => set("client", { ...state.client, email: value })}
                                 placeholder="Email address"
                                 ariaLabel="Client email"
+                                className="client-email"
                                 style={{ fontSize: "9px" }}
                               />
                             </ContactRow>
