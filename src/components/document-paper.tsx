@@ -3,7 +3,7 @@ import { Globe2, Mail, MapPin, Phone, Plus, Trash2, RotateCcw } from "lucide-rea
 import logoMark from "@/assets/logo-mark.png";
 import { DOC_LABELS, PAPER_SIZES, money, uid, type DocState, type DocType, type LineItem, type PaperSizeKey } from "@/lib/document";
 import { Button } from "@/components/ui/button";
-import { AreaField, NumberField, TermsField, TextField } from "@/components/field";
+import { AreaField, AutoGrowTextField, NumberField, TermsField, TextField } from "@/components/field";
 
 interface Props {
   docType: DocType;
@@ -457,7 +457,7 @@ const DocumentPage = memo(function DocumentPage({
                             {/* BILL TO - Bada */}
                             <h2 style={{ fontSize: "24px", fontWeight: 400, marginBottom: "2px" }}>BILL TO</h2>
                             {/* Client details */}
-                            <TextField
+                            <AutoGrowTextField
                               value={state.client.name}
                               onChange={(value) => set("client", { ...state.client, name: value })}
                               placeholder="Client name"
