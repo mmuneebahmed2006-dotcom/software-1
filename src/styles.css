@@ -2111,3 +2111,25 @@ body:has(.print-preview-overlay) .document-paper-wrapper > .no-print {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+
+/* Keep all BILL TO client fields within the left header column. */
+.paper .bill-to {
+  box-sizing: border-box;
+  width: min(100%, calc(235px * var(--paper-scale, 1)));
+  max-width: calc(235px * var(--paper-scale, 1));
+  min-width: 0;
+}
+.paper .bill-to .contact-row {
+  width: 100%;
+  min-width: 0;
+}
+.paper .bill-to .client-name,
+.paper .bill-to .contact-row .editable,
+.paper .bill-to .contact-row input,
+.paper .bill-to .contact-row textarea {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
