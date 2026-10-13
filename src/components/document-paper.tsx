@@ -13,10 +13,6 @@ interface Props {
   paperSize: PaperSizeKey;
 }
 
-// A4: pehle page par 12 rows, uske baad har page par 20 rows
-const A4_FIRST_PAGE_ROWS = 12;
-const A4_NEXT_PAGE_ROWS = 20;
-
 interface PaginationMeasurements {
   rowHeights: Record<string, number>;
   baselineRowHeight: number;
@@ -190,45 +186,16 @@ function paginateRows(
 export const DocumentPaper = memo(function DocumentPaper({ docType, state, setState, paperStyle, paperSize }: Props) {
   const [zoom, setZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(1);
-  const baseRows = PAPER_SIZES[paperSize].rows || 15;
-  const isA4 = String(paperSize).toLowerCase() === "a4";
-  const firstRows = isA4 ? A4_FIRST_PAGE_ROWS : baseRows;
-  const nextRows = isA4 ? A4_NEXT_PAGE_ROWS : baseRows;
+  const [paginationMetrics, setPaginationMetrics] = useState<PaginationMeasurements | null>(null);
 
-  // Build pages from the user's manual page breaks first, then apply the normal
-  // A4 capacity (12 on page 1, 20 on continuation pages).
+  // Pack complete rows into each fixed-size page, enforcing both the
+  // single-line-equivalent limit and measured printable row area.
   const pageStarts = useMemo(() => {
-    const starts: number[] = [0];
     const manualBreaks = (state.pageBreaks ?? [])
       .filter((n) => Number.isInteger(n) && n > 0 && n < state.items.length)
       .sort((a, b) => a - b);
-
-    let start = 0;
-    let pageIndex = 0;
-    let breakCursor = 0;
-
-    while (start < state.items.length) {
-      const capacity = pageIndex === 0 ? firstRows : nextRows;
-      const capacityEnd = start + capacity;
-      while (breakCursor < manualBreaks.length && manualBreaks[breakCursor] <= start) breakCursor++;
-
-      const manualEnd = manualBreaks[breakCursor] ?? Infinity;
-      const end = Math.min(capacityEnd, manualEnd);
-
-      if (end <= start) {
-        breakCursor++;
-        continue;
-      }
-
-      if (end < state.items.length) {
-        starts.push(end);
-      }
-      start = end;
-      pageIndex++;
-    }
-
-    return starts;
-  }, [firstRows, nextRows, state.items.length, state.pageBreaks]);
+    return paginateRows(state.items, paperSize, manualBreaks, paginationMetrics);
+  }, [paginationMetrics, paperSize, state.items, state.pageBreaks]);
 
   const pages = useMemo(() => {
     const chunks = pageStarts.map((start, index) => {
@@ -239,6 +206,12 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
     while (chunks.length < state.minimumPages) chunks.push([]);
     return chunks;
   }, [pageStarts, state.items, state.minimumPages]);
+
+  useLayoutEffect(() => {
+    const measured = measurePagination(state.items);
+    if (!measured) return;
+    setPaginationMetrics((current) => current?.signature === measured.signature ? current : measured);
+  }, [docType, pages, paperSize, state.items, zoom]);
 
   const pageStart = (page: number) => pageStarts[page] ?? state.items.length;
 
@@ -293,32 +266,10 @@ export const DocumentPaper = memo(function DocumentPaper({ docType, state, setSt
         .filter((n) => Number.isInteger(n) && n > 0 && n < current.items.length)
         .sort((a, b) => a - b);
 
-      const starts: number[] = [0];
-      let start = 0;
-      let page = 0;
-      let breakCursor = 0;
-
-      while (start < current.items.length) {
-        const capacity = page === 0 ? (isA4 ? A4_FIRST_PAGE_ROWS : baseRows) : (isA4 ? A4_NEXT_PAGE_ROWS : baseRows);
-        const capacityEnd = start + capacity;
-        while (breakCursor < manualBreaks.length && manualBreaks[breakCursor] <= start) breakCursor++;
-        const manualEnd = manualBreaks[breakCursor] ?? Infinity;
-        const end = Math.min(capacityEnd, manualEnd);
-        if (end <= start) break;
-        if (end < current.items.length) starts.push(end);
-        start = end;
-        page++;
-      }
-
-      while (starts.length < current.minimumPages) {
-        starts.push(current.items.length);
-      }
-
-      const insertAt = starts[pageIndex] !== undefined
-        ? Math.min(
-            pageIndex + 1 < starts.length ? starts[pageIndex + 1] : current.items.length,
-            starts[pageIndex] + (pageIndex === 0 ? (isA4 ? A4_FIRST_PAGE_ROWS : baseRows) : (isA4 ? A4_NEXT_PAGE_ROWS : baseRows))
-          )
+      const starts = pageStarts.filter((start) => start < current.items.length);
+      while (starts.length < current.minimumPages) starts.push(current.items.length);
+      const insertAt = pageStarts[pageIndex] !== undefined
+        ? (pageStarts[pageIndex + 1] ?? current.items.length)
         : current.items.length;
 
       const updatedItems = [...current.items];
