@@ -35,9 +35,9 @@ function measureTextLayout(element: HTMLTextAreaElement, text: string) {
     visibility: "hidden",
     pointerEvents: "none",
     boxSizing: computed.boxSizing,
-    width: \`${width}px\`,
-    minWidth: \`${width}px\`,
-    maxWidth: \`${width}px\`,
+    width: `${width}px`,
+    minWidth: `${width}px`,
+    maxWidth: `${width}px`,
     height: "auto",
     minHeight: "0",
     maxHeight: "none",
@@ -65,7 +65,7 @@ function measureTextLayout(element: HTMLTextAreaElement, text: string) {
   const paddingHeight = parseFloat(computed.paddingTop) + parseFloat(computed.paddingBottom);
   const oneLineHeight = Math.max(1, mirror.scrollHeight - paddingHeight);
   // Keep a trailing newline as a visible second line during measurement.
-  mirror.value = text.endsWith("\n") ? \`${text}\u200b\` : text || "\u200b";
+  mirror.value = text.endsWith("\n") ? `${text}\u200b` : text || "\u200b";
   const contentHeight = Math.max(oneLineHeight, mirror.scrollHeight - paddingHeight);
   mirror.remove();
 
@@ -104,9 +104,9 @@ export function AutoGrowTextField({ value, onChange, placeholder, className, ari
     const { lineHeight, paddingHeight } = measureTextLayout(element, element.value);
     const borderHeight = parseFloat(getComputedStyle(element).borderTopWidth) + parseFloat(getComputedStyle(element).borderBottomWidth);
     const twoLineHeight = lineHeight * 2 + paddingHeight + borderHeight;
-    element.style.height = \`${twoLineHeight}px\`;
-    element.style.minHeight = \`${twoLineHeight}px\`;
-    element.style.maxHeight = \`${twoLineHeight}px\`;
+    element.style.height = `${twoLineHeight}px`;
+    element.style.minHeight = `${twoLineHeight}px`;
+    element.style.maxHeight = `${twoLineHeight}px`;
     element.style.overflowY = "hidden";
     element.style.overflowX = "hidden";
     element.scrollTop = 0;
