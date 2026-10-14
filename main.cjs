@@ -75,6 +75,22 @@ async function writePdfDestination(selectedPath, bytes) {
   if (!saved.isFile() || saved.size === 0) throw new Error('The PDF file was not created.');
   return target;
 }
+function pdfSaveFailure(error) {
+  const code = error?.code;
+  const windowsAccessDenied = process.platform === 'win32' && ['EACCES', 'EPERM'].includes(code);
+  if (windowsAccessDenied) {
+    return {
+      message: 'Windows denied access while saving this PDF.',
+      detail: `Windows reported ${code}: ${String(error.message || 'Access denied')}
+
+If Windows Security shows “Protected folder access blocked,” Controlled folder access is preventing Document Generator.exe from writing to this protected folder. To approve this app, open Windows Security > Virus & threat protection > Ransomware protection > Manage ransomware protection > Allow an app through Controlled folder access. On a managed PC, contact your administrator. You can also choose a folder that Windows allows this app to write to. The PDF is not saved to another location automatically.`,
+    };
+  }
+  return {
+    message: 'The PDF could not be saved to this location.',
+    detail: String(error?.message || 'Unknown file-system error'),
+  };
+}
 const getServerEntry = () => app.isPackaged ? path.join(process.resourcesPath, 'app-output', 'server', 'index.mjs') : path.join(__dirname, '.output', 'server', 'index.mjs');
 const log = (message) => { try { fs.appendFileSync(path.join(app.getPath('userData'), 'document-generator.log'), `[${new Date().toISOString()}] ${message}\n`); } catch {} };
 function ensureWorkspace(root) {
@@ -336,11 +352,11 @@ function installIpc() {
       return true;
     } catch (error) {
       log(`PDF save failed: ${error.message} | target=${result.filePath}`);
+      const failure = pdfSaveFailure(error);
       await dialog.showMessageBox(win, {
         type: 'error',
         title: 'PDF Save Error',
-        message: 'The PDF could not be saved to this location.',
-        detail: String(error.message || 'Unknown file-system error'),
+        ...failure,
       });
       return false;
     }
@@ -368,11 +384,11 @@ function installIpc() {
       return true;
     } catch (error) {
       log(`PDF export failed: ${error.message} | target=${result.filePath}`);
+      const failure = pdfSaveFailure(error);
       await dialog.showMessageBox(win, {
         type: 'error',
         title: 'PDF Save Error',
-        message: 'The PDF could not be saved to this location.',
-        detail: String(error.message || 'Unknown file-system error'),
+        ...failure,
       });
       return false;
     }
