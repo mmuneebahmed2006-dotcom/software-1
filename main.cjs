@@ -335,7 +335,7 @@ function installIpc() {
       await writePdfDestination(result.filePath, decodeData(data));
       return true;
     } catch (error) {
-      log(`PDF save failed: ${error.message} | target=${selectedPath}`);
+      log(`PDF save failed: ${error.message} | target=${result.filePath}`);
       await dialog.showMessageBox(win, {
         type: 'error',
         title: 'PDF Save Error',
@@ -347,10 +347,8 @@ function installIpc() {
   });
   ipcMain.handle('pdf:export-current', async (_event, name, docType, paperSize, landscape = false, scale = 100, pageRange = '') => {
     if (!win || win.isDestroyed()) return false;
-    // See the matching comment in pdf:save-as: a defaultPath with a
-    // directory inside the workspace folder can fail with "File not found"
-    // on Save when that workspace is on a drive other than C:, so only the
-    // plain file name is suggested here too.
+    // Suggest only a filename; never derive the user's output directory from
+    // the install location or internal document workspace.
     const defaultPath = safePart(name);
     const result = await dialog.showSaveDialog(win, { defaultPath, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
     if (result.canceled || !result.filePath) return false;
