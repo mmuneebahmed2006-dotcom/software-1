@@ -310,7 +310,23 @@ function installIpc() {
   ipcMain.handle('pdf:save-as', async (_event, name, data, docType) => {
     if (!win || win.isDestroyed()) return false;
     let suggestedName = safePart(String(name || 'Document').replace(/\.pdf$/i, '')) + '.pdf';
-    try { const category = CATEGORIES[docType]; if (category) suggestedName = path.join(withinRoot(category), suggestedName); } catch {}
+    try {
+      const category = CATEGORIES[docType];
+      if (category) {
+        const folder = withinRoot(category);
+        // Windows' native Save dialog pre-validates defaultPath's directory.
+        // If that folder doesn't exist yet (first save for this category),
+        // the dialog silently falls back to some other folder (e.g. Pictures)
+        // but keeps an internal reference to the missing one - clicking Save
+        // then fails with "File not found. Check the file name and try
+        // again.", even though the file name itself is perfectly valid.
+        // Creating the folder up front avoids that broken state entirely.
+        fs.mkdirSync(folder, { recursive: true });
+        suggestedName = path.join(folder, suggestedName);
+      }
+    } catch (error) {
+      log(`PDF save folder could not be prepared: ${error.message}`);
+    }
     let result;
     try {
       result = await dialog.showSaveDialog(win, { title: 'Save PDF', defaultPath: suggestedName, buttonLabel: 'Save', filters: [{ name: 'PDF', extensions: ['pdf'] }] });
@@ -351,7 +367,19 @@ function installIpc() {
   ipcMain.handle('pdf:export-current', async (_event, name, docType, paperSize, landscape = false, scale = 100, pageRange = '') => {
     if (!win || win.isDestroyed()) return false;
     let defaultPath = safePart(name);
-    try { const category = CATEGORIES[docType]; if (category) defaultPath = path.join(withinRoot(category), safePart(name)); } catch {}
+    try {
+      const category = CATEGORIES[docType];
+      if (category) {
+        const folder = withinRoot(category);
+        // See the matching comment in pdf:save-as: the folder must exist
+        // before the dialog opens, or Windows' Save dialog can end up in a
+        // broken state that fails with "File not found" on Save.
+        fs.mkdirSync(folder, { recursive: true });
+        defaultPath = path.join(folder, safePart(name));
+      }
+    } catch (error) {
+      log(`PDF export folder could not be prepared: ${error.message}`);
+    }
     const result = await dialog.showSaveDialog(win, { defaultPath, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
     if (result.canceled || !result.filePath) return false;
     const validSize = ['A4', 'A5', 'Letter', 'Legal'].includes(paperSize) ? paperSize : 'A4';
