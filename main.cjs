@@ -309,36 +309,20 @@ function installIpc() {
   });
   ipcMain.handle('pdf:save-as', async (_event, name, data, docType) => {
     if (!win || win.isDestroyed()) return false;
-    let suggestedName = safePart(String(name || 'Document').replace(/\.pdf$/i, '')) + '.pdf';
-    try {
-      const category = CATEGORIES[docType];
-      if (category) {
-        const folder = withinRoot(category);
-        // Windows' native Save dialog pre-validates defaultPath's directory.
-        // If that folder doesn't exist yet (first save for this category),
-        // the dialog silently falls back to some other folder (e.g. Pictures)
-        // but keeps an internal reference to the missing one - clicking Save
-        // then fails with "File not found. Check the file name and try
-        // again.", even though the file name itself is perfectly valid.
-        // Creating the folder up front avoids that broken state entirely.
-        fs.mkdirSync(folder, { recursive: true });
-        suggestedName = path.join(folder, suggestedName);
-      }
-    } catch (error) {
-      log(`PDF save folder could not be prepared: ${error.message}`);
-    }
-    let result;
-    try {
-      result = await dialog.showSaveDialog(win, { title: 'Save PDF', defaultPath: suggestedName, buttonLabel: 'Save', filters: [{ name: 'PDF', extensions: ['pdf'] }] });
-    } catch (error) {
-      log(`PDF Save dialog retry: ${error.message}`);
-      result = await dialog.showSaveDialog(win, {
-        title: 'Save PDF',
-        defaultPath: path.basename(suggestedName),
-        buttonLabel: 'Save',
-        filters: [{ name: 'PDF', extensions: ['pdf'] }],
-      });
-    }
+    // Earlier versions suggested a full path inside the workspace folder
+    // (e.g. D:\...\Invoice\Invoice_Untitled.pdf) as defaultPath. That still
+    // failed with "File not found. Check the file name and try again." on
+    // a workspace folder chosen on a drive other than the system drive (C:)
+    // during install - even though the folder genuinely existed and was
+    // writable - which points to Electron/Windows' native Save dialog
+    // itself mishandling a multi-level defaultPath on a non-system drive,
+    // not anything wrong with the folder or file name. Passing just the
+    // plain file name sidesteps that entirely: Windows opens its own
+    // last-used (or default) folder instead, and whatever folder the
+    // person then picks - any drive - is still handled correctly below,
+    // since the actual save always creates its destination folder first.
+    const suggestedName = safePart(String(name || 'Document').replace(/\.pdf$/i, '')) + '.pdf';
+    const result = await dialog.showSaveDialog(win, { title: 'Save PDF', defaultPath: suggestedName, buttonLabel: 'Save', filters: [{ name: 'PDF', extensions: ['pdf'] }] });
 
     if (result.canceled || !result.filePath) return false;
 
@@ -366,20 +350,11 @@ function installIpc() {
   });
   ipcMain.handle('pdf:export-current', async (_event, name, docType, paperSize, landscape = false, scale = 100, pageRange = '') => {
     if (!win || win.isDestroyed()) return false;
-    let defaultPath = safePart(name);
-    try {
-      const category = CATEGORIES[docType];
-      if (category) {
-        const folder = withinRoot(category);
-        // See the matching comment in pdf:save-as: the folder must exist
-        // before the dialog opens, or Windows' Save dialog can end up in a
-        // broken state that fails with "File not found" on Save.
-        fs.mkdirSync(folder, { recursive: true });
-        defaultPath = path.join(folder, safePart(name));
-      }
-    } catch (error) {
-      log(`PDF export folder could not be prepared: ${error.message}`);
-    }
+    // See the matching comment in pdf:save-as: a defaultPath with a
+    // directory inside the workspace folder can fail with "File not found"
+    // on Save when that workspace is on a drive other than C:, so only the
+    // plain file name is suggested here too.
+    const defaultPath = safePart(name);
     const result = await dialog.showSaveDialog(win, { defaultPath, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
     if (result.canceled || !result.filePath) return false;
     const validSize = ['A4', 'A5', 'Letter', 'Legal'].includes(paperSize) ? paperSize : 'A4';
