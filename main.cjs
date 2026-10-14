@@ -61,6 +61,20 @@ const safePart = (value) => String(value ?? '').replace(/[<>:"/\\|?*\x00-\x1f]/g
 const dataRoot = () => { const root = readSettings().dataRoot; if (!root) throw new Error('Workspace is not initialized'); return path.resolve(root); };
 const withinRoot = (...parts) => { const root = dataRoot(); const target = path.resolve(root, ...parts.map(safePart)); if (target !== root && !target.startsWith(root + path.sep)) throw new Error('Invalid workspace path'); return target; };
 const decodeData = (value) => Buffer.from(String(value).replace(/^data:[^;]+;base64,/, ''), 'base64');
+function absolutePdfDestination(selectedPath) {
+  const value = String(selectedPath ?? '');
+  if (!path.isAbsolute(value)) throw new Error('The save dialog did not return an absolute PDF path.');
+  const resolved = path.resolve(value);
+  return resolved.toLowerCase().endsWith('.pdf') ? resolved : `${resolved}.pdf`;
+}
+async function writePdfDestination(selectedPath, bytes) {
+  const target = absolutePdfDestination(selectedPath);
+  await fs.promises.mkdir(path.dirname(target), { recursive: true });
+  await fs.promises.writeFile(target, bytes);
+  const saved = await fs.promises.stat(target);
+  if (!saved.isFile() || saved.size === 0) throw new Error('The PDF file was not created.');
+  return target;
+}
 const getServerEntry = () => app.isPackaged ? path.join(process.resourcesPath, 'app-output', 'server', 'index.mjs') : path.join(__dirname, '.output', 'server', 'index.mjs');
 const log = (message) => { try { fs.appendFileSync(path.join(app.getPath('userData'), 'document-generator.log'), `[${new Date().toISOString()}] ${message}\n`); } catch {} };
 function ensureWorkspace(root) {
@@ -309,33 +323,16 @@ function installIpc() {
   });
   ipcMain.handle('pdf:save-as', async (_event, name, data, docType) => {
     if (!win || win.isDestroyed()) return false;
-    // Earlier versions suggested a full path inside the workspace folder
-    // (e.g. D:\...\Invoice\Invoice_Untitled.pdf) as defaultPath. That still
-    // failed with "File not found. Check the file name and try again." on
-    // a workspace folder chosen on a drive other than the system drive (C:)
-    // during install - even though the folder genuinely existed and was
-    // writable - which points to Electron/Windows' native Save dialog
-    // itself mishandling a multi-level defaultPath on a non-system drive,
-    // not anything wrong with the folder or file name. Passing just the
-    // plain file name sidesteps that entirely: Windows opens its own
-    // last-used (or default) folder instead, and whatever folder the
-    // person then picks - any drive - is still handled correctly below,
-    // since the actual save always creates its destination folder first.
+    // Keep the suggestion independent of the install/workspace drive. The
+    // user's selected absolute path below is the only PDF destination.
     const suggestedName = safePart(String(name || 'Document').replace(/\.pdf$/i, '')) + '.pdf';
     const result = await dialog.showSaveDialog(win, { title: 'Save PDF', defaultPath: suggestedName, buttonLabel: 'Save', filters: [{ name: 'PDF', extensions: ['pdf'] }] });
 
     if (result.canceled || !result.filePath) return false;
 
-    const selectedPath = result.filePath.toLowerCase().endsWith('.pdf') ? result.filePath : `${result.filePath}.pdf`;
-    const bytes = decodeData(data);
-
     try {
-      // Use async filesystem calls so large PDFs do not block Electron's main
-      // process while the selected destination directory is being prepared.
-      await fs.promises.mkdir(path.dirname(selectedPath), { recursive: true });
-      await fs.promises.writeFile(selectedPath, bytes);
-      const savedFile = await fs.promises.stat(selectedPath);
-      if (!savedFile.isFile() || savedFile.size === 0) throw new Error('The PDF file was not created.');
+      // Save only to the absolute path returned by the user's Save As choice.
+      await writePdfDestination(result.filePath, decodeData(data));
       return true;
     } catch (error) {
       log(`PDF save failed: ${error.message} | target=${selectedPath}`);
@@ -368,9 +365,19 @@ function installIpc() {
       preferCSSPageSize: false,
       displayHeaderFooter: false,
     });
-    fs.mkdirSync(path.dirname(result.filePath), { recursive: true });
-    fs.writeFileSync(result.filePath, data);
-    return true;
+    try {
+      await writePdfDestination(result.filePath, data);
+      return true;
+    } catch (error) {
+      log(`PDF export failed: ${error.message} | target=${result.filePath}`);
+      await dialog.showMessageBox(win, {
+        type: 'error',
+        title: 'PDF Save Error',
+        message: 'The PDF could not be saved to this location.',
+        detail: String(error.message || 'Unknown file-system error'),
+      });
+      return false;
+    }
   });
   ipcMain.handle('zip:save-as', async (_event, name, data) => { const result = await dialog.showSaveDialog(win, { defaultPath: safePart(name), filters: [{ name: 'ZIP archive', extensions: ['zip'] }] }); if (result.canceled || !result.filePath) return false; fs.writeFileSync(result.filePath, decodeData(data)); return true; });
   ipcMain.handle('settings:base-path', () => { try { return dataRoot(); } catch { return null; } });
